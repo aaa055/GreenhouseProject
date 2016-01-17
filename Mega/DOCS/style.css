@@ -1,0 +1,240 @@
+img, div 
+{ 
+	behavior: url('iepngfix.htc') 
+}
+
+
+FORM {
+ margin: 0; /* Убираем отступы */
+}
+
+textarea {
+	float:left;
+	clear:left;
+	margin-top:5px;
+	border:solid 1px #CCC;
+	padding:0px;
+	font-size:12px;
+	background-color:#FFFFFF;
+}
+
+input[type="text"]
+{
+	font-size:12px;
+	background-color:#FFFFFF;
+}
+
+select
+{
+	font-size: 12px;
+	background-color:#FFFFFF;
+}
+
+
+fieldset {
+	border:solid 1px #CCC;
+	margin-top:10px;
+}
+
+legend {
+	font-size:16px;
+	color:#119ae9;
+	font-weight:bold;
+}
+
+
+
+.grayborder
+{
+	border:solid 1px #CCC;
+	background-color:#FFFFFF;
+}
+
+.fr
+{
+  float:right;
+}
+
+.arrow_img
+{
+  align: absmiddle;
+  margin-right: 10px;
+}
+
+
+BODY, TD, DIV, SPAN, P, FONT 
+{
+	font-weight:normal;
+	font-family:Arial;
+	color:#000000;
+	font-size:12px;
+}
+
+LABEL
+{
+	cursor:pointer;
+}
+
+.hdn
+{
+	display:none;
+}
+
+
+
+h1,h2,h3,h4
+{
+	color:#90d70f;
+	margin-top:0px;
+	margin-bottom:12px;
+	padding-top:0px;
+}
+
+h1
+{
+	font-size:24px;
+}
+h2
+{
+	font-size:20px;
+}
+h3
+{
+	font-size:16px;
+}
+h4
+{
+	font-size:12px;
+}
+
+.good
+{
+	color:#008000;
+}
+
+.bad
+{
+	color:#f71314;
+}
+
+
+.required
+{
+	color:#D00000;
+}
+
+.bold
+{
+font-weight:bold;
+}
+
+.info
+{
+font-style:italic;
+}
+
+.bf
+{
+font-size:130%;
+}
+
+.tm
+{
+  margin-top:20px;
+}
+
+A 
+{
+color:#0d8ed8;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:underline;
+outline: none; /* Убираем границу вокруг ссылок */ 
+}
+
+A:visited 
+{
+color:#119ae9;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:underline;
+outline: none; /* Убираем границу вокруг ссылок */ 
+}
+
+A:hover 
+{
+color:#0d8ed8;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:none;
+outline: none; /* Убираем границу вокруг ссылок */ 
+}
+
+.odd
+{
+background-color:#F0F0F0;
+}
+
+
+th
+{
+	color:#FFF;
+	font-size:120%;
+}
+
+.cb_caption
+{
+	color:#ffffff;
+	font-style:italic;
+	font-weight:600;
+	font-size:14px;
+}
+
+UL
+{
+	padding-left:16px;
+	padding-bottom:0px;
+	margin-bottom:0px;
+	margin-left:10px;
+}
+
+UL LI
+{
+	list-style-image: url('images/li.png');
+	padding-left:0px;
+	padding-top:5px;
+}
+
+
+.hint
+{
+	background-color:#ffffe7;
+	margin:6px;
+	padding:10px;
+	font-style:italic;
+	color:#262626;
+	margin-top:20px;
+	margin-bottom:40px;
+	
+}
+.pad
+{
+padding:10px;
+}
+.hintcolor
+{
+	background-color:#ffffe7;
+}
+
+.inf
+{
+background-image:url('images/dt.png');
+}
+
+.nobtm
+{
+margin-bottom:0px;
+}

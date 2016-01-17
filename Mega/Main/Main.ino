@@ -1,0 +1,277 @@
+#include "Globals.h"
+
+#include "CommandBuffer.h"
+#include "CommandParser.h"
+#include "ModuleController.h"
+#include "Menu.h"
+
+#ifdef AS_CONTROLLER
+#include "AlertModule.h"
+#endif
+
+#ifdef USE_PIN_MODULE
+#include "PinModule.h"
+#endif
+
+#ifdef USE_LOOP_MODULE
+#include "LoopModule.h"
+#endif
+
+#ifdef USE_STAT_MODULE
+#include "StatModule.h"
+#endif
+
+#include "ZeroStreamListener.h"
+
+#ifdef USE_TEMP_SENSORS
+#include "TempSensors.h"
+#endif
+
+
+// КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
+const char init_0[] PROGMEM = "CTSET=PIN|13|1";// ВКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
+const char init_1[] PROGMEM = "CTSET=LOOP|SET|50|30|PIN|13|T";// помигаем 30 раз диодом для проверки
+//const char init_2[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|>|25|CTSET=STATE|WINDOW|0|OPEN|4000"; // (открывать 4 секунды при Т > 25)
+//const char init_3[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|<=|25|CTSET=STATE|WINDOW|0|CLOSE|0";// (закрывать 4 секунды при Т < 27)
+//const char init_4[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|>|27|CTSET=STATE|WINDOW|0|OPEN|8000";// (открывать 8 секунд при Т > 27)
+//const char init_5[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|<|30|CTSET=STATE|WINDOW|0|CLOSE|8000";// (закрывать 8 секунд при Т < 30)
+//const char init_6[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|>=|30|CTSET=STATE|WINDOW|0|OPEN|12000";// (открывать 12 секунд при Т >= 30)
+//const char init_7[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|<=|25|CTSET=STATE|WINDOW|0|CLOSE|0";// (закрыть полностью при Т <= 25)
+
+const char init_STUB[] PROGMEM = "";
+
+
+const char* const  INIT_COMMANDS[] PROGMEM  = 
+{
+   init_0
+ , init_1
+// , init_2
+// , init_3
+// , init_4
+// , init_5
+// , init_6
+// , init_7
+, init_STUB // ЗАГЛУШКА, НЕ ТРОГАТЬ !!!
+};
+
+
+// timer
+unsigned long lastMillis = 0;
+
+
+
+// Ждем команды из сериала
+CommandBuffer commandsFromSerial(&Serial);
+// Парсер команд
+CommandParser commandParser;
+
+// Контроллер модулей - в указанном режиме работы - как главный контроллер или дочерний модуль
+ModuleController controller(
+  
+  #ifdef AS_CONTROLLER
+  cdCONTROLLER
+  #else
+  cdCHILDMODULE
+  #endif
+    
+  ,OUR_ID);
+
+
+// паблишер для вывода ответов в сериал
+SerialPublisher serialPublisher;
+
+// паблишер вывода на экран
+DisplayPublisher displayPublisher;
+
+#ifdef USE_PIN_MODULE
+//  Модуль управления цифровыми пинами
+PinModule pin13Diode("PIN");
+#endif
+
+#ifdef USE_LOOP_MODULE
+// Модуль поддержки периодически повторяемых операций
+LoopModule loopModule("LOOP");
+#endif
+
+#ifdef USE_STAT_MODULE
+// Модуль вывода статистики
+StatModule statModule("STAT");
+#endif
+
+#ifdef USE_TEMP_SENSORS
+// модуль опроса температурных датчиков
+TempSensors tempSensors;
+#endif
+
+
+#ifdef AS_CONTROLLER
+// Модуль поддержки регистрации сторонних коробочек - только в режиме работы контроллера
+ZeroStreamListener remoteRegistrator;
+// модуль регистрации алертов тоже только в режиме контроллера
+AlertModule alerts;
+#endif
+
+String ReadProgmemString(const char* c)
+{
+  String s;
+  int len = strlen_P(c);
+ // Serial.println(len);
+  
+  for (int i = 0; i < len; i++)
+    s += (char) pgm_read_byte_near(c + i);
+
+  //Serial.println(s);
+ // delay(5000);
+    
+  return s;
+}
+// ДОБАВЛЯЕМ КОМАНДЫ ИНИЦИАЛИЗАЦИИ В ОБРАБОТКУ
+void ProcessInitCommands()
+{
+  int curIdx = 0;
+  while(true)
+  {
+    const char* c = (const char*) pgm_read_word(&(INIT_COMMANDS[curIdx]));
+    String command = ReadProgmemString(c);
+    if(!command.length())
+      break;
+
+     Command cmd;
+    if(commandParser.ParseCommand(command, OUR_ID, cmd))
+    {
+      // КОМАНДЫ ИНИЦИАЛИЗАЦИИ НЕ ДЕЛАЮТ ВЫВОД В СЕРИАЛ
+      //cmd.SetIncomingStream(commandsFromSerial.GetStream());
+      controller.ProcessModuleCommand(cmd);    
+    } // if
+
+    curIdx++;
+  } // while
+}
+
+void setup() 
+{
+  // устанавливаем провайдера команд для контроллера
+  controller.SetCommandParser(&commandParser);
+
+  // put your setup code here, to run once:
+  Serial.begin(SERIAL_BAUD_RATE);
+
+  // назначаем поток вывода по умолчанию для контроллера
+  controller.SetCurrentStream(commandsFromSerial.GetStream());
+
+  /*
+   * ЛОГИКА РАБОТЫ ПУБЛИКАТОРОВ: ОНИ МОГУТ ВЫВОДИТЬ ОТВЕТ ТУДА, КУДА ХОТЯТ.
+   * ПО УМОЛЧАНИЮ ОТВЕТ НА ЗАПРОС ПРИХОДИТ В ТОТ ПОТОК, С КОТОРОГО БЫЛ ПОСЛАН ЗАПРОС.
+   * НАПРИМЕР, ЕСЛИ ЗАПРОС БЫЛ ИЗ SERIAL, ТО ТУДА И УЙДЁТ ОТВЕТ.
+   * ЕСЛИ МЫ ПОДПИШЕМ МОДУЛЬ, ПРИПИСАВ ЕМУ ПОДПИСЧИКА НА ОТВЕТ, И ЭТОТ ПОДПИСЧИК
+   * ВЫВОДИТ ДАННЫЕ В ЭТОТ ЖЕ ПОТОК - ВЫВОД ПО УМОЛЧАНИЮ ПРОИГНОРИРУЕТСЯ,
+   * ВМЕСТО ЭТОГО БУДЕТ ВЫЗВАН МЕТОД ПОДПИСЧИКА.
+   * 
+   * ТО ЕСТЬ - ОДИН И ТОТ ЖЕ ОТВЕТ НЕ ПОПАДЁТ НЕСКОЛЬКО РАЗ В ПОТОК ДЛЯ ВЫВОДА ОТВЕТА.
+   */
+#ifdef USE_PIN_MODULE   
+  // подписываем ответы от модуля на сериал
+  //pin13Diode.AddPublisher(&serialPublisher);
+  // для модуля управления диодом дублируем надпись на дисплей 
+  //pin13Diode.AddPublisher(&displayPublisher);
+#endif
+
+#ifdef USE_STAT_MODULE
+// подписываем ответы от модуля статистики на дисплей
+  //statModule.AddPublisher(&serialPublisher);
+#endif
+
+ // подписываем ответы от регистратора сторонних модулей на сериал
+ #ifdef AS_CONTROLLER
+ //remoteRegistrator.AddPublisher(&serialPublisher);
+ #endif
+ /*
+  * Как видно - строчка выше закомментирована. Это значит, что при отсутствии
+  * подписчиков на вывод куда-либо информации от модуля - возвращаемая модулем
+  * информация публикуется в текущий поток контроллера, т.е. в поток, от которого
+  * и пришёл запрос на выполнение команды. В нашем случае - это Serial.
+  */
+ 
+  
+  // регистрируем модули
+  #ifdef AS_CONTROLLER
+    controller.RegisterModule(&remoteRegistrator);
+    controller.RegisterModule(&alerts);
+  #endif
+
+  #ifdef USE_PIN_MODULE  
+  controller.RegisterModule(&pin13Diode);
+  #endif
+  
+  #ifdef USE_LOOP_MODULE
+  controller.RegisterModule(&loopModule);
+  #endif
+
+  #ifdef USE_STAT_MODULE
+  controller.RegisterModule(&statModule);
+  #endif
+
+  #ifdef USE_TEMP_SENSORS
+  controller.RegisterModule(&tempSensors);
+  #endif
+
+
+  ProcessInitCommands();
+
+  // тест часов реального времени
+  #ifdef USE_DS3231_REALTIME_CLOCK
+  
+   DS3231 rtc = controller.GetClock();
+   String s = rtc.getDOWStr();
+   s += F(" ");
+   s += rtc.getDateStr();
+   s += F(" -- ");
+   s += rtc.getTimeStr();
+   Serial.println(s);
+   
+  #endif
+
+  // Печатаем в Serial готовность
+  Serial.println(READY);
+}
+
+void loop() 
+{
+    // вычисляем время, прошедшее с момента последнего вызова
+    unsigned long curMillis = millis();
+    uint16_t dt = curMillis - lastMillis;
+    
+    lastMillis = curMillis;
+    
+  // смотрим, есть ли входящие команды
+   if(commandsFromSerial.HasCommand())
+   {
+    // есть новая команда
+    Command cmd;
+    if(commandParser.ParseCommand(commandsFromSerial.GetCommand(),OUR_ID, cmd))
+    {
+       Stream* answerStream = commandsFromSerial.GetStream();
+      // разобрали, назначили поток, с которого пришла команда
+        cmd.SetIncomingStream(answerStream);
+        // сохранили поток и для контроллера
+        controller.SetCurrentStream(answerStream);
+        
+      // запустили команду в обработку
+       controller.ProcessModuleCommand(cmd);
+
+    
+    } // if
+    else
+    {
+      // что-то пошло не так, игнорируем команду
+    } // else
+    
+    commandsFromSerial.ClearCommand(); // очищаем полученную команду
+   } // if
+
+    // обновляем состояние всех зарегистрированных модулей
+   controller.UpdateModules(dt);
+   
+  // put your main code here, to run repeatedly:
+
+}

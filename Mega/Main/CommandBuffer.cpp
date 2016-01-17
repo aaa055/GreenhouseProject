@@ -1,0 +1,36 @@
+#include "CommandBuffer.h"
+#include "Globals.h"
+
+CommandBuffer::CommandBuffer(Stream* s) : pStream(s)
+{
+}
+
+bool CommandBuffer::HasCommand()
+{
+  if(!(pStream && pStream->available()))
+    return false;
+
+    char ch;
+    while(pStream->available())
+    {
+      ch = pStream->read();
+      if(ch == '\r' || ch == '\n')
+      {
+        pStream->flush();
+        return strBuff.length() > 0; // вдруг лишние управляющие символы придут в начале строки?
+      } // if
+
+      strBuff += ch;
+      // не даём вычитать больше символов, чем надо - иначе нас можно заспамить
+      if(strBuff.length() >= MAX_RECEIVE_BUFFER_LENGTH)
+      {
+         ClearCommand();
+         pStream->flush();
+         return false;
+      } // if
+    } // while
+
+    return false;
+}
+
+
