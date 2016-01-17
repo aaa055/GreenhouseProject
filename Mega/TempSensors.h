@@ -81,13 +81,12 @@ class TempSensors : public AbstractModule // модуль опроса темп�
 
 
     WindowWorkMode workMode;
-    int CurrentOpenInterval; // интервал для открытия окон
-
+ 
   uint8_t supportedWindowsCnt;
   uint8_t supportedSensorsCnt;
     
   public:
-    TempSensors() : AbstractModule(F("STATE")),lastUpdateCall(0),supportedWindowsCnt(SUPPORTED_WINDOWS),supportedSensorsCnt(SUPPORTED_SENSORS), workMode(wmAutomatic), CurrentOpenInterval(DEF_OPEN_INTERVAL) {}
+    TempSensors() : AbstractModule(F("STATE")),lastUpdateCall(0),supportedWindowsCnt(SUPPORTED_WINDOWS),supportedSensorsCnt(SUPPORTED_SENSORS), workMode(wmAutomatic) {}
 
     bool ExecCommand(const Command& command);
     void Setup();

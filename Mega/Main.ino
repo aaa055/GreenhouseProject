@@ -29,28 +29,17 @@
 
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
-const char init_0[] PROGMEM = "CTSET=PIN|13|1";// ВКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
-const char init_1[] PROGMEM = "CTSET=LOOP|SET|50|30|PIN|13|T";// помигаем 30 раз диодом для проверки
-//const char init_2[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|>|25|CTSET=STATE|WINDOW|0|OPEN|4000"; // (открывать 4 секунды при Т > 25)
-//const char init_3[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|<=|25|CTSET=STATE|WINDOW|0|CLOSE|0";// (закрывать 4 секунды при Т < 27)
-//const char init_4[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|>|27|CTSET=STATE|WINDOW|0|OPEN|8000";// (открывать 8 секунд при Т > 27)
-//const char init_5[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|<|30|CTSET=STATE|WINDOW|0|CLOSE|8000";// (закрывать 8 секунд при Т < 30)
-//const char init_6[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|>=|30|CTSET=STATE|WINDOW|0|OPEN|12000";// (открывать 12 секунд при Т >= 30)
-//const char init_7[] PROGMEM = "CTSET=ALERT|RULE_ADD|STATE|TEMP|0|<=|25|CTSET=STATE|WINDOW|0|CLOSE|0";// (закрыть полностью при Т <= 25)
+//const char init_0[] PROGMEM = "CTSET=PIN|13|1";// ВКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
+const char init_1[] PROGMEM = "CTSET=LOOP|SET|100|10|PIN|13|T";// помигаем 5 раз диодом для проверки
 
 const char init_STUB[] PROGMEM = "";
 
 
 const char* const  INIT_COMMANDS[] PROGMEM  = 
 {
-   init_0
- , init_1
-// , init_2
-// , init_3
-// , init_4
-// , init_5
-// , init_6
-// , init_7
+//   init_0
+// ,
+ init_1
 , init_STUB // ЗАГЛУШКА, НЕ ТРОГАТЬ !!!
 };
 
@@ -153,7 +142,6 @@ void setup()
   // устанавливаем провайдера команд для контроллера
   controller.SetCommandParser(&commandParser);
 
-  // put your setup code here, to run once:
   Serial.begin(SERIAL_BAUD_RATE);
 
   // назначаем поток вывода по умолчанию для контроллера
@@ -231,6 +219,8 @@ void setup()
    
   #endif
 
+
+  controller.Begin(); // начинаем работу
   // Печатаем в Serial готовность
   Serial.println(READY);
 }

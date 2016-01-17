@@ -6,6 +6,7 @@
 #include "AbstractModule.h"
 #include "CommandParser.h"
 #include "TinyVector.h"
+#include "Settings.h"
 
 #ifdef USE_DS3231_REALTIME_CLOCK
 #include <DS3231.h>
@@ -25,14 +26,19 @@ class ModuleController
 
   CommandParser* cParser;
 
+  GlobalSettings settings;
+
 public:
   ModuleController(COMMAND_DESTINATION wAs, const String& id);
+
+  void Begin(); // начинаем работу
 
   #ifdef USE_DS3231_REALTIME_CLOCK
   // модуль реального времени
   DS3231& GetClock();
   #endif
-  
+
+  GlobalSettings* GetSettings() {return &settings;}
 
   // устанавливает текущий поток, в который надо выводить ответы
   void SetCurrentStream(Stream* s) {pStream = s;}

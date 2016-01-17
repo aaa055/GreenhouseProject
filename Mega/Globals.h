@@ -48,7 +48,9 @@
 
 
 // состояние канала управления фрамугой
-#define DEF_OPEN_INTERVAL 5000 // по умолчанию пять секунд на полное открытие/закрытие
+#define DEF_OPEN_INTERVAL 30000 // по умолчанию пять секунд на полное открытие/закрытие
+#define DEF_OPEN_TEMP 25 // температура открытия по умолчанию
+#define DEF_CLOSE_TEMP 24 // температура закрытия по умолчанию
 #define STATE_OPENING F("OPENING") // Открывается
 #define STATE_CLOSING F("CLOSING") // Закрывается
 #define STATE_CLOSED F("CLOSED") // Закрыто
@@ -56,11 +58,11 @@
 #define WM_MANUAL F("MANUAL") // ручной режим управления фрамугами
 #define WORK_MODE F("MODE") // получить/установить режим работы CTGET=STATE|MODE, CTSET=STATE|MODE|AUTO, CTSET=STATE|MODE|MANUAL
 #define WM_INTERVAL F("INTERVAL") // получить/установить интервал на открытие/закрытие окон CTGET=STATE|INTERVAL, CTSET=STATE|INTERVAL|3000
-
-#define STATE_OPEN F("OPEN") // Открыто CTSET=STATE|WINDOW|0|OPEN|4000, CTSET=STATE|WINDOW|ALL|OPEN|8000, CTSET=STATE|WINDOW|0-2|OPEN|2000
+#define STATE_OPEN F("OPEN") // Открыть CTSET=STATE|WINDOW|0|OPEN, CTSET=STATE|WINDOW|ALL|OPEN, CTSET=STATE|WINDOW|0-2|OPEN|2000
 #define ALL F("ALL") // отработать все каналы
 #define PROP_WINDOW F("WINDOW") // название канала, чтобы было понятно
-#define PROP_WINDOW_CNT F("WINDOW_CNT") // кол-во фрамуг
+#define PROP_WINDOW_CNT F("WINDOW_CNT") // кол-во фрамуг CTGET=STATE|WINDOW_CNT
+#define TEMP_SETTINGS F("T_SETT") // получить/установить температуры срабатывания, CTGET=STATE|T_SETT, CTSET=STATE|T_SETT|t open|t close
 
 
 

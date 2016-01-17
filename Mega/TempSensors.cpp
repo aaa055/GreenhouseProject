@@ -109,7 +109,7 @@ void WindowState::UpdateState(uint16_t dt)
         TimerTicks = 0; // и таймер
         Direction = dirNOTHING; // уже никуда не движемся
 
-        //TODO: ВЫКЛЮЧАЕМ РЕЛЕ
+        //ВЫКЛЮЧАЕМ РЕЛЕ
         SwitchRelays();
         
         OnMyWay = false;
@@ -137,9 +137,6 @@ void TempSensors::SetupWindows()
 void TempSensors::Setup()
 {
   // настройка модуля тут
-
-  //TODO: ВЫЧИТЫВАТЬ ИНТЕРВАЛ РАБОТЫ С НАСТРОЕК
-  // CurrentOpenInterval = Settings.GetOpenInterval();
   
   /*
    * Пишем в State настройки - кол-во поддерживаемых датчиков температуры
@@ -181,6 +178,8 @@ void TempSensors::Update(uint16_t dt)
 bool  TempSensors::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
+  GlobalSettings* sett = c->GetSettings();
+  
   String answer = PARAMS_MISSED;  
   bool answerStatus = false;
 
@@ -215,7 +214,7 @@ bool  TempSensors::ExecCommand(const Command& command)
           bool bAll = (token == ALL); // на все реле распространяется запрос?
           bool bIntervalAsked = token.indexOf("-") != -1; // запросили интервал каналов?
           uint8_t channelIdx = token.toInt();
-          unsigned long interval = this->CurrentOpenInterval;
+          unsigned long interval = sett->GetOpenInterval();
           
           if(command.GetArgsCount() > 3)
             interval = command.GetArg(3).toInt(); // получили интервал для работы реле
@@ -277,6 +276,19 @@ bool  TempSensors::ExecCommand(const Command& command)
         } // else can process
         
       } // if PROP_WINDOW
+      else
+      if(s == TEMP_SETTINGS) // установить температуры закрытия/открытия
+      {
+        uint8_t tOpen = command.GetArg(1).toInt();
+        uint8_t tClose = command.GetArg(2).toInt();
+
+       sett->SetOpenTemp(tOpen);
+        sett->SetCloseTemp(tClose);
+        sett->Save();
+        
+        answerStatus = true;
+        answer = String(TEMP_SETTINGS) + PARAM_DELIMITER + REG_SUCC;
+      } // TEMP_SETTINGS
       
     } // if(argsCnt > 2)
     else if(argsCnt > 1)
@@ -307,18 +319,19 @@ bool  TempSensors::ExecCommand(const Command& command)
       } // WORK_MODE
       else if(s == WM_INTERVAL) // запросили установку интервала
       {
-              int newInt = command.GetArg(1).toInt();
+              unsigned long newInt = command.GetArg(1).toInt();
               if(newInt > 0)
               {
-                CurrentOpenInterval = newInt;
-                //TODO: ТУТ СОХРАНЕНИЕ ИНТЕРВАЛА В НАСТРОЙКАХ !!!
-                // Settings.WriteInterval(CurrentOpenInterval);
+                //СОХРАНЕНИЕ ИНТЕРВАЛА В НАСТРОЙКАХ
+                sett->SetOpenInterval(newInt);
+                sett->Save();
+                
                 answerStatus = true;
                 answer = String(WM_INTERVAL) + PARAM_DELIMITER + REG_SUCC;
               } // if
       } // WM_INTERVAL
     } // argsCnt > 1
-  }
+  } // SET
   else
   if(command.GetType() == ctGET) // запросили показание датчика
   {
@@ -415,11 +428,18 @@ bool  TempSensors::ExecCommand(const Command& command)
         if(s == WM_INTERVAL) // запросили интервал срабатывания форточек
         {
           answerStatus = true;
-          answer = String(WM_INTERVAL) + PARAM_DELIMITER + String(CurrentOpenInterval);
+          answer = String(WM_INTERVAL) + PARAM_DELIMITER + String(sett->GetOpenInterval());
         } // WM_INTERVAL
+        else
+        if(s == TEMP_SETTINGS) // запросили температуры открытия и закрытия
+        {
+          answerStatus = true;
+          
+          answer = String(TEMP_SETTINGS) + PARAM_DELIMITER + String(sett->GetOpenTemp()) + PARAM_DELIMITER + String(sett->GetCloseTemp());
+        }
         
       } // else if(argsCnt > 0)
-  } // if
+  } // if GET
   
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
