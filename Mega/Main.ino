@@ -29,17 +29,16 @@
 
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
-//const char init_0[] PROGMEM = "CTSET=PIN|13|1";// ВКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
-const char init_1[] PROGMEM = "CTSET=LOOP|SET|100|10|PIN|13|T";// помигаем 5 раз диодом для проверки
+const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
+const char init_1[] PROGMEM = "CTSET=LOOP|SET|100|11|PIN|6|T";// помигаем 5 раз диодом для проверки
 
 const char init_STUB[] PROGMEM = "";
 
 
 const char* const  INIT_COMMANDS[] PROGMEM  = 
 {
-//   init_0
-// ,
- init_1
+   init_0
+ ,init_1
 , init_STUB // ЗАГЛУШКА, НЕ ТРОГАТЬ !!!
 };
 

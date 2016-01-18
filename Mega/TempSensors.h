@@ -81,6 +81,8 @@ class TempSensors : public AbstractModule // модуль опроса темп�
 
 
     WindowWorkMode workMode;
+
+    void BlinkWorkMode(uint16_t blinkInterval = 0);
  
   uint8_t supportedWindowsCnt;
   uint8_t supportedSensorsCnt;

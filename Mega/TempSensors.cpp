@@ -174,7 +174,41 @@ void TempSensors::Update(uint16_t dt)
   // TEST CODE END //
 
 }
+void TempSensors::BlinkWorkMode(uint16_t blinkInterval)
+{
+  String s = F("CTSET=LOOP|SET|");
+  s += blinkInterval;
+  s+= F("|0|PIN|");
+  s += DIODE_MANUAL_MODE_PIN;
+  s += F("|T");
 
+    ModuleController* c = GetController();
+    CommandParser* cParser = c->GetCommandParser();
+      Command cmd;
+      if(cParser->ParseCommand(s, c->GetControllerID(), cmd))
+      {
+         cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
+
+        // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
+        //cmd.SetIncomingStream(pStream);
+        c->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой    
+      } // if  
+
+      if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
+      {
+        s = CMD_PREFIX;
+        s += CMD_SET;
+        s += F("=PIN|");
+        s += DIODE_MANUAL_MODE_PIN;
+        s += PARAM_DELIMITER;
+        s += F("0");
+        
+        cParser->ParseCommand(s, c->GetControllerID(), cmd);
+        cmd.SetInternal(true); 
+        c->ProcessModuleCommand(cmd,false);
+      } // if
+  
+}
 bool  TempSensors::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
@@ -198,12 +232,18 @@ bool  TempSensors::ExecCommand(const Command& command)
         && workMode == wmManual) // и мы в ручном режиме, то
         {
           // просто игнорируем команду, потому что нами управляют в ручном режиме
-        }
+          // мигаем светодиодом на 6 пине
+          
+         }
         else
         {
           if(!command.IsInternal()) // пришла команда от пользователя,
+          {
             workMode = wmManual; // переходим на ручной режим работы
-            
+            // мигаем светодиодом на 6 пине
+            BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+          }
+
           String token = command.GetArg(1);
           token.toUpperCase();
 
@@ -308,12 +348,14 @@ bool  TempSensors::ExecCommand(const Command& command)
           answerStatus = true;
           answer = String(WORK_MODE) + PARAM_DELIMITER + s;
           workMode = wmAutomatic;
+          BlinkWorkMode(0);
         }
         else if(s == WM_MANUAL)
         {
           answerStatus = true;
           answer = String(WORK_MODE) + PARAM_DELIMITER + s;
           workMode = wmManual;
+          BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
         }
         
       } // WORK_MODE
