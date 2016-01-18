@@ -6,6 +6,7 @@ DS3231 _rtc(RTC_SDA_PIN, RTC_SCL_PIN);
 
 ModuleController::ModuleController(COMMAND_DESTINATION wAs, const String& id) : workAs(wAs), ourID(id), cParser(NULL)
 {
+  settings.Load(); // загружаем настройки
 }
 #ifdef USE_DS3231_REALTIME_CLOCK
 DS3231& ModuleController::GetClock()
@@ -19,7 +20,6 @@ void ModuleController::Begin()
 #ifdef USE_DS3231_REALTIME_CLOCK
 _rtc.begin();
 #endif
-  settings.Load(); // загружаем настройки
 }
 void ModuleController::RegisterModule(AbstractModule* mod)
 {

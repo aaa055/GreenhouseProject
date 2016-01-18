@@ -3,12 +3,21 @@
 
 #include "AbstractModule.h"
 #include "Globals.h"
+#include <EEPROM.h>
 
 typedef enum
 {
   rtUnknown,
-  rtTemp // за температурой следим
+  rtTemp// за температурой следим
 } RuleTarget; // за чем следит правило
+
+typedef enum
+{
+  tsPassed, // следим четко за переданной
+  tsOpenTemperature, // берём температуру открытия из настроек
+  tsCloseTemperature // берём температуру закрытия из настроек
+  
+} RuleTemperatureSource; // откуда брать настройку температуры для слежения?
 
 typedef enum
 {
@@ -23,13 +32,16 @@ class AlertRule
 {
   private:
     RuleTarget target;
-    int tempAlert; // температура, за которой следим
+    int8_t tempAlert; // температура, за которой следим
     uint8_t tempSensorIdx; // индекс датчика, за которым следим
     RuleOperand operand; // операнд, которым проверяем
     String targetCommand; // команда, которую надо выполнить при срабатывании правила
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
-    String alertRule;
-    bool bEnabled;
+    
+    String alertRule; // строка с правилом
+    bool bEnabled; // включено или нет
+
+    RuleTemperatureSource temperatureSource;
 
     String ruleName; // имя правила
     uint8_t whichTime; // когда работает?
@@ -56,6 +68,8 @@ class AlertRule
     uint8_t GetLinkedRulesCount() {return linkedRulesCnt;}
     String GetLinkedRuleName(uint8_t idx);
 
+    uint8_t Save(uint16_t writeAddr); // сохраняем себя в EEPROM, возвращаем кол-во записанных байт
+    uint8_t Load(uint16_t readAddr, ModuleController* c); // читаем себя из EEPROM, возвращаем кол-во прочитанных байт
 
     void Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK 
@@ -77,7 +91,6 @@ class AlertModule : public AbstractModule
     String& GetAlert(uint8_t idx);
     void AddAlert(const String& strAlert);
 
-    uint8_t nextNoRuleIdx;
     uint8_t rulesCnt;
     AlertRule* alertRules[MAX_ALERT_RULES];
     void InitRules();
@@ -86,6 +99,9 @@ class AlertModule : public AbstractModule
     void SolveConflicts(RulesVector& raisedAlerts,RulesVector& workRules);
     bool CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule,RulesVector& raisedAlerts);
     AlertRule* GetLinkedRule(const String& linkedRuleName,RulesVector& raisedAlerts);
+
+    void LoadRules();
+    void SaveRules();
     
   public:
     AlertModule() : AbstractModule(F("ALERT")), cntAlerts(0),curAlertIdx(0) {InitRules();}

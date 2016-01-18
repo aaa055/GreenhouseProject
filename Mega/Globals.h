@@ -4,6 +4,10 @@
 // ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ!
 #define OUR_ID  "CHILD" // имя модуля (при CONTROLLER_MODE == cdCHILDMODULE), для разрешения конфликтов, кому адресована команда
 
+#define SETT_HEADER1 0xDE // байты, сигнализирующие о наличии сохранённых настроек
+#define SETT_HEADER2 0xAD
+#define EEPROM_RULES_START_ADDR 1025 // со второго килобайта в EEPROM идут правила
+
 // настройки Serial
 #define SERIAL_BAUD_RATE 9600 // скорость работы с портом, бод
 #define READY F("READY") // будет напечатано в Serial после загрузки
@@ -29,11 +33,14 @@
 #define RULE_VIEW F("RULE_VIEW") // просмотр правила по индексу CTGET=ALERT|RULE_VIEW|0
 #define RULE_STATE F("RULE_STATE") // включить/выключить правило по индексу CTSET=ALERT|RULE_STATE|0|ON, CTSET=ALERT|RULE_STATE|0|OFF, CTSET=ALERT|RULE_STATE|ALL|OFF, CTGET=ALERT|RULE_STATE|0
 #define RULE_DELETE F("RULE_DELETE") // удалить правило по индексу CTSET=ALERT|RULE_DELETE|1 - ПРИ УДАЛЕНИИ ВСЕ ПРАВИЛА СДВИГАЮТСЯ К ГОЛОВЕ ОТ УДАЛЁННОГО !!!
+#define SAVE_RULES F("SAVE") // команда "сохранить правила"
 #define GREATER_THAN F(">") // больше чем
 #define GREATER_OR_EQUAL_THAN F(">=") // больше либо равно
 #define LESS_THAN F("<") // меньше чем
 #define LESS_OR_EQUAL_THAN F("<=") // меньше или равно
 #define MAX_ALERT_RULES 20 // максимальное кол-во поддерживаемых правил
+#define T_OPEN_MACRO F("%TO%") // макроподстановка температуры открытия из настроек
+#define T_CLOSE_MACRO F("%TC%") // макроподстановка температуры закрытия из настроек
 
 
 // настройки модуля реального времени (шина I2C)

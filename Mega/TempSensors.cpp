@@ -160,17 +160,17 @@ void TempSensors::Update(uint16_t dt)
 
   // TEST CODE BEGIN //
   lastUpdateCall += dt;
-  if(lastUpdateCall < 500) // нечего обновлять раньше, чем раз в полсекунды
+  if(lastUpdateCall < 2000) // нечего обновлять раньше, чем раз в две секунды
     return;
 
   lastUpdateCall = 0;
   
   // обновляем значения температуры
-  for(uint8_t i=0;i<supportedSensorsCnt;i++)
-  {
-    String s = String(random(0,40)) + F(",") + String(random(50,100));
-    State.SetTemp(i,s);
-  }
+    String s = String(random(20,40)) + F(",") + String(random(50,100));
+    State.SetTemp(0,s);
+    s = String(random(0,15)) + F(",") + String(random(50,100));
+    State.SetTemp(1,s);
+
   // TEST CODE END //
 
 }

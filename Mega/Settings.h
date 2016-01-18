@@ -9,10 +9,12 @@ class GlobalSettings
 {
   private:
 
+
   uint8_t tempOpen; // температура открытия
   uint8_t tempClose; // температура закрытия
   unsigned long openInterval; // интервал для открытия окон
-
+  
+ 
   public:
     GlobalSettings();
 
@@ -28,6 +30,8 @@ class GlobalSettings
 
     unsigned long GetOpenInterval() {return openInterval;}
     void SetOpenInterval(unsigned long val) {openInterval = val;}
+
+    
     
 };
 

@@ -1,6 +1,7 @@
 #include "AlertModule.h"
 #include "ModuleController.h"
 
+
 AlertRule::AlertRule()
 {
   linkedModule = NULL;
@@ -24,7 +25,7 @@ void AlertRule::Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK
 
    // поставим заглушку, чтобы не забыть
-   Serial.println("TEST ALERT CODE WITH USE_DS3231_REALTIME_CLOCK!"); delay(5000);
+   Serial.println("SHOULD TEST ALERT CODE WITH USE_DS3231_REALTIME_CLOCK DEFINE!"); delay(5000);
 
       // проверяем, можем ли мы работать со временем?
       if(whichTime > 0)
@@ -91,14 +92,26 @@ bool AlertRule::HasAlert()
       {
         return false;
       }
-       int curTemp = linkedModule->State.GetTemp(tempSensorIdx).toInt();
+       int8_t curTemp = linkedModule->State.GetTemp(tempSensorIdx).toInt();
+
+       int8_t tAlert = tempAlert; // следим за переданной температурой
+       switch(temperatureSource)
+       {
+          case tsOpenTemperature: // попросили подставить температуру открытия из настроек
+            tAlert = linkedModule->GetController()->GetSettings()->GetOpenTemp();
+          break;
+
+          case tsCloseTemperature: // попросили подставить температуру закрытия из настроек
+            tAlert = linkedModule->GetController()->GetSettings()->GetCloseTemp();
+          break;
+       }
 
        switch(operand)
        {
-          case roLessThan: return curTemp < tempAlert;
-          case roLessOrEqual: return curTemp <= tempAlert;
-          case roGreaterThan: return curTemp > tempAlert;
-          case roGreaterOrEqual: return curTemp >= tempAlert;
+          case roLessThan: return curTemp < tAlert;
+          case roLessOrEqual: return curTemp <= tAlert;
+          case roGreaterThan: return curTemp > tAlert;
+          case roGreaterOrEqual: return curTemp >= tAlert;
           default: return false;
        } // switch
         
@@ -106,6 +119,216 @@ bool AlertRule::HasAlert()
   } // switch
 
   return false;
+}
+uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EEPROM, возвращаем кол-во записанных байт
+{
+  uint16_t curWriteAddr = writeAddr;
+  uint8_t written = 0;
+
+  EEPROM.write(curWriteAddr++,target); written++;// записали, за чем следим
+  EEPROM.write(curWriteAddr++,tempAlert); written++;// записали температуру, за которой следим
+  EEPROM.write(curWriteAddr++,tempSensorIdx); written++;// записали индекс датчика, за которым следим
+  EEPROM.write(curWriteAddr++,operand); written++;// записали оператор сравнения
+  EEPROM.write(curWriteAddr++,bEnabled); written++;// записали флаг - активно правило или нет?
+  EEPROM.write(curWriteAddr++,temperatureSource); written++;// записали источник, с которого надо брать установку температуры
+  EEPROM.write(curWriteAddr++,whichTime); written++;// записали, когда работаем
+
+  // записали, сколько времени работать
+  const byte* readAddr = (const byte*) &workTime;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+
+  // записали имя нашего правила
+  uint8_t namelen = ruleName.length();
+  const char* nameptr = ruleName.c_str();
+  EEPROM.write(curWriteAddr++,namelen); written++;// записали длину имени нашего правила
+  for(uint8_t i=0;i<namelen;i++)
+  {
+    EEPROM.write(curWriteAddr++,*nameptr++); written++; // записываем имя посимвольно
+  }
+ 
+  // записали имя связанного модуля, за показаниями которого мы следим
+  String lmName = linkedModule->GetID();
+  namelen = lmName.length();
+  nameptr = lmName.c_str();
+  EEPROM.write(curWriteAddr++,namelen); written++;// записали длину имени связанного модуля
+  for(uint8_t i=0;i<namelen;i++)
+  {
+    EEPROM.write(curWriteAddr++,*nameptr++); written++; // записываем имя посимвольно
+  }
+
+  // записали длину команды, которую надо отправить другому модулю при срабатывании правила
+  namelen = targetCommand.length();
+  nameptr = targetCommand.c_str();
+  EEPROM.write(curWriteAddr++,namelen); written++;
+
+  // записали саму команду
+  for(uint8_t i=0;i<namelen;i++)
+  {
+    EEPROM.write(curWriteAddr++,*nameptr++); written++; // записываем посимвольно
+  }
+
+  // записываем кол-во связанных правил
+   EEPROM.write(curWriteAddr++,linkedRulesCnt); written++;
+
+   // записываем имена связанных правил, одно за другим
+   for(uint8_t i=0;i<linkedRulesCnt;i++)
+   {
+      // записываем длину имени
+      namelen = linkedRuleNames[i].length();
+      nameptr = linkedRuleNames[i].c_str();
+      EEPROM.write(curWriteAddr++,namelen); written++;
+
+      // записываем имя посимвольно
+      for(uint8_t j=0;j<namelen;j++)
+      {
+        EEPROM.write(curWriteAddr++,*nameptr++); written++; // записываем посимвольно
+      }
+      
+     
+   } // for
+ 
+
+  // записали всё, оставим заглушку в несколько байт, вдруг что ещё будет в правиле?
+  
+  return (written + 10); // оставляем 10 байт на будущее
+}
+uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
+{
+  uint8_t readed = 0;
+  uint16_t curReadAddr = readAddr;
+
+
+  target = (RuleTarget) EEPROM.read(curReadAddr++); readed++;// прочитали, за чем следим
+  tempAlert = EEPROM.read(curReadAddr++); readed++;// прочитали температуру, за которой следим
+  tempSensorIdx = EEPROM.read(curReadAddr++); readed++;// прочитали индекс датчика, за которым следим
+  operand = (RuleOperand) EEPROM.read(curReadAddr++); readed++;// прочитали оператор сравнения
+  bEnabled = EEPROM.read(curReadAddr++); readed++;// прочитали флаг - активно правило или нет?
+  temperatureSource = (RuleTemperatureSource) EEPROM.read(curReadAddr++); readed++;// прочитали источник, с которого надо брать установку температуры
+  whichTime = EEPROM.read(curReadAddr++); readed++;// прочитали, когда работаем
+
+  // прочитали, сколько времени работать
+   byte* writeAddr = (byte*) &workTime;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+
+  // прочитали имя нашего правила
+  uint8_t namelen = EEPROM.read(curReadAddr++); readed++;// прочитали длину имени нашего правила
+  ruleName = F("");
+  
+  for(uint8_t i=0;i<namelen;i++)
+  {
+    ruleName += (char) EEPROM.read(curReadAddr++); readed++; // читаем имя посимвольно
+  }
+  
+ 
+  // читаем имя связанного модуля, за показаниями которого мы следим
+  String lmName;
+  namelen =  EEPROM.read(curReadAddr++); readed++;// читаем длину имени связанного модуля
+  
+  for(uint8_t i=0;i<namelen;i++)
+  {
+    lmName += (char) EEPROM.read(curReadAddr++); readed++; // читаем имя посимвольно
+  }
+ 
+  // ищем связанный модуль
+  linkedModule = controller->GetModuleByID(lmName);
+
+ 
+  // читаем длину команды, которую надо отправить другому модулю при срабатывании правила
+  targetCommand = "";
+  namelen = EEPROM.read(curReadAddr++); readed++;//targetCommand.length();
+ 
+  // читаем саму команду
+  for(uint8_t i=0;i<namelen;i++)
+  {
+    targetCommand += (char) EEPROM.read(curReadAddr++); readed++; // читаем посимвольно
+  }
+
+
+  // читаем кол-во связанных правил
+   linkedRulesCnt = EEPROM.read(curReadAddr++); readed++;
+
+   // читаем имена связанных правил, одно за другим
+   for(uint8_t i=0;i<linkedRulesCnt;i++)
+   {
+      // читаем длину имени
+      namelen = EEPROM.read(curReadAddr++); readed++;
+      String curName;
+        
+
+      // читаем имя посимвольно
+      for(uint8_t j=0;j<namelen;j++)
+      {
+       curName += (char) EEPROM.read(curReadAddr++); readed++; // читаем посимвольно
+      }
+
+      linkedRuleNames[i] = curName;
+      
+     
+   } // for
+
+   // теперь конструируем правило, это нужно для запроса просмотра правила
+    alertRule = ruleName + PARAM_DELIMITER;
+    alertRule += lmName + PARAM_DELIMITER;
+    alertRule += (target == rtTemp ? PROP_TEMP : F(""));
+    alertRule += String(PARAM_DELIMITER) + String(tempSensorIdx) + PARAM_DELIMITER;
+
+    switch(operand)
+    {
+      case roLessThan:
+        alertRule += LESS_THAN;
+      break;
+      case roGreaterThan:
+        alertRule += GREATER_THAN;
+      break;
+      case roLessOrEqual:
+        alertRule += LESS_OR_EQUAL_THAN;
+      break;
+      case roGreaterOrEqual:
+        alertRule += GREATER_OR_EQUAL_THAN;
+      break;
+    }
+    
+    alertRule += PARAM_DELIMITER;
+
+    switch(temperatureSource)
+    {
+      case tsOpenTemperature:
+        alertRule += T_OPEN_MACRO;
+      break;
+      case tsCloseTemperature:
+        alertRule += T_CLOSE_MACRO;
+      break;
+      case tsPassed:
+        alertRule += tempAlert;
+      break;
+    }
+    alertRule += PARAM_DELIMITER;
+    
+  alertRule += String(whichTime) + PARAM_DELIMITER;
+  alertRule += String((uint16_t)workTime/60000) + PARAM_DELIMITER;
+
+  String lRulesNames;
+  for(uint8_t i=0;i<linkedRulesCnt;i++)
+  {
+    if(lRulesNames.length())
+      lRulesNames += F(",");
+      
+    lRulesNames += linkedRuleNames[i];
+    
+  } // for
+
+  if(!lRulesNames.length())
+    lRulesNames = F("_");
+ 
+  alertRule += lRulesNames;
+  
+  return (readed+10); // оставляем в хвосте 10 свободных байт на будущее
 }
 String AlertRule::GetLinkedRuleName(uint8_t idx)
 {
@@ -120,9 +343,6 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   // конструируем команду
   linkedModule = lm;
 
-  // пришла такая команда, например:
- // RULE_ADD|N1|STATE|TEMP|0|>|25|0|0|N3|CTSET=STATE|WINDOW|ALL|OPEN|5000
- // эта команда приходит в AlertModule::ExecCommand, как команда CTSET=ALERT|....
   uint8_t argsCnt = command.GetArgsCount();
   if(argsCnt < 10) // мало аргументов
     return false;
@@ -133,7 +353,6 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   ruleName = command.GetArg(curArgIdx++);
   alertRule = ruleName + PARAM_DELIMITER;
  
-
   // записываем имя связанного модуля
   alertRule += command.GetArg(curArgIdx++) + PARAM_DELIMITER;
   
@@ -143,7 +362,6 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
     target = rtTemp;
 
   alertRule += ruleTargetStr + PARAM_DELIMITER;
-
 
   alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
   tempSensorIdx = command.GetArg(curArgIdx++).toInt();
@@ -160,8 +378,19 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
     operand = roGreaterOrEqual;
 
   alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
-  tempAlert = command.GetArg(curArgIdx++).toInt();
 
+  String strTempAlert = command.GetArg(curArgIdx++);
+
+  // выясняем, за какой температурой следим
+  if(strTempAlert == T_OPEN_MACRO)
+    temperatureSource = tsOpenTemperature;
+  else if(strTempAlert == T_CLOSE_MACRO)
+    temperatureSource = tsCloseTemperature;
+  else
+    temperatureSource = tsPassed;
+    
+  
+  tempAlert = strTempAlert.toInt();
 
   // дошли до температуры, после неё - настройки срабатывания
 
@@ -226,9 +455,75 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
  
   
 }
+void AlertModule::LoadRules() // читаем настройки из EEPROM
+{
+  ModuleController* c = GetController();
+  
+  for(uint8_t i=0;i<rulesCnt;i++)
+  {
+    AlertRule* r = alertRules[i];
+    delete r;
+  }
+  InitRules(); // инициализируем массив
+
+ uint16_t readAddr = EEPROM_RULES_START_ADDR; // пишем с этого смещения
+
+  // сначала читаем заголовок
+  uint8_t h1, h2;
+  h1 = EEPROM.read(readAddr++);
+  h2 = EEPROM.read(readAddr++);
+
+  if(!(h1 == SETT_HEADER1 && h2 == SETT_HEADER2)) // ничего не записано
+    return;
+  
+  // потом читаем количество правил
+ rulesCnt = EEPROM.read(readAddr++);
+ 
+  // потом читаем правила
+  for(uint8_t i=0;i<rulesCnt;i++)
+  {
+    AlertRule* r = new AlertRule;
+    alertRules[i] = r;
+    readAddr += r->Load(readAddr,c); // просим правило прочитать своё внутреннее состояние
+  } // for
+  
+}
+void AlertModule::SaveRules() // сохраняем настройки в EEPROM
+{
+  uint16_t writeAddr = EEPROM_RULES_START_ADDR; // пишем с этого смещения
+
+  // сначала пишем заголовок
+  EEPROM.write(writeAddr++,SETT_HEADER1);
+  EEPROM.write(writeAddr++,SETT_HEADER2);
+  
+  // потом пишем количество правил
+  EEPROM.write(writeAddr++,rulesCnt);
+
+  // потом пишем правила
+  for(uint8_t i=0;i<rulesCnt;i++)
+  {
+    AlertRule* r = alertRules[i];
+    if(r)
+      writeAddr += r->Save(writeAddr); // просим правило записать своё внутреннее состояние
+  } // for
+
+}
 bool AlertModule::AddRule(AbstractModule* m, const Command& c)
 {
-  if(nextNoRuleIdx >=  MAX_ALERT_RULES)
+
+// сперва ищем правило с таким же именем, как у переданное
+ String rName = c.GetArg(1);
+ for(uint8_t i= 0;i<rulesCnt;i++)
+ {
+  AlertRule* r = alertRules[i];
+  if(r && r->GetName() == rName)
+  {
+     // нашли такое правило, просто модифицируем его
+     return r->Construct(m,c);
+  }
+ } // for
+  
+  if(rulesCnt >=  MAX_ALERT_RULES)
     return false;
 
    AlertRule* ar = new AlertRule;
@@ -240,9 +535,8 @@ bool AlertModule::AddRule(AbstractModule* m, const Command& c)
     delete ar;
     return false;
    }
-   alertRules[nextNoRuleIdx] = ar;
+   alertRules[rulesCnt] = ar;
 
-    nextNoRuleIdx++;
     rulesCnt++;
 }
 
@@ -257,10 +551,11 @@ void AlertModule::Setup()
     strAlerts[i] = ""; // резервируем события
   } // for
 
+  // загружаем правила
+  LoadRules();
 }
 void AlertModule::InitRules()
 {
-  nextNoRuleIdx = 0; // индекс следующего пустого места
   rulesCnt = 0; // кол-вo правил
   for(uint8_t i=0;i<MAX_ALERT_RULES;i++)
   {
@@ -283,7 +578,7 @@ void AlertModule::Update(uint16_t dt)
 
   Vector<AlertRule*> raisedAlerts;
   
-  for(uint8_t i=0;i<nextNoRuleIdx;i++)
+  for(uint8_t i=0;i<rulesCnt;i++)
   {
     AlertRule* r = alertRules[i];
     if(!r)
@@ -412,7 +707,7 @@ void AlertModule::SolveConflicts(RulesVector& raisedAlerts,RulesVector& workRule
           
     } // for
 }
-String& AlertModule::GetAlert (uint8_t idx)
+String& AlertModule::GetAlert(uint8_t idx)
 {
   if(idx >= MAX_STORED_ALERTS) 
     idx = MAX_STORED_ALERTS-1;
@@ -468,6 +763,13 @@ bool  AlertModule::ExecCommand(const Command& command)
               answer = REG_SUCC;
             }
           } // ADD_RULE
+          else 
+          if(t == SAVE_RULES) // запросили сохранение правил
+          {
+            SaveRules();
+            answerStatus = true;
+            answer = SAVE_RULES;
+          }
           else 
           if(t == RULE_STATE) // установить состояние правила - включено или выключено
           {
@@ -525,7 +827,7 @@ bool  AlertModule::ExecCommand(const Command& command)
             {
                  String sParam = command.GetArg(1);
                  sParam.toUpperCase();
-                 uint8_t idx = command.GetArg(1).toInt();
+                // uint8_t idx = command.GetArg(1).toInt();
 
                 if(sParam == ALL) // удалить все правила
                 {
@@ -539,39 +841,38 @@ bool  AlertModule::ExecCommand(const Command& command)
                   } // for
 
                   rulesCnt = 0;
-                  nextNoRuleIdx = 0;
                   
                   answerStatus = true;
                   answer = RULE_DELETE; answer += PARAM_DELIMITER; answer +=  sParam + PARAM_DELIMITER + REG_DEL;
 
                 }
-                else // только одно правило
+                else // только одно правило, удаляем по имени правила
                 {
-                 if(idx < rulesCnt)
-                 {
-                    String state = command.GetArg(2);
-                    state.toUpperCase();
-                     AlertRule* rule = alertRules[idx];
-                     if(rule)
-                     {
-                        delete rule; // удаляем правило
-                        
-                        for(uint8_t i=idx+1;i<rulesCnt;i++) // сдвигаем к голове
-                        {
-                          alertRules[i-1] = alertRules[i];
-                        } // for
+                   uint8_t deletedIdx = 0;
+                   bool bDeleted = false;
+                   for(uint8_t i=0;i<rulesCnt;i++)
+                   {
+                      AlertRule* rule = alertRules[i];
+                      if(rule && rule->GetName() == sParam) // нашли правило
+                      {
+                        delete rule;
+                        bDeleted = true;
+                        deletedIdx = i; 
+                        break;
+                      }
+                   } // for
+                   if(bDeleted)
+                   {
+                      for(uint8_t i=deletedIdx+1;i<rulesCnt;i++) // сдвигаем массив
+                      {
+                        alertRules[i-1] = alertRules[i];
+                      } // for
 
-                        alertRules[rulesCnt-1] = NULL; // в хвосте обнуляем ячейку
-                        
-                        rulesCnt--;
-                        nextNoRuleIdx--;
-                        
-
-                        answerStatus = true;
-                        answer = RULE_DELETE; answer += PARAM_DELIMITER; answer +=  command.GetArg(1) + PARAM_DELIMITER + REG_DEL;
-                        
-                     } // if(rule)
-                 } // if
+                    rulesCnt--;
+ 
+                    answerStatus = true;
+                    answer = RULE_DELETE; answer += PARAM_DELIMITER; answer +=  sParam + PARAM_DELIMITER + REG_DEL;
+                   } // if(bDeleted)
                 } // else not ALL
             } // else
           } // else RULE_DELETE
@@ -636,7 +937,7 @@ bool  AlertModule::ExecCommand(const Command& command)
                     else
                     {
                         uint8_t idx = command.GetArg(1).toInt();
-                        if(idx <= rulesCnt) // норм индекс
+                        if(idx < rulesCnt) // норм индекс
                         {
                           AlertRule* rule = alertRules[idx];
                           if(rule) // нашли правило

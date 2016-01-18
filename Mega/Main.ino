@@ -103,14 +103,10 @@ String ReadProgmemString(const char* c)
 {
   String s;
   int len = strlen_P(c);
- // Serial.println(len);
   
   for (int i = 0; i < len; i++)
     s += (char) pgm_read_byte_near(c + i);
 
-  //Serial.println(s);
- // delay(5000);
-    
   return s;
 }
 // ДОБАВЛЯЕМ КОМАНДЫ ИНИЦИАЛИЗАЦИИ В ОБРАБОТКУ
@@ -181,10 +177,6 @@ void setup()
  
   
   // регистрируем модули
-  #ifdef AS_CONTROLLER
-    controller.RegisterModule(&remoteRegistrator);
-    controller.RegisterModule(&alerts);
-  #endif
 
   #ifdef USE_PIN_MODULE  
   controller.RegisterModule(&pin13Diode);
@@ -202,26 +194,32 @@ void setup()
   controller.RegisterModule(&tempSensors);
   #endif
 
+ // модуль алертов регистрируем последним, т.к. он должен вычитать зависимости с уже зарегистрированными модулями
+  #ifdef AS_CONTROLLER
+    controller.RegisterModule(&remoteRegistrator);
+    controller.RegisterModule(&alerts);
+  #endif
 
   ProcessInitCommands();
+
+  controller.Begin(); // начинаем работу
+  // Печатаем в Serial готовность
+  Serial.print(READY);
 
   // тест часов реального времени
   #ifdef USE_DS3231_REALTIME_CLOCK
   
    DS3231 rtc = controller.GetClock();
-   String s = rtc.getDOWStr();
+   String s = ", " + rtc.getDOWStr();
    s += F(" ");
    s += rtc.getDateStr();
    s += F(" -- ");
    s += rtc.getTimeStr();
-   Serial.println(s);
+   Serial.print(s);
    
-  #endif
+  #endif 
 
-
-  controller.Begin(); // начинаем работу
-  // Печатаем в Serial готовность
-  Serial.println(READY);
+   Serial.println(F(""));
 }
 
 void loop() 
