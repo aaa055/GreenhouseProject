@@ -25,7 +25,8 @@ void AlertRule::Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK
 
    // поставим заглушку, чтобы не забыть
-   Serial.println("SHOULD TEST ALERT CODE WITH USE_DS3231_REALTIME_CLOCK DEFINE!"); delay(5000);
+   //TODO: протестировать этот код!!!
+ //  Serial.println("SHOULD TEST ALERT CODE WITH USE_DS3231_REALTIME_CLOCK DEFINE!"); delay(5000);
 
       // проверяем, можем ли мы работать со временем?
       if(whichTime > 0)

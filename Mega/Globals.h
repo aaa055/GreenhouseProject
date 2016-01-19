@@ -17,7 +17,7 @@
 
 // дирестивы условной компиляции 
 #define AS_CONTROLLER // закомментировать для дочерних модулей
-//#define USE_DS3231_REALTIME_CLOCK // закомментировать, если не хотим использовать модуль реального времени
+#define USE_DS3231_REALTIME_CLOCK // закомментировать, если не хотим использовать модуль реального времени
 #define USE_PIN_MODULE // закомментировать, если не нужен модуль управления пинами
 #define USE_TEMP_SENSORS // закомментировать, если датчики температуры не поддерживаются
 #define USE_LOOP_MODULE // закомментировать, если не нужна поддержка модуля LOOP
@@ -141,6 +141,7 @@
 #define PROP_RELAY_CNT F("RELAY_CNT") // кол-во каналов реле CTGET=0|PROP|MODULE_NAME|RELAY_CNT, CTSET=0|PROP|MODULE_NAME|RELAY_CNT|2
 #define PROP_TEMP F("TEMP") // нам передали/запросили температуру CTGET=0|PROP|MODULE_NAME|TEMP|0, CTSET=0|PROP|MODULE_NAME|TEMP|0|36,6
 #define PROP_RELAY F("RELAY") // нам передали/запросили состояние канала реле CTGET=0|PROP|MODULE_NAME|RELAY|0, CTSET=0|PROP|MODULE_NAME|RELAY|0|ON
+#define SMS_NUMBER_COMMAND F("PHONE") // сохранить/вернуть номер телефона для управления контроллером по СМС: CTSET=0|PHONE|+7918..., CTGET=0|PHONE
 #define PONG F("PONG") // ответ на запрос пинга
 #define REG_SUCC F("ADDED") // модуль зарегистрирован
 #define REG_DEL F("DELETED") // удалено

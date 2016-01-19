@@ -52,6 +52,13 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           answer = PONG;
           shouldAddModuleID = false;
         } // if
+        else
+        if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по СМС
+        {
+          answerStatus = true;
+          shouldAddModuleID = false;
+          answer = SMS_NUMBER_COMMAND; answer += PARAM_DELIMITER; answer += c->GetSettings()->GetSmsPhoneNumber();
+        }
         else if(t == HAS_CHANGES_COMMAND) // есть ли изменения в состоянии модулей?
         {
           // CTGET=0|HAS_CHANGES - ВЕРНЕТ 1, ЕСЛИ ЕСТЬ ИЗМЕНЕНИЯ, И 0 - ЕСЛИ НЕТ
@@ -330,6 +337,17 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
 
           } // else
        }
+       
+       else if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по SMS
+       {
+          GlobalSettings* sett = c->GetSettings();
+          sett->SetSmsPhoneNumber(command.GetArg(1));
+          sett->Save();
+          answerStatus = true;
+          answer = SMS_NUMBER_COMMAND; answer += PARAM_DELIMITER; answer += REG_SUCC;
+          
+       }
+       
        else if(t == PROPERTIES_COMMAND)
        {
         // запросили установку свойств

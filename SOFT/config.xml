@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 <AppSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <def_t_open>25</def_t_open>
+  <def_t_open>30</def_t_open>
   <def_t_close>24</def_t_close>
   <sel_idx>0</sel_idx>
-  <w_interval>30000</w_interval>
+  <w_interval>2000</w_interval>
+  <phone />
   <temp>
     <t_setting display="Помидоры" t_open="25" t_close="24" />
     <t_setting display="Огурцы" t_open="28" t_close="26" />

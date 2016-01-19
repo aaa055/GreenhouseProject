@@ -43,6 +43,15 @@ void GlobalSettings::Load()
   *wrAddr++ = EEPROM.read(readPtr++);
   *wrAddr++ = EEPROM.read(readPtr++);
 
+  // читаем номер телефона для управления по СМС
+  uint8_t smsnumlen = EEPROM.read(readPtr++);
+  if(smsnumlen != 0xFF) // есть номер телефона
+  {
+    for(uint8_t i=0;i<smsnumlen;i++)
+      smsPhoneNumber += (char) EEPROM.read(readPtr++);
+  }
+  
+
   
 
   // читаем другие настройки!
@@ -70,7 +79,16 @@ void GlobalSettings::Save()
   EEPROM.write(addr++,*readAddr++);
   EEPROM.write(addr++,*readAddr++);
   EEPROM.write(addr++,*readAddr++);
+
+  // сохраняем номер телефона для управления по смс
+  uint8_t smsnumlen = smsPhoneNumber.length();
+  EEPROM.write(addr++,smsnumlen);
   
+  const char* sms_c = smsPhoneNumber.c_str();
+  for(uint8_t i=0;i<smsnumlen;i++)
+  {
+    EEPROM.write(addr++, *sms_c++);
+  }
 
   // сохраняем другие настройки!
 

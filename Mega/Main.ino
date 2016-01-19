@@ -210,10 +210,12 @@ void setup()
   #ifdef USE_DS3231_REALTIME_CLOCK
   
    DS3231 rtc = controller.GetClock();
-   String s = ", " + rtc.getDOWStr();
+   String s = F(", ");
+   
+   s += rtc.getDOWStr();
    s += F(" ");
    s += rtc.getDateStr();
-   s += F(" -- ");
+   s += F(" - ");
    s += rtc.getTimeStr();
    Serial.print(s);
    

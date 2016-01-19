@@ -13,7 +13,8 @@ class GlobalSettings
   uint8_t tempOpen; // температура открытия
   uint8_t tempClose; // температура закрытия
   unsigned long openInterval; // интервал для открытия окон
-  
+
+  String smsPhoneNumber;
  
   public:
     GlobalSettings();
@@ -30,6 +31,9 @@ class GlobalSettings
 
     unsigned long GetOpenInterval() {return openInterval;}
     void SetOpenInterval(unsigned long val) {openInterval = val;}
+
+    String GetSmsPhoneNumber() {return smsPhoneNumber; }
+    void SetSmsPhoneNumber(const String& v) {smsPhoneNumber = v;}
 
     
     
