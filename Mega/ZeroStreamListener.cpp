@@ -407,7 +407,16 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                            String curTemp = command.GetArg(4);
                            uint8_t sensorIdx = command.GetArg(3).toInt();
 
-                           mod->State.SetTemp(sensorIdx,curTemp);
+                           Temperature t;
+                           t.Value = curTemp.toInt();
+                           int8_t idx = curTemp.indexOf(F(","));
+                           if(idx != -1)
+                           {
+                              curTemp = curTemp.substring(idx+1);
+                              t.Fract = curTemp.toInt();
+                           }
+
+                           mod->State.SetTemp(sensorIdx,t);
  
                             answerStatus = true;
                             answer = REG_SUCC;

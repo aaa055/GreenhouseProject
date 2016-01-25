@@ -38,6 +38,7 @@ public:
   DS3231& GetClock();
   #endif
 
+  // возвращает текущие настройки контроллера
   GlobalSettings* GetSettings() {return &settings;}
 
   // устанавливает текущий поток, в который надо выводить ответы
@@ -49,9 +50,12 @@ public:
   size_t GetModulesCount() {return modules.size(); }
   AbstractModule* GetModule(size_t idx) {return modules[idx]; }
   AbstractModule* GetModuleByID(const String& id);
+
   void RegisterModule(AbstractModule* mod);
   void ProcessModuleCommand(const Command& c, bool checkDestination=true);
+  
   void UpdateModules(uint16_t dt);
+  
   COMMAND_DESTINATION GetWorkMode() {return workAs;}
   String GetControllerID() {return ourID;}
 

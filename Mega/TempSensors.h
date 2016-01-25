@@ -10,11 +10,6 @@ typedef enum
   
 } WindowWorkMode;
 
-#define SUPPORTED_SENSORS 2 // кол-во поддерживаемых датчиков температуры
-#define SUPPORTED_WINDOWS 4 // кол-во поддерживаемых каналов реле
-
-#define SHORT_CIRQUIT_STATE LOW // статус пинов, на которых висит реле, чтобы закоротить мотор и не дать ему крутиться
-
 typedef enum
 {
   dirNOTHING,

@@ -93,7 +93,8 @@ bool AlertRule::HasAlert()
       {
         return false;
       }
-       int8_t curTemp = linkedModule->State.GetTemp(tempSensorIdx).toInt();
+       Temperature t = linkedModule->State.GetTemp(tempSensorIdx);
+       int8_t curTemp = t.Value;
 
        int8_t tAlert = tempAlert; // следим за переданной температурой
        switch(temperatureSource)

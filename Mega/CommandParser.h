@@ -19,8 +19,8 @@
  * Следующие n аргументов - специфичны для каждого модуля.
  * 
  * Пример команды:
- * CTSET=PIN13|T - инвертировать текущее состояние модуля PIN13
- * CTGET=PIN13 - получить текущее состояние модуля PIN13
+ * CTSET=PIN|13|T - инвертировать текущее состояние модуля PIN для пина номер 13
+ * CTGET=PIN|13 - получить текущее состояние модуля PIN для пина номер 13
  */
 
 
@@ -60,25 +60,41 @@ class Command
 
  public:
 
+    // устанавливает/возвращает поток для работы с командой
     void SetIncomingStream(Stream* s) {IncomingStream = s;}
     Stream* GetIncomingStream() const {return IncomingStream;}
 
+    // флаг, что команда внутренняя, т.е. от одного модуля другому
     bool IsInternal() const {return bIsInternal;}
     void SetInternal(bool i) {bIsInternal = i;}
     
     void Construct(const String& moduleID,const String& rawArgs, const String& commandType,COMMAND_DESTINATION dest); // конструирует команду из переданных аргументов
+
+    // возвращает тип адресации команды: контроллеру или дочернему модулю (отдельной железной коробочке со своим МК)
     COMMAND_DESTINATION GetDestination() const { return Destination;}
+
+    // возвращает тип команды
     COMMAND_TYPE GetType() const {return Type;}
-    String GetRawArguments() const  {return Arg;}
-    String GetTargetModuleID() const {return ModuleID;}
+    // возвращает тип команды в виде строки
     String GetStringType() const {return StringType;};
+
+    // возвращает все аргументы в виде строки
+    String GetRawArguments() const  {return Arg;}
+
+    // возвращает ID программного модуля, которому адресована команда
+    String GetTargetModuleID() const {return ModuleID;}
+
+    // возвращает количество переданных аргументов
     uint8_t GetArgsCount() const {return ArgsCount;}
+
+    // возвращает аргумент по интексу
     String GetArg(uint16_t idx) const {return idx >= ArgsCount ? F("") : ArgsSplitted[idx];}
+    
     Command() : IncomingStream(NULL), bIsInternal(false) {}
 };
 
 
-
+// парсер команд
 class CommandParser
 {
   private:

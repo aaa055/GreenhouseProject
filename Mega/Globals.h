@@ -13,7 +13,7 @@
 #define READY F("READY") // будет напечатано в Serial после загрузки
 #define DIODE_READY_PIN 6 // пин, на котором будет диод, мигающий при старте и горящий в режиме работы
 #define DIODE_MANUAL_MODE_PIN 7 // пин, на котором будет диод, мигающий, когда мы в ручном режиме управления
-#define WORK_MODE_BLINK_INTERVAL 1250 // с какой частотой мигать на пине
+#define WORK_MODE_BLINK_INTERVAL 750 // с какой частотой мигать на пине индикации ручного режима работы, мс
 
 // дирестивы условной компиляции 
 #define AS_CONTROLLER // закомментировать для дочерних модулей
@@ -22,6 +22,7 @@
 #define USE_TEMP_SENSORS // закомментировать, если датчики температуры не поддерживаются
 #define USE_LOOP_MODULE // закомментировать, если не нужна поддержка модуля LOOP
 #define USE_STAT_MODULE // закомментировать, если не нужна поддержка модуля статистики
+#define USE_SMS_MODULE // закомментировать, если не нужна поддержка управления по SMS
 
 // настройки модуля алертов (событий по срабатыванию каких-либо условий)
 #define MAX_STORED_ALERTS 3 // максимальное кол-во сохраняемых последних алертов
@@ -73,6 +74,10 @@
 #define PROP_WINDOW F("WINDOW") // название канала, чтобы было понятно
 #define PROP_WINDOW_CNT F("WINDOW_CNT") // кол-во фрамуг CTGET=STATE|WINDOW_CNT
 #define TEMP_SETTINGS F("T_SETT") // получить/установить температуры срабатывания, CTGET=STATE|T_SETT, CTSET=STATE|T_SETT|t open|t close
+#define NO_TEMPERATURE_DATA -128 // нет данных с датчика температуры
+#define SUPPORTED_SENSORS 2 // кол-во поддерживаемых датчиков температуры "из коробки"
+#define SUPPORTED_WINDOWS 4 // кол-во поддерживаемых окон (по два реле на мотор, для 8-ми канального модуля реле - 4 окна)
+#define SHORT_CIRQUIT_STATE LOW // статус пинов, на которых висит реле, чтобы закоротить мотор и не дать ему крутиться
 
 
 
@@ -130,6 +135,23 @@
 #ifdef USE_DS3231_REALTIME_CLOCK
 #define CURDATETIME_COMMAND F("DATETIME") // вывести текущую дату и время CTGET=STAT|DATETIME
 #endif
+
+// Команды и настройки модуля управления по SMS (модуль NEOWAY M590)
+//#define NEOWAY_DEBUG_MODE // закомментировать, если не нужен режим отладки (плюётся в Serial отладочными сообщениями)
+#define STAT_COMMAND F("STAT") // получить текущую статистику по SMS, CTGET=SMS|STAT
+#define T_INDOOR F("Твн: ") // температура внутри
+#define T_OUTDOOR F("Тнар: ") // температура снаружи
+#define W_STATE F("Окна: ") // состояние окон
+#define W_CLOSED F("закр") // закрыты
+#define W_OPEN F("откр") // открыты
+#define NEOWAY_NEWLINE F("\r\n") // новая строка для модуля, при отсыле команды
+#define NEOWAY_SERIAL Serial1 // какой хардварный Serial будем использовать при работе с NEOWAY?
+#define NEOWAY_BAUDRATE 9600 // скорость работы с GSM-модемом NEOWAY
+#define SMS_OPEN_COMMAND F("#1") // открыть окна
+#define SMS_CLOSE_COMMAND F("#0") // закрыть окна
+#define SMS_STAT_COMMAND F("#9") // получить статистику
+#define SMS_AUTOMODE_COMMAND F("#8") // установить автоматический режим работы
+#define NEOWAY_WAIT_FOR_SMS_SEND_COMPLETE 6000 // интервал, в течение которого мы ждём откравку смс модулем (ждём асинхронно, без блокирования!)
 
 // команды модуля "0"
 #define NEWLINE F("\r\n")

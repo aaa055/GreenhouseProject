@@ -27,6 +27,10 @@
 #include "TempSensors.h"
 #endif
 
+#ifdef USE_SMS_MODULE
+#include "SMSModule.h"
+#endif
+
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
@@ -91,6 +95,10 @@ StatModule statModule("STAT");
 TempSensors tempSensors;
 #endif
 
+#ifdef USE_SMS_MODULE
+// модуль управления по SMS
+ SMSModule smsModule;
+#endif
 
 #ifdef AS_CONTROLLER
 // Модуль поддержки регистрации сторонних коробочек - только в режиме работы контроллера
@@ -192,6 +200,10 @@ void setup()
 
   #ifdef USE_TEMP_SENSORS
   controller.RegisterModule(&tempSensors);
+  #endif
+
+  #ifdef USE_SMS_MODULE
+  controller.RegisterModule(&smsModule);
   #endif
 
  // модуль алертов регистрируем последним, т.к. он должен вычитать зависимости с уже зарегистрированными модулями

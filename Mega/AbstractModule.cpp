@@ -7,21 +7,21 @@ void ModuleState::SetTempSensors(uint8_t cnt)
 
     TempSensors = cnt;
 }
-String ModuleState::GetTemp(uint8_t idx)
+Temperature ModuleState::GetTemp(uint8_t idx)
 {
   if(idx >= MAX_TEMP_SENSORS)
     idx = MAX_TEMP_SENSORS - 1;
 
   return Temp[idx];
 }
-String ModuleState::GetPrevTemp(uint8_t idx)
+Temperature ModuleState::GetPrevTemp(uint8_t idx)
 {
   if(idx >= MAX_TEMP_SENSORS)
     idx = MAX_TEMP_SENSORS - 1;
 
   return prevTemp[idx];
 }
-void ModuleState::SetTemp(uint8_t idx, const String& dt)
+void ModuleState::SetTemp(uint8_t idx, const Temperature& dt)
 { 
   if(idx >= MAX_TEMP_SENSORS)
     idx = MAX_TEMP_SENSORS - 1;
@@ -35,11 +35,8 @@ bool ModuleState::GetRelayState(uint8_t idx)
 {
     if(idx >= MAX_RELAY_CHANNELS)
       idx = MAX_RELAY_CHANNELS - 1;
-
  
     return bitRead(RelayStates,idx);
-
-//    return RelayStates[idx];
 
 }
 bool ModuleState::GetPrevRelayState(uint8_t idx)
@@ -48,8 +45,6 @@ bool ModuleState::GetPrevRelayState(uint8_t idx)
       idx = MAX_RELAY_CHANNELS - 1;
       
      return bitRead(prevRelayStates,idx);
-
-//    return prevRelayStates[idx];
 
 }
 bool  ModuleState::IsTempChanged(uint8_t idx)
@@ -70,10 +65,6 @@ void  ModuleState::SetRelayState(uint8_t idx,bool bOn)
 
     bitWrite(prevRelayStates,idx,bitRead(RelayStates,idx));
     bitWrite(RelayStates,idx, bOn);
-
-//    prevRelayStates[idx] = RelayStates[idx]; // сохраняем предыдущее состояние
-//    RelayStates[idx] = bOn; // записываем новое
-
   
 }
 bool ModuleState::IsRelayStateChanged(uint8_t idx)
@@ -82,7 +73,6 @@ bool ModuleState::IsRelayStateChanged(uint8_t idx)
       idx = MAX_RELAY_CHANNELS - 1;  
 
   return bitRead(prevRelayStates,idx) != bitRead(RelayStates,idx);
-//    return prevRelayStates[idx] != RelayStates[idx];
 }
 void ModuleState::SetRelayChannels(uint8_t cnt)
 {

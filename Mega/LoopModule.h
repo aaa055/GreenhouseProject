@@ -32,17 +32,17 @@
  *    Если для модуля поступила новая команда - старая перезаписывается, т.е. цепочка команд не поддерживается!
  */
 
-struct LoopLink
+struct LoopLink // структура хранения информации для отсыла команды связанному модулю
 {
-  Stream* IncomingCtream;
-  AbstractModule* linkedModule;
-  bool bActive;
-  uint16_t lastTimerVal;
-  uint16_t interval;
-  uint8_t currPass;
-  uint8_t countPasses;
-  String paramsToPass;
-  String typeOfCommand;
+  Stream* IncomingCtream; // поток, с которого пришёл запрос на выполнение команды
+  AbstractModule* linkedModule; // модуль, которому мы пересылаем команду через нужные интервалы
+  bool bActive; // флаг активности работы
+  uint16_t lastTimerVal; // последнее значение таймера
+  uint16_t interval; // интервал работы команды
+  uint8_t currPass; // номер текущего прохода
+  uint8_t countPasses; // сколько проходов сделать всего
+  String paramsToPass; // параметры, которые надо передать связанному модулю
+  String typeOfCommand; // тип команды, которую надо передать связанному модулю
 
 };
 

@@ -166,15 +166,21 @@ void TempSensors::Update(uint16_t dt)
   lastUpdateCall = 0;
   
   // обновляем значения температуры
-    String s = String(random(20,40)) + F(",") + String(random(50,100));
+    Temperature s;
+    s.Value = random(20,40);
+    s.Fract = random(50,100);
+    //String s = String(random(20,40)) + F(",") + String(random(50,100));
     State.SetTemp(0,s);
-    s = String(random(0,15)) + F(",") + String(random(50,100));
+
+    s.Value = random(0,15);
+    s.Fract = random(50,100);
+//    s = String(random(0,15)) + F(",") + String(random(50,100));
     State.SetTemp(1,s);
 
   // TEST CODE END //
 
 }
-void TempSensors::BlinkWorkMode(uint16_t blinkInterval)
+void TempSensors::BlinkWorkMode(uint16_t blinkInterval) // мигаем диодом индикации ручного режима работы
 {
   String s = F("CTSET=LOOP|SET|");
   s += blinkInterval;
@@ -322,7 +328,7 @@ bool  TempSensors::ExecCommand(const Command& command)
         uint8_t tOpen = command.GetArg(1).toInt();
         uint8_t tClose = command.GetArg(2).toInt();
 
-       sett->SetOpenTemp(tOpen);
+        sett->SetOpenTemp(tOpen);
         sett->SetCloseTemp(tClose);
         sett->Save();
         
@@ -405,6 +411,7 @@ bool  TempSensors::ExecCommand(const Command& command)
                   {
                     // получаем текущее значение датчика
                     answerStatus = true;
+
                     answer = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + State.GetTemp(sensorIdx);
                   }
               } // else

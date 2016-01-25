@@ -3,8 +3,7 @@
 
 #include <Stream.h>
 
-
-
+// класс для накопления команды из потока
 class CommandBuffer
 {
 private:
