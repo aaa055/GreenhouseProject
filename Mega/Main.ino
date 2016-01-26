@@ -31,6 +31,10 @@
 #include "SMSModule.h"
 #endif
 
+#ifdef USE_WATERING_MOSULE
+#include "WateringModule.h"
+#endif
+
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
@@ -98,6 +102,11 @@ TempSensors tempSensors;
 #ifdef USE_SMS_MODULE
 // модуль управления по SMS
  SMSModule smsModule;
+#endif
+
+#ifdef USE_WATERING_MOSULE
+// модуль управления поливом
+WateringModule wateringModule;
 #endif
 
 #ifdef AS_CONTROLLER
@@ -204,6 +213,10 @@ void setup()
 
   #ifdef USE_SMS_MODULE
   controller.RegisterModule(&smsModule);
+  #endif
+
+  #ifdef USE_WATERING_MOSULE
+  controller.RegisterModule(&wateringModule);
   #endif
 
  // модуль алертов регистрируем последним, т.к. он должен вычитать зависимости с уже зарегистрированными модулями

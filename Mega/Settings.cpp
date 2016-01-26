@@ -12,6 +12,9 @@ void GlobalSettings::ResetToDefault()
   tempOpen = DEF_OPEN_TEMP;
   tempClose = DEF_CLOSE_TEMP;
   openInterval = DEF_OPEN_INTERVAL;
+  wateringOption = wateringOFF;
+  wateringWeekDays = 0;
+  wateringTime = 0;
 }
 void GlobalSettings::Load()
 {  
@@ -50,8 +53,30 @@ void GlobalSettings::Load()
     for(uint8_t i=0;i<smsnumlen;i++)
       smsPhoneNumber += (char) EEPROM.read(readPtr++);
   }
-  
 
+  // читаем установку контроля за поливом
+  uint8_t bOpt = EEPROM.read(readPtr++);
+  if(bOpt != 0xFF) // есть настройка контроля за поливом
+  {
+    wateringOption = (WateringOption) bOpt;
+  } // if
+  
+ // читаем установку дней недели полива
+  bOpt = EEPROM.read(readPtr++);
+  if(bOpt != 0xFF) // есть настройка дней недели
+  {
+    wateringWeekDays = bOpt;
+  } // if
+
+  // читаем время полива
+  bOpt = EEPROM.read(readPtr);
+  if(bOpt != 0xFF) // есть настройка длительности полива
+  {
+    // читаем длительность полива
+    wrAddr = (byte*) &wateringTime;
+    *wrAddr++ = EEPROM.read(readPtr++);
+    *wrAddr++ = EEPROM.read(readPtr++);
+  }
   
 
   // читаем другие настройки!
@@ -90,6 +115,17 @@ void GlobalSettings::Save()
     EEPROM.write(addr++, *sms_c++);
   }
 
+  // сохраняем опцию контроля за поливом
+  EEPROM.write(addr++,wateringOption);
+  
+  // сохраняем дни недели для полива
+  EEPROM.write(addr++,wateringWeekDays);
+
+  // сохраняем продолжительность полива
+  readAddr = (const byte*) &wateringTime;
+  EEPROM.write(addr++,*readAddr++);
+  EEPROM.write(addr++,*readAddr++);
+  
   // сохраняем другие настройки!
 
 

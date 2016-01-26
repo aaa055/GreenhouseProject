@@ -4,7 +4,7 @@
 #include "AbstractModule.h"
 #include "Settings.h"
 
-enum SMSOperation // какую ответ на какую операцию мы ждём?
+enum SMSOperation // какой ответ на какую операцию мы ждём?
 {
   opIdle, // свободны
   opCheckReady, // ждём ответ на запрос AT+CPAS
@@ -34,7 +34,7 @@ class SMSModule : public AbstractModule, public Stream // модуль подд�
     String incomingData; // входящие данные, которые модуль сыпет при приёме SMS, например
 
     void SendToNeoway(const String& s, bool addNewLine=true);
-    bool IsNeowayAnswerCompleted(const String&, bool& isOkAnswer); // проверяем, полный ответ или нет?
+    bool IsNeowayAnswerCompleted(const String& s, bool& isOkAnswer); // проверяем, полный ответ или нет?
     bool IsNeowayReady(); // проверяет, готов ли модуль к работе?
     void FetchNeowayAnswer(bool& isOkAnswer); // получает данные до тех пор, пока не будет получена строка OK или ERROR
 

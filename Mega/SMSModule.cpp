@@ -6,6 +6,9 @@ void SMSModule::Setup()
 {
   Settings = GetController()->GetSettings();
 
+  // будем смотреть этот пин на предмет наличия питания у модуля NEOWAY
+  pinMode(NEOWAY_VCCIO_CHECK_PIN,INPUT);
+  
   // запускаем наш сериал
   NEOWAY_SERIAL.begin(NEOWAY_BAUDRATE);
    
@@ -98,7 +101,6 @@ void SMSModule::FetchNeowayAnswer(bool& isOkAnswer)
 void SMSModule::ParseIncomingSMS(const String& sms)
 {
   ModuleController* c = GetController();
-  GlobalSettings* s = c->GetSettings();
   CommandParser* cParser = c->GetCommandParser();
   
   #ifdef NEOWAY_DEBUG_MODE
@@ -112,7 +114,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
       Serial.println("Message decoded, try to check sender number and find right commands...");
     #endif
 
-    if(message.SenderNumber != s->GetSmsPhoneNumber())
+    if(message.SenderNumber != Settings->GetSmsPhoneNumber())
     {
      #ifdef NEOWAY_DEBUG_MODE
       Serial.println("Message received from unknown number: " + message.SenderNumber + ", skip it...");
@@ -239,6 +241,19 @@ void SMSModule::Update(uint16_t dt)
   }
 
   needToWaitTimer = 0; // сбрасываем таймер ожидания
+
+  // проверяем питание на модуле
+  if(digitalRead(NEOWAY_VCCIO_CHECK_PIN) != HIGH)
+  {
+    isModuleReady = false;
+    currentOperation = opIdle;
+    needToWaitTimer = 5000; // проверим ещё раз через пять секунд
+
+    #ifdef NEOWAY_DEBUG_MODE
+      Serial.println("NEOWAY NOT FOUND!");
+    #endif
+    return;
+  }
 
   bool isOkAnswer; // флаг ответа - OK или ERROR
 
@@ -699,7 +714,7 @@ bool  SMSModule::ExecCommand(const Command& command)
   } // if
  
  // отвечаем на команду
-    SetPublishData(&command,answerStatus,answer,false); // готовим данные для публикации
+    SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
     c->Publish(this);
     
   return answerStatus;

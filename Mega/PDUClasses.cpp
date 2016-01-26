@@ -1,7 +1,6 @@
 #include "PDUClasses.h"
 #include <avr/pgmspace.h>
 
-
 PDUHelper PDU;
 
 const char HEX_CHARS[]  PROGMEM = {"0123456789ABCDEF"};
@@ -36,7 +35,7 @@ bool PDUMessageEncoder::utf8ToUInt(const String& bytes, unsigned int& target)
     if ((bytes[0] >> 7) != 0) 
     { 
       result = false; 
-      } 
+    } 
       else 
       target = bytes[0]; 
    } 
@@ -208,7 +207,7 @@ uint8_t PDUMessageDecoder::MakeNum(char ch)
 String PDUMessageDecoder::exchangeOctets(const String& src)
 {
   String out;
-  for(uint8_t i =0;i<src.length();i+=2)
+  for(uint16_t i =0;i<src.length();i+=2)
   {
     out += mapChar(src[i+1]);
     out += mapChar(src[i]);
@@ -290,7 +289,7 @@ String PDUMessageDecoder::getUTF8From16BitEncoding(const String& ucs2Message)
   String result;
 
   unsigned char buff[6] = {0};
-  for(uint8_t i=0;i<ucs2Message.length();i+=4)
+  for(uint16_t i=0;i<ucs2Message.length();i+=4)
   {
      String hex1 = ucs2Message.substring(i,i+2);
      String hex2 = ucs2Message.substring(i+2,i+4);
@@ -398,7 +397,8 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
   result.IsDecodingSucceed = true;
 
   String workStr = ucs2Message;
-  
+
+
   uint8_t smscNumberLength = HexToNum(workStr.substring(0,2));
     
   String smsCenterInfo = workStr.substring(2,2+(smscNumberLength*2));
@@ -411,7 +411,7 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
      smsCenterNumber = exchangeOctets(smsCenterNumber);
      
      if(smscTypeOfAddress == 91)
-      smsCenterNumber = "+" + smsCenterNumber;
+      smsCenterNumber = String(F("+")) + smsCenterNumber;
 
       smsCenterNumber.replace(F("F"),F("")); // убираем последнюю F, если она есть
      
@@ -419,6 +419,7 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
 
   // сохраняем данные об СМС-центре
   result.SMSCenterNumber = smsCenterNumber;
+  
 
   uint16_t start = 0;
   uint16_t startDeliveryInfo = (smscNumberLength*2)+2;
@@ -426,7 +427,6 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
   start = startDeliveryInfo;
   String smsDeliver = workStr.substring(start,start+2);
   start = start + 2;
-
 
   uint8_t smsDeliverBits = HexToNum(smsDeliver);
 
@@ -466,7 +466,7 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
 
       } // else
 
-      // сохраняем номер телефона отправителя
+     // сохраняем номер телефона отправителя
       result.SenderNumber = sender_number;
 
       // тут декодируем сообщение...
@@ -488,15 +488,17 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
   
     if (bitSize==7)
     {
-      String mess = workStr.substring(start);
+
+     String mess = workStr.substring(start);
       result.Message = getUTF8From7BitEncoding(mess,messageLength);
-    }
+
+     }
     else 
     if (bitSize==8)
     {
       String mess = workStr.substring(start);
       result.Message = getUTF8From8BitEncoding(mess);
-    }
+     }
     else 
     if (bitSize==16)
     {
@@ -504,15 +506,14 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
       result.Message = getUTF8From16BitEncoding(mess);
     }
 
-    // сохраняем декодированное сообщение
+
+   // сохраняем декодированное сообщение
     result.Message = result.Message.substring(0,messageLength);
-     
 
   } // if((smsDeliverBits & 0x03) == 0)
   else
   if ((smsDeliverBits & 0x03) == 1 || (smsDeliverBits & 0x03) == 3) // сообщение для пересылки
   {
-
     // uint8_t MessageReference = HexToNum(workStr.substring(start,start+2));
     start += 2;
 
@@ -533,7 +534,7 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
     
     if (sender_typeOfAddress.toInt() == 91)
     {
-      sender_number = "+" + sender_number;
+      sender_number = String(F("+")) + sender_number;
     }
     start += sender_addressLength;
 
@@ -544,7 +545,6 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
 
      String tp_DCS = workStr.substring(start,start+2);
      start +=2;
-
 
     switch( smsDeliverBits & 0x18 )
     {

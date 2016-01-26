@@ -5,6 +5,14 @@
 
 // класс настроек, которые сохраняются и читаются в/из EEPROM
 // здесь будут всякие настройки, типа уставок срабатывания и пр. лабуды
+
+enum WateringOption // какая опция управления поливом выбрана
+{
+  wateringOFF = 0, // автоматическое управление поливом выключено
+  wateringWeekDays = 1 // управление поливом по дням недели
+  
+};
+
 class GlobalSettings
 {
   private:
@@ -14,7 +22,11 @@ class GlobalSettings
   uint8_t tempClose; // температура закрытия
   unsigned long openInterval; // интервал для открытия окон
 
-  String smsPhoneNumber;
+  String smsPhoneNumber; // номер телефона для управления по SMS
+
+  WateringOption wateringOption; // какая опция управления выбрана?
+  uint8_t wateringWeekDays; // в какие дни недели управляем поливом?
+  uint16_t wateringTime; // время полива
  
   public:
     GlobalSettings();
@@ -22,6 +34,15 @@ class GlobalSettings
     void Load();
     void Save();
     void ResetToDefault();
+
+    WateringOption GetWateringOption() {return wateringOption; }
+    void SetWateringOption(WateringOption val) {wateringOption = val; }
+
+     uint8_t GetWateringWeekDays() {return wateringWeekDays; }
+     void SetWateringWeekDays(uint8_t val) {wateringWeekDays = val;}
+
+     uint16_t GetWateringTime() {return wateringTime;}
+     void SetWateringTime(uint16_t val) {wateringTime = val;}
 
     uint8_t GetOpenTemp() {return tempOpen;}
     void SetOpenTemp(uint8_t val) {tempOpen = val;}
