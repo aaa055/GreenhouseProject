@@ -55,7 +55,7 @@ bool  WateringModule::ExecCommand(const Command& command)
       } // else
   }
   else
-  if(command.GetType() == ctGET) //получить статистику
+  if(command.GetType() == ctGET) //получить данные
   {
 
     String t = command.GetRawArguments();

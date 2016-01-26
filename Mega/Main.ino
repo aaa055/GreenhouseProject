@@ -35,6 +35,10 @@
 #include "WateringModule.h"
 #endif
 
+#ifdef USE_LUMINOSITY_MODULE
+#include "LuminosityModule.h"
+#endif
+
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
@@ -107,6 +111,10 @@ TempSensors tempSensors;
 #ifdef USE_WATERING_MOSULE
 // модуль управления поливом
 WateringModule wateringModule;
+#endif
+
+#ifdef USE_LUMINOSITY_MODULE
+LuminosityModule luminosityModule;
 #endif
 
 #ifdef AS_CONTROLLER
@@ -217,6 +225,10 @@ void setup()
 
   #ifdef USE_WATERING_MOSULE
   controller.RegisterModule(&wateringModule);
+  #endif
+
+  #ifdef USE_LUMINOSITY_MODULE
+  controller.RegisterModule(&luminosityModule);
   #endif
 
  // модуль алертов регистрируем последним, т.к. он должен вычитать зависимости с уже зарегистрированными модулями
