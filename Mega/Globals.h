@@ -87,10 +87,11 @@
 
 
 // настройки модуля управления поливом
-#define WATER_SETTINGS_COMMAND F("T_SETT") // получить/установить настройки управления поливом: CTGET=WATER|T_SETT, CTSET=WATER|T_SETT|WateringOption|WateringDays|WateringTime , где
+#define WATER_SETTINGS_COMMAND F("T_SETT") // получить/установить настройки управления поливом: CTGET=WATER|T_SETT, CTSET=WATER|T_SETT|WateringOption|WateringDays|WateringTime|StartTime , где
 // WateringOption = 0 (выключено автоматическое управление поливом), 1 - автоматическое управление поливом включено
 // WateringDays - битовая маска дней недели (младший бит - понедельник и т.д.)
 // WateringTime - продолжительность полива в минутах, максимальное значение - 65535 (два байта)
+// StartTime - час начала полива (1 байт) - от 1 до 23
 #define WATER_RELAY_ON LOW // уровень для включения реле
 #define WATER_RELAY_OFF HIGH // уровень для выключения реле
 
@@ -161,6 +162,9 @@
 #define W_STATE F("Окна: ") // состояние окон
 #define W_CLOSED F("закр") // закрыты
 #define W_OPEN F("откр") // открыты
+#define WTR_STATE F("Полив: ") // состояние полива
+#define WTR_OFF F("выкл") // полив выкл
+#define WTR_ON F("вкл") // полив вкл
 #define NEOWAY_NEWLINE F("\r\n") // новая строка для модуля, при отсыле команды
 #define NEOWAY_SERIAL Serial1 // какой хардварный Serial будем использовать при работе с NEOWAY?
 #define NEOWAY_BAUDRATE 9600 // скорость работы с GSM-модемом NEOWAY
@@ -168,6 +172,8 @@
 #define SMS_CLOSE_COMMAND F("#0") // закрыть окна
 #define SMS_STAT_COMMAND F("#9") // получить статистику
 #define SMS_AUTOMODE_COMMAND F("#8") // установить автоматический режим работы
+#define SMS_WATER_ON_COMMAND F("#4") // включить полив
+#define SMS_WATER_OFF_COMMAND F("#6") // выключить полив
 #define NEOWAY_WAIT_FOR_SMS_SEND_COMPLETE 6000 // интервал, в течение которого мы ждём откравку смс модулем (ждём асинхронно, без блокирования!)
 #define NEOWAY_VCCIO_CHECK_PIN 2 // пин, на котором будем проверять сигнал от VCCIO (6 пин) модуля NEOWAY
 

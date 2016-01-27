@@ -27,6 +27,7 @@ class GlobalSettings
   WateringOption wateringOption; // какая опция управления выбрана?
   uint8_t wateringWeekDays; // в какие дни недели управляем поливом?
   uint16_t wateringTime; // время полива
+  uint8_t startWateringTime; // время начала полива
  
   public:
     GlobalSettings();
@@ -43,6 +44,9 @@ class GlobalSettings
 
      uint16_t GetWateringTime() {return wateringTime;}
      void SetWateringTime(uint16_t val) {wateringTime = val;}
+
+     uint8_t GetStartWateringTime() {return startWateringTime;}
+     void SetStartWateringTime(uint8_t val) {startWateringTime = val;}
 
     uint8_t GetOpenTemp() {return tempOpen;}
     void SetOpenTemp(uint8_t val) {tempOpen = val;}

@@ -73,14 +73,16 @@ void WateringModule::Update(uint16_t dt)
           uint8_t weekDays = settings->GetWateringWeekDays();
           DS3231 watch =  controller->GetClock();
           Time t =   watch.getTime();
-          bool canWork = bitRead(weekDays,t.dow-1); // проверяем, установлен ли у нас день недели для полива
 
           if(lastDOW == -1) // если мы не сохраняли текущий день недели, то
             lastDOW = t.dow; // сохраним его, чтобы потом проверять переход через дни недели
 
+          // проверяем, установлен ли у нас день недели для полива, и настал ли час, с которого можно поливать
+          bool canWork = bitRead(weekDays,t.dow-1) && t.hour >= settings->GetStartWateringTime(); 
+
           if(!canWork)
            {            
-             wateringTimer = 0; // в этот день недели работать не можем, однозначно обнуляем таймер полива    
+             wateringTimer = 0; // в этот день недели и в этот час работать не можем, однозначно обнуляем таймер полива    
              bRelaysIsOn = false; // выключаем реле
            }
            else
@@ -95,12 +97,12 @@ void WateringModule::Update(uint16_t dt)
               
               lastDOW = t.dow; // сохраняем текущий день недели
               // начался другой день недели, в который мы можем работать. Для одного дня недели у нас установлена
-              // продолжительность полива, поэтому, если мы поливали 30 мин, например, во вторник, и перешли на среду,
-              // то и в среду надо полить 30 мин. Поэтому таймер полива переводим в нужный режим:
+              // продолжительность полива, поэтому, если мы поливали 28 минут вместо 30, например, во вторник, и перешли на среду,
+              // то и в среду надо полить 32 мин. Поэтому таймер полива переводим в нужный режим:
               // оставляем в нём недополитое время, чтобы учесть, что поливать надо, например, 32 минуты.
 
               //               разница между полным и отработанным временем
-              wateringTimer = -((timeToWatering*60*1000) - wateringTimer); // загоняем в минус, чтобы добавить недостающие минуты к работе
+              wateringTimer = -((timeToWatering*60000) - wateringTimer); // загоняем в минус, чтобы добавить недостающие минуты к работе
             }
             
             wateringTimer += dt; // прибавляем время работы
@@ -119,6 +121,11 @@ void WateringModule::Update(uint16_t dt)
             else
               bRelaysIsOn = true; // ещё можем работать, продолжаем поливать
            } // else
+
+        #else
+          // нет модуля часов реального времени!
+          settings->SetWateringOption(wateringOFF); // отключим автоматический контроль полива
+          workMode = wmManual; // переходим на ручное управление
         #endif
         
         break; // wateringWeekDays
@@ -193,17 +200,19 @@ bool  WateringModule::ExecCommand(const Command& command)
 
         if(which == WATER_SETTINGS_COMMAND)
         {
-          if(argsCount > 3)
+          if(argsCount > 4)
           {
               // парсим параметры
               WateringOption wateringOption = (WateringOption) command.GetArg(1).toInt();
               uint8_t wateringWeekDays = command.GetArg(2).toInt();
               uint16_t wateringTime = command.GetArg(3).toInt();
+              uint8_t startWateringTime = command.GetArg(4).toInt();
       
               // пишем в настройки
               settings->SetWateringOption(wateringOption);
               settings->SetWateringWeekDays(wateringWeekDays);
               settings->SetWateringTime(wateringTime);
+              settings->SetStartWateringTime(startWateringTime);
       
               // сохраняем настройки
               settings->Save();

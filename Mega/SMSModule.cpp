@@ -107,6 +107,8 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     Serial.println("ParseIncomingSMS(\"" + sms + "\")");
   #endif
 
+  bool shouldSendSMS = false;
+
   PDUIncomingMessage message = PDU.Decode(sms);
   if(message.IsDecodingSucceed)
   {
@@ -114,7 +116,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
       Serial.println("Message decoded, try to check sender number and find right commands...");
     #endif
 
-    if(message.SenderNumber != Settings->GetSmsPhoneNumber())
+    if(message.SenderNumber != Settings->GetSmsPhoneNumber()) // с неизвестного номера пришло СМС
     {
      #ifdef NEOWAY_DEBUG_MODE
       Serial.println("Message received from unknown number: " + message.SenderNumber + ", skip it...");
@@ -123,7 +125,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     }
 
     // ищем команды
-    int16_t idx = message.Message.indexOf(SMS_OPEN_COMMAND);
+    int16_t idx = message.Message.indexOf(SMS_OPEN_COMMAND); // открыть окна
     if(idx != -1)
     {
     #ifdef NEOWAY_DEBUG_MODE
@@ -145,14 +147,11 @@ void SMSModule::ParseIncomingSMS(const String& sms)
         cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
         c->ProcessModuleCommand(cmd,false);
 
-        // посылаем СМС с ответом
-        SendSMS(OK_ANSWER);
+        shouldSendSMS = true;
       }
-        
-      return;
     }
     
-    idx = message.Message.indexOf(SMS_CLOSE_COMMAND);
+    idx = message.Message.indexOf(SMS_CLOSE_COMMAND); // закрыть окна
     if(idx != -1)
     {
     #ifdef NEOWAY_DEBUG_MODE
@@ -174,14 +173,12 @@ void SMSModule::ParseIncomingSMS(const String& sms)
         cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
         c->ProcessModuleCommand(cmd,false);
 
-        // посылаем СМС с ответом
-        SendSMS(OK_ANSWER);
+      shouldSendSMS = true;
       }
 
-      return;
     }
     
-    idx = message.Message.indexOf(SMS_AUTOMODE_COMMAND);
+    idx = message.Message.indexOf(SMS_AUTOMODE_COMMAND); // перейти в автоматический режим работы
     if(idx != -1)
     {
     #ifdef NEOWAY_DEBUG_MODE
@@ -197,18 +194,79 @@ void SMSModule::ParseIncomingSMS(const String& sms)
         #endif
     
         streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер окон после выполнения команды перейдёт в автоматический режим
+        cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
+        c->ProcessModuleCommand(cmd,false);
+
+      }
+
+      if(cParser->ParseCommand(F("CTSET=WATER|MODE|AUTO"), c->GetControllerID(), cmd))
+      {
+        #ifdef NEOWAY_DEBUG_MODE
+          Serial.println("CTSET=WATER|MODE|AUTO command parsed, process it...");
+        #endif
+    
+        streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер полива после выполнения команды перейдёт в автоматический режим
+        cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
+        c->ProcessModuleCommand(cmd,false);
+
+      }    
+
+      shouldSendSMS = true;
+    }
+
+    idx = message.Message.indexOf(SMS_WATER_ON_COMMAND); // включить полив
+    if(idx != -1)
+    {
+    #ifdef NEOWAY_DEBUG_MODE
+      Serial.println("Water ON command found, execute it...");
+    #endif
+
+    // переводим контроллер в автоматический режим работы
+      Command cmd;
+      if(cParser->ParseCommand(F("CTSET=WATER|ON"), c->GetControllerID(), cmd))
+      {
+        #ifdef NEOWAY_DEBUG_MODE
+          Serial.println("CTSET=WATER|ON command parsed, process it...");
+        #endif
+    
+        streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
         cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
         cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
         c->ProcessModuleCommand(cmd,false);
 
-        // посылаем СМС с ответом
-        SendSMS(OK_ANSWER);
+       shouldSendSMS = true;
+      }
+    }
+
+    idx = message.Message.indexOf(SMS_WATER_OFF_COMMAND); // выключить полив
+    if(idx != -1)
+    {
+    #ifdef NEOWAY_DEBUG_MODE
+      Serial.println("Water OFF command found, execute it...");
+    #endif
+
+    // переводим контроллер в автоматический режим работы
+      Command cmd;
+      if(cParser->ParseCommand(F("CTSET=WATER|OFF"), c->GetControllerID(), cmd))
+      {
+        #ifdef NEOWAY_DEBUG_MODE
+          Serial.println("CTSET=WATER|OFF command parsed, process it...");
+        #endif
+    
+        streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
+        cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
+        c->ProcessModuleCommand(cmd,false);
+
+        shouldSendSMS = true;
       }
 
-      return;
     }
-    
-    idx = message.Message.indexOf(SMS_STAT_COMMAND);
+
+           
+    idx = message.Message.indexOf(SMS_STAT_COMMAND); // послать статистику
     if(idx != -1)
     {
     #ifdef NEOWAY_DEBUG_MODE
@@ -218,6 +276,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
       // посылаем статистику вызвавшему номеру
       SendStatToCaller(message.SenderNumber);
 
+      // возвращаемся, поскольку нет необходимости посылать СМС с ответом ОК - вместо этого придёт статистика
       return;
     }
     
@@ -228,6 +287,9 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     Serial.println("Message decoding ERROR!");
   #endif
   }
+
+  if(shouldSendSMS) // надо послать СМС с ответом "ОК"
+    SendSMS(OK_ANSWER);
   
 }
 
@@ -600,10 +662,38 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
       else
         sms += W_CLOSED;
     }
-    
+  
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println("Receive answer from STATE: \"" + streamAnswer + "\"");
     #endif
+  }
+    // получаем состояние полива
+  if(cParser->ParseCommand(F("CTGET=WATER"), c->GetControllerID(), cmd))
+  {
+    sms += NEOWAY_NEWLINE;
+    sms += WTR_STATE;
+
+    #ifdef NEOWAY_DEBUG_MODE
+      Serial.println("Command CTGET=WATER parsed, execute it...");
+    #endif
+
+    streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+    cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
+    cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
+    c->ProcessModuleCommand(cmd,false);
+
+    // здесь получили ответ, выводим его в сериал для теста
+    streamAnswer.trim();
+    int16_t idx = streamAnswer.lastIndexOf(PARAM_DELIMITER);
+    if(idx != -1)
+    {
+      String state = streamAnswer.substring(idx+1,streamAnswer.length());
+      if(state == STATE_ON)
+        sms += WTR_ON;
+      else
+        sms += WTR_OFF;
+    }
+    
     
   }
 

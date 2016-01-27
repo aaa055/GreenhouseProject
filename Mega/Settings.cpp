@@ -15,6 +15,7 @@ void GlobalSettings::ResetToDefault()
   wateringOption = wateringOFF;
   wateringWeekDays = 0;
   wateringTime = 0;
+  startWateringTime = 12;
 }
 void GlobalSettings::Load()
 {  
@@ -77,6 +78,13 @@ void GlobalSettings::Load()
     *wrAddr++ = EEPROM.read(readPtr++);
     *wrAddr++ = EEPROM.read(readPtr++);
   }
+
+  // читаем время начала полива
+  bOpt = EEPROM.read(readPtr++);
+  if(bOpt != 0xFF) // есть время начала полива
+  {
+    startWateringTime = bOpt;
+  } // if
   
 
   // читаем другие настройки!
@@ -125,6 +133,10 @@ void GlobalSettings::Save()
   readAddr = (const byte*) &wateringTime;
   EEPROM.write(addr++,*readAddr++);
   EEPROM.write(addr++,*readAddr++);
+
+  // сохраняем время начала полива
+   EEPROM.write(addr++,startWateringTime);
+ 
   
   // сохраняем другие настройки!
 
