@@ -158,7 +158,7 @@ void ProcessInitCommands()
 }
 
 void setup() 
-{
+{  
   // устанавливаем провайдера команд для контроллера
   controller.SetCommandParser(&commandParser);
 
