@@ -61,6 +61,9 @@ void Command::Clear()
   Type = ctUNKNOWN;
   ModuleID = F("");
   Arg = F("");
+  IncomingStream = NULL;
+  bIsInternal = false;
+  Destination = cdUNKNOWN;
 }
   
 CommandParser::CommandParser()

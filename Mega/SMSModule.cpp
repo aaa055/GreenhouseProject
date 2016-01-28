@@ -97,7 +97,58 @@ void SMSModule::FetchNeowayAnswer(bool& isOkAnswer)
     
   } // while 1
 }
+void SMSModule::ProcessQueuedWindowCommand()
+{
+    if(!queuedWindowCommand.length()) // а нет команды на управление окнами
+      return;
 
+    ModuleController* c = GetController();
+    CommandParser* cParser = c->GetCommandParser();
+  
+    // для начала проверяем, в каком состоянии у нас окна
+      Command cmd;
+      if(cParser->ParseCommand(F("CTGET=STATE|WINDOW|ALL"), c->GetControllerID(), cmd))
+      {
+        #ifdef NEOWAY_DEBUG_MODE
+          Serial.println("CTGET=STATE|WINDOW|ALL command parsed, process it...");
+        #endif
+    
+        streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
+        cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
+        c->ProcessModuleCommand(cmd,false);
+
+        // теперь проверяем ответ. Если окна не в движении - нам вернётся OPEN или CLOSED последним параметром.
+        // только в этом случае мы можем исполнять команду
+        streamAnswer.trim();
+        int16_t idx = streamAnswer.lastIndexOf(PARAM_DELIMITER);
+        if(idx != -1)
+        {
+          String state = streamAnswer.substring(idx+1,streamAnswer.length());
+          
+              if(state == STATE_OPEN || state == STATE_CLOSED)
+              {
+                // окна не двигаются, можем отправлять команду
+                 if(cParser->ParseCommand(queuedWindowCommand, c->GetControllerID(), cmd))
+                 {
+           
+                  // команда разобрана, можно выполнять
+                    queuedWindowCommand = F(""); // очищаем команду, нам она больше не нужна
+                    streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+                    cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
+                    cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
+                    c->ProcessModuleCommand(cmd,false);
+
+                    // всё, команда выполнена, когда окна не находились в движении
+                 } // if
+                
+              } // if(state == STATE_OPEN || state == STATE_CLOSED)
+              
+         } // if(idx != -1)
+        
+      } // if(cParser->ParseCommand(F("CTGET=STATE|WINDOW|ALL")
+  
+}
 void SMSModule::ParseIncomingSMS(const String& sms)
 {
   ModuleController* c = GetController();
@@ -132,23 +183,10 @@ void SMSModule::ParseIncomingSMS(const String& sms)
       Serial.println("WINDOWS->OPEN command found, execute it...");
     #endif
 
-    // открываем окна
-      Command cmd;
-      if(cParser->ParseCommand(F("CTSET=STATE|WINDOW|ALL|OPEN"), c->GetControllerID(), cmd))
-      {
-        #ifdef NEOWAY_DEBUG_MODE
-          Serial.println("CTSET=STATE|WINDOW|ALL|OPEN command parsed, process it...");
-        #endif
-
-        //TODO: Тут потенциальный косяк: если окна в процессе движения - команда не отработает!
-    
-        streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-        cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
-        c->ProcessModuleCommand(cmd,false);
-
+        // открываем окна
+        // сохраняем команду на выполнение тогда, когда окна будут открыты или закрыты - иначе она не отработает
+        queuedWindowCommand = F("CTSET=STATE|WINDOW|ALL|OPEN");
         shouldSendSMS = true;
-      }
     }
     
     idx = message.Message.indexOf(SMS_CLOSE_COMMAND); // закрыть окна
@@ -158,24 +196,10 @@ void SMSModule::ParseIncomingSMS(const String& sms)
       Serial.println("WINDOWS->CLOSE command found, execute it...");
     #endif
 
-    // закрываем окна
-      Command cmd;
-      if(cParser->ParseCommand(F("CTSET=STATE|WINDOW|ALL|CLOSE"), c->GetControllerID(), cmd))
-      {
-        #ifdef NEOWAY_DEBUG_MODE
-          Serial.println("CTSET=STATE|WINDOW|ALL|CLOSE command parsed, process it...");
-        #endif
-
-        //TODO: Тут потенциальный косяк: если окна в процессе движения - команда не отработает!
-    
-        streamAnswer = F(""); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-        cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в нас
-        c->ProcessModuleCommand(cmd,false);
-
+      // закрываем окна
+      // сохраняем команду на выполнение тогда, когда окна будут открыты или закрыты - иначе она не отработает
+      queuedWindowCommand = F("CTSET=STATE|WINDOW|ALL|CLOSE");
       shouldSendSMS = true;
-      }
-
     }
     
     idx = message.Message.indexOf(SMS_AUTOMODE_COMMAND); // перейти в автоматический режим работы
@@ -223,7 +247,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
       Serial.println("Water ON command found, execute it...");
     #endif
 
-    // переводим контроллер в автоматический режим работы
+    // включаем полив
       Command cmd;
       if(cParser->ParseCommand(F("CTSET=WATER|ON"), c->GetControllerID(), cmd))
       {
@@ -247,7 +271,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
       Serial.println("Water OFF command found, execute it...");
     #endif
 
-    // переводим контроллер в автоматический режим работы
+    // выключаем полив
       Command cmd;
       if(cParser->ParseCommand(F("CTSET=WATER|OFF"), c->GetControllerID(), cmd))
       {
@@ -470,6 +494,8 @@ void SMSModule::Update(uint16_t dt)
       else
       {
         // модуль зарегистрирован, можем работать с любыми входящими данными
+        ProcessQueuedWindowCommand(); // проверяем, есть ли у нас команда для окон на исполнение
+        
           while(NEOWAY_SERIAL.available())
               incomingData += (char) NEOWAY_SERIAL.read();
 

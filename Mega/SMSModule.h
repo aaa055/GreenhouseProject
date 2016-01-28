@@ -41,6 +41,9 @@ class SMSModule : public AbstractModule, public Stream // модуль подд�
     String streamAnswer; // ответ от другого модуля будет здесь
 
     void ParseIncomingSMS(const String& sms);
+
+    String queuedWindowCommand; // команда на выполнение управления окнами, должна выполняться только когда окна не в движении
+    void ProcessQueuedWindowCommand(); // обрабатываем команду управления окнами, помещенную в очередь
     
   public:
     SMSModule() : AbstractModule(F("SMS")) {}

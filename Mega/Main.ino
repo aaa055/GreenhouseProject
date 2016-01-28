@@ -259,6 +259,7 @@ void setup()
   #endif 
 
    Serial.println(F(""));
+
 }
 
 void loop() 
@@ -267,7 +268,7 @@ void loop()
     unsigned long curMillis = millis();
     uint16_t dt = curMillis - lastMillis;
     
-    lastMillis = curMillis;
+    lastMillis = curMillis; // сохраняем последнее значение вызова millis()
     
   // смотрим, есть ли входящие команды
    if(commandsFromSerial.HasCommand())

@@ -302,9 +302,21 @@ bool  TempSensors::ExecCommand(const Command& command)
                 bAnyPosChanged = true;
               } 
             } // for
-            if(!bAnyPosChanged) // ничего не сменили
+            
+            if(!bAnyPosChanged) // позицию окон не сменили, значит, они либо в этой позиции, либо в процессе смены позиции
             {
-              answer =  bOpen ? STATE_OPEN : STATE_CLOSED;
+              // проверяем, заняты ли окна чем-то
+              if(Windows[from].IsBusy())
+               {
+                // окно занято сменой позиции
+                answer = Windows[from].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING;
+               }
+               else
+               {
+                // окно не сменяет позицию
+                answer =  bOpen ? STATE_OPEN : STATE_CLOSED;
+               }
+              
             }
 
           }
