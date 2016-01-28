@@ -97,10 +97,19 @@ void SMSModule::FetchNeowayAnswer(bool& isOkAnswer)
     
   } // while 1
 }
-void SMSModule::ProcessQueuedWindowCommand()
+void SMSModule::ProcessQueuedWindowCommand(uint16_t dt)
 {
     if(!queuedWindowCommand.length()) // а нет команды на управление окнами
+    {
+      queuedTimer = 0; // обнуляем таймер
       return;
+    }
+
+    queuedTimer += dt;
+    if(queuedTimer < 3000) // не дёргаем чаще, чем раз в три секунды
+      return;
+
+    queuedTimer = 0; // обнуляем таймер ожидания
 
     ModuleController* c = GetController();
     CommandParser* cParser = c->GetCommandParser();
@@ -494,7 +503,7 @@ void SMSModule::Update(uint16_t dt)
       else
       {
         // модуль зарегистрирован, можем работать с любыми входящими данными
-        ProcessQueuedWindowCommand(); // проверяем, есть ли у нас команда для окон на исполнение
+        ProcessQueuedWindowCommand(dt); // проверяем, есть ли у нас команда для окон на исполнение
         
           while(NEOWAY_SERIAL.available())
               incomingData += (char) NEOWAY_SERIAL.read();
