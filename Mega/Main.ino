@@ -42,26 +42,28 @@
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
-const char init_1[] PROGMEM = "CTSET=LOOP|SET|100|11|PIN|6|T";// помигаем 5 раз диодом для проверки
+const char init_1[] PROGMEM = "CTSET=LOOP|SD|SET|100|11|PIN|6|T";// помигаем 5 раз диодом для проверки
 
-const char init_STUB[] PROGMEM = "";
+const char init_STUB[] PROGMEM = ""; // ЗАГЛУШКА, НЕ ТРОГАТЬ!
 
 
+// команды инициализации при старте контроллера
 const char* const  INIT_COMMANDS[] PROGMEM  = 
 {
    init_0
- ,init_1
-, init_STUB // ЗАГЛУШКА, НЕ ТРОГАТЬ !!!
+  ,init_1
+  ,init_STUB // ЗАГЛУШКА, НЕ ТРОГАТЬ!
 };
 
 
-// timer
+// таймер
 unsigned long lastMillis = 0;
 
 
 
 // Ждем команды из сериала
 CommandBuffer commandsFromSerial(&Serial);
+
 // Парсер команд
 CommandParser commandParser;
 
@@ -78,24 +80,24 @@ ModuleController controller(
 
 
 // паблишер для вывода ответов в сериал
-SerialPublisher serialPublisher;
+//SerialPublisher serialPublisher;
 
 // паблишер вывода на экран
-DisplayPublisher displayPublisher;
+//DisplayPublisher displayPublisher;
 
 #ifdef USE_PIN_MODULE
 //  Модуль управления цифровыми пинами
-PinModule pin13Diode("PIN");
+PinModule pinModule;
 #endif
 
 #ifdef USE_LOOP_MODULE
 // Модуль поддержки периодически повторяемых операций
-LoopModule loopModule("LOOP");
+LoopModule loopModule;
 #endif
 
 #ifdef USE_STAT_MODULE
 // Модуль вывода статистики
-StatModule statModule("STAT");
+StatModule statModule;
 #endif
 
 #ifdef USE_TEMP_SENSORS
@@ -114,6 +116,7 @@ WateringModule wateringModule;
 #endif
 
 #ifdef USE_LUMINOSITY_MODULE
+// модуль освещенности
 LuminosityModule luminosityModule;
 #endif
 
@@ -179,9 +182,9 @@ void setup()
    */
 #ifdef USE_PIN_MODULE   
   // подписываем ответы от модуля на сериал
-  //pin13Diode.AddPublisher(&serialPublisher);
+  //pinModule.AddPublisher(&serialPublisher);
   // для модуля управления диодом дублируем надпись на дисплей 
-  //pin13Diode.AddPublisher(&displayPublisher);
+  //pinModule.AddPublisher(&displayPublisher);
 #endif
 
 #ifdef USE_STAT_MODULE
@@ -204,7 +207,7 @@ void setup()
   // регистрируем модули
 
   #ifdef USE_PIN_MODULE  
-  controller.RegisterModule(&pin13Diode);
+  controller.RegisterModule(&pinModule);
   #endif
   
   #ifdef USE_LOOP_MODULE
@@ -240,6 +243,7 @@ void setup()
   ProcessInitCommands();
 
   controller.Begin(); // начинаем работу
+  
   // Печатаем в Serial готовность
   Serial.print(READY);
 

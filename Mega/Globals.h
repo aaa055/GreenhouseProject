@@ -20,7 +20,7 @@
 #define AS_CONTROLLER // закомментировать для дочерних модулей
 #define USE_DS3231_REALTIME_CLOCK // закомментировать, если не хотим использовать модуль реального времени
 #define USE_PIN_MODULE // закомментировать, если не нужен модуль управления пинами
-#define USE_TEMP_SENSORS // закомментировать, если датчики температуры не поддерживаются
+#define USE_TEMP_SENSORS // закомментировать, если не нужно управление окнами по температуре
 #define USE_LOOP_MODULE // закомментировать, если не нужна поддержка модуля LOOP
 #define USE_STAT_MODULE // закомментировать, если не нужна поддержка модуля статистики
 #define USE_SMS_MODULE // закомментировать, если не нужна поддержка управления по SMS
@@ -32,12 +32,17 @@
 #define ALERT F("ALERT") // произошло событие
 #define VIEW_ALERT_COMMAND F("VIEW") // команда просмотра события CTGET=ALERT|VIEW|0
 #define CNT_COMMAND F("CNT") // сколько зарегистрировано событий CTGET=ALERT|CNT
-#define ADD_RULE F("RULE_ADD") // правило алерта CTSET=ALERT|RULE_ADD|STATE|TEMP|0|>|38|CTSET=M|RELAY|0|ON, или, без привязки к модулю, CTSET=ALERT|RULE_ADD|STATE|TEMP|0|<=|38
+
+// правило алерта CTSET=ALERT|RULE_ADD|RuleName|STATE|TEMP|1|>|23|Когда работает (0-всегда, 1 - утром, 2 - днём, 3 - вечером,4 - ночью)|Продолжительность работы, мин|Список связанных правил|Команды для стороннего модуля
+// пример №1: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|30|N3,N4|CTSET=STATE|WINDOW|ALL|OPEN
+// пример №2: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|0|_|CTSET=STATE|WINDOW|ALL|OPEN
+#define ADD_RULE F("RULE_ADD") // добавить правило
 #define RULE_CNT F("RULES_CNT") // кол-во правил CTGET=ALERT|RULES_CNT
 #define RULE_VIEW F("RULE_VIEW") // просмотр правила по индексу CTGET=ALERT|RULE_VIEW|0
-#define RULE_STATE F("RULE_STATE") // включить/выключить правило по индексу CTSET=ALERT|RULE_STATE|0|ON, CTSET=ALERT|RULE_STATE|0|OFF, CTSET=ALERT|RULE_STATE|ALL|OFF, CTGET=ALERT|RULE_STATE|0
-#define RULE_DELETE F("RULE_DELETE") // удалить правило по индексу CTSET=ALERT|RULE_DELETE|1 - ПРИ УДАЛЕНИИ ВСЕ ПРАВИЛА СДВИГАЮТСЯ К ГОЛОВЕ ОТ УДАЛЁННОГО !!!
-#define SAVE_RULES F("SAVE") // команда "сохранить правила"
+#define RULE_STATE F("RULE_STATE") // включить/выключить правило по имени CTSET=ALERT|RULE_STATE|RuleName|ON, CTSET=ALERT|RULE_STATE|RuleName|OFF, CTSET=ALERT|RULE_STATE|ALL|OFF
+// получить состояние правила по индексу -  CTGET=ALERT|RULE_STATE|0
+#define RULE_DELETE F("RULE_DELETE") // удалить правило по имени CTSET=ALERT|RULE_DELETE|RuleName - ПРИ УДАЛЕНИИ ВСЕ ПРАВИЛА СДВИГАЮТСЯ К ГОЛОВЕ ОТ УДАЛЁННОГО !!!
+#define SAVE_RULES F("SAVE") // команда "сохранить правила", CTSET=ALERT|SAVE
 #define GREATER_THAN F(">") // больше чем
 #define GREATER_OR_EQUAL_THAN F(">=") // больше либо равно
 #define LESS_THAN F("<") // меньше чем
@@ -55,9 +60,9 @@
 // команда, на которую модуль выдаёт текущую освещенность - CTGET=LIGHT
 
 
-#define MAX_PUBLISHERS 3 // максимальное количество паблишеров для модуля
+#define MAX_PUBLISHERS 2 // максимальное количество паблишеров для модуля
 #define MAX_TEMP_SENSORS 4 // максимальное кол-во поддерживаемых датчиков температуры
-#define MAX_RELAY_CHANNELS 8 // максимальное кол-во реле (максимум - 8)
+#define MAX_RELAY_CHANNELS 8 // максимальное кол-во каналов реле в структуре состояния модуля (максимум - 8)
 #define STATE_ON F("ON") // Включено
 #define STATE_ON_ALT F("1") // Включено
 #define STATE_OFF F("OFF") // Выключено
@@ -65,7 +70,7 @@
 
 
 // состояние канала управления фрамугой
-#define DEF_OPEN_INTERVAL 30000 // по умолчанию пять секунд на полное открытие/закрытие
+#define DEF_OPEN_INTERVAL 30000 // по умолчанию 30 секунд на полное открытие/закрытие
 #define DEF_OPEN_TEMP 25 // температура открытия по умолчанию
 #define DEF_CLOSE_TEMP 24 // температура закрытия по умолчанию
 #define STATE_OPENING F("OPENING") // Открывается
@@ -87,17 +92,20 @@
 
 
 // настройки модуля управления поливом
-#define WATER_SETTINGS_COMMAND F("T_SETT") // получить/установить настройки управления поливом: CTGET=WATER|T_SETT, CTSET=WATER|T_SETT|WateringOption|WateringDays|WateringTime|StartTime , где
+#define WATER_SETTINGS_COMMAND F("T_SETT") // получить/установить настройки управления поливом: CTGET=WATER|T_SETT, CTSET=WATER|T_SETT|WateringOption|WateringDays|WateringTime|StartTime|TurnOnPump , где
 // WateringOption = 0 (выключено автоматическое управление поливом), 1 - автоматическое управление поливом включено
 // WateringDays - битовая маска дней недели (младший бит - понедельник и т.д.)
 // WateringTime - продолжительность полива в минутах, максимальное значение - 65535 (два байта)
 // StartTime - час начала полива (1 байт) - от 1 до 23
+// TurnOnPump - включать (1) или нет (0) насос при активном поливе на любом из каналов
+#define WATER_CHANNEL_SETTINGS F("CH_SETT") // получить/установить настройки отдельного канала управления поливом: CTGET=WATER|CH_SETT|0, CTSET=WATER|CH_SETT|0|WateringDays|WateringTime|StartTime
+#define WATER_CHANNELS_COUNT_COMMAND F("CHANNELS") // получить кол-во поддерживаемых каналов полива: CTGET=WATER|CHANNELS
 #define WATER_RELAY_ON LOW // уровень для включения реле
 #define WATER_RELAY_OFF HIGH // уровень для выключения реле
-
-#define WATER_RELAYS_COUNT 3 // сколько каналов управления поливом используется
+#define PUMP_RELAY_PIN 22 // пин, на котором сидит реле управления насосом
+#define WATER_RELAYS_COUNT 2 // сколько каналов управления поливом используется
 // объявляем пины для управления каналами реле - дописывать в этот массив, через запятую!
-#define WATER_RELAYS_PINS 22,23,24 
+#define WATER_RELAYS_PINS 23,24 
 
 /*
  * Команды модуля STATE - модуль следит за температурой и управляет открытием/закрытием фрамуг:
@@ -105,15 +113,16 @@
  * CTGET=STATE|TEMP|TEMP_CNT - возвращает кол-во температурных датчиков
  * CTGET=STATE|TEMP|0 - получить данные с первого датчика (и т.д.)
  * 
- * CTGET=STATE|WINDOW|WINDOW_CNT - получить кол-во каналов реле для управления фрамугами
- * CTGET=STATE|WINDOW|2 - получить состояние третьего канала (возможные состояния: OPEN - открыто, OPENING - фрамуга открывается, CLOSING - фрамуга закрываетсяб CLOSED - фрамуга закрыта)
+ * CTGET=STATE|WINDOW|WINDOW_CNT - получить кол-во фрамуг
+ * CTGET=STATE|WINDOW|2 - получить состояние третьей фрамуги (возможные состояния: OPEN - открыто, OPENING - фрамуга открывается, CLOSING - фрамуга закрываетсяб CLOSED - фрамуга закрыта)
  * 
  * CTSET=STATE|WINDOW|0|OPEN - ОТКРЫТЬ ФРАМУГУ НА ПЕРВОМ КАНАЛЕ (БЕЗ УКАЗАНИЯ ВРЕМЕНИ РАБОТЫ, берётся значение по умолчанию
- * CTSET=STATE|WINDOW|2|OPEN|4000 - открыть фрамугу на третьем канале, держать реле включенным 4000 миллисекунд
- * CTSET=STATE|WINDOW|ALL|CLOSE|5000 - закрыть все фрамуги, держать реле включенными 5 секунд
+ * CTSET=STATE|WINDOW|ALL|CLOSE - закрыть все фрамуги
+ * CTSET=STATE|WINDOW|ALL|OPEN - открыть все фрамуги
  * CTSET=STATE|WINDOW|2-7|OPEN|12000 - открыть фрамуги с 3 по восьмой канал, держать реле включенным 12 секунд
  * 
  */
+
 
 // настройки главного контроллера
 #define MAX_RECEIVE_BUFFER_LENGTH 256 // максимальная длина (в байтах) пакета в сети, дла защиты от спама
@@ -176,6 +185,37 @@
 #define SMS_WATER_OFF_COMMAND F("#6") // выключить полив
 #define NEOWAY_WAIT_FOR_SMS_SEND_COMPLETE 6000 // интервал, в течение которого мы ждём откравку смс модулем (ждём асинхронно, без блокирования!)
 #define NEOWAY_VCCIO_CHECK_PIN 2 // пин, на котором будем проверять сигнал от VCCIO (6 пин) модуля NEOWAY
+
+
+// настройки модуля LOOP
+#define MIN_LOOP_PARAMS 5 // минимальное количество параметров, которые надо передать
+#define MAX_LOOP_PARAMS 15 // максимальное кол-во параметров, которые можно передать
+#define LOOP_NAME_IDX 0 // имя циклически выполняемой команды
+#define COMMAND_TYPE_IDX 1 // индекс типа команды в параметрах
+#define INTERVAL_IDX 2 // индекс параметра "интервал"
+#define COUNT_PASSES_IDX 3 // индекс параметра "кол-во проходов"
+#define MODULE_ID_IDX 4 // индекс ID модуля в параметрах
+/*
+ * Структура команды LOOP:
+ * 
+ * LOOP|NAME|SET_OR_GET|INTERVAL|COUNT_PASSES|LINKED_MODULE_ID|PARAMS_FOR_MODULE
+ * где
+ *  NAME - имя, к которому привязывается циклическая команда
+ *  SET_OR_GET = SET или GET команда для связанного модуля
+ *  INTERVAL - интервал в мс между вызовами (0 - выключить модуль из циклического опроса)
+ *  COUNT_PASSES - кол-во проходов (0 - бесконечно)
+ *  LINKED_MODULE_ID - идентификатор модуля для передачи команд
+ *  PARAMS_FOR_MODULE - параметры для связанного модуля (разделенные '|')
+ *  
+ *  Для примера, команда
+ *  CTSET=LOOP|MyLoop|SET|500|10|PIN|13|T
+ *  передаст параметры 13 и T модулю с идентификатором "PIN" 10 раз через каждые 500 мс
+ *  
+ *  Выключить модуль из обработки просто:
+ *  CTSET=LOOP|MyLoop|SET|0|0|PIN|13
+ *  
+ *    Если для модуля поступила новая команда - старая перезаписывается, т.е. цепочка команд не поддерживается!
+ */
 
 // команды модуля "0"
 #define NEWLINE F("\r\n")

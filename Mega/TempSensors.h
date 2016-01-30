@@ -81,6 +81,8 @@ class TempSensors : public AbstractModule // модуль опроса темп�
  
   uint8_t supportedWindowsCnt;
   uint8_t supportedSensorsCnt;
+
+  uint16_t lastBlinkInterval;
     
   public:
     TempSensors() : AbstractModule(F("STATE")),lastUpdateCall(0),supportedWindowsCnt(SUPPORTED_WINDOWS),supportedSensorsCnt(SUPPORTED_SENSORS), workMode(wmAutomatic) {}

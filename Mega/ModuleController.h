@@ -19,14 +19,15 @@ typedef Vector<AbstractModule*> ModulesVec;
 class ModuleController
 {
  private:
-  ModulesVec modules;
+  ModulesVec modules; // список зарегистрированных модулей
   Stream* pStream; // текущий поток вывода по умолчанию
   COMMAND_DESTINATION workAs; // как работаем - как контроллер или дочерний модуль?
-  String ourID;
+  
+  String ourID; // ID контроллера
 
-  CommandParser* cParser;
+  CommandParser* cParser; // парсер текстовых команд
 
-  GlobalSettings settings;
+  GlobalSettings settings; // глобальные настройки
 
 public:
   ModuleController(COMMAND_DESTINATION wAs, const String& id);

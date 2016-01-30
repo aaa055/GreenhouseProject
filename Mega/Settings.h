@@ -2,6 +2,7 @@
 #define _SETTINGS_H
 
 #include <Arduino.h>
+#include "Globals.h"
 
 // класс настроек, которые сохраняются и читаются в/из EEPROM
 // здесь будут всякие настройки, типа уставок срабатывания и пр. лабуды
@@ -9,9 +10,17 @@
 enum WateringOption // какая опция управления поливом выбрана
 {
   wateringOFF = 0, // автоматическое управление поливом выключено
-  wateringWeekDays = 1 // управление поливом по дням недели
-  
+  wateringWeekDays = 1, // управление поливом по дням недели, все каналы одновременно
+  wateringSeparateChannels = 2 // раздельное управление каналами по дням недели  
 };
+
+typedef struct
+{
+  uint8_t wateringWeekDays; // в какие дни недели управляем поливом на этом канале?
+  uint16_t wateringTime; // время полива на этом канале
+  uint8_t startWateringTime; // время начала полива для этого канала
+  
+} WateringChannelOptions; // настройки для отдельного канала полива
 
 class GlobalSettings
 {
@@ -25,9 +34,12 @@ class GlobalSettings
   String smsPhoneNumber; // номер телефона для управления по SMS
 
   WateringOption wateringOption; // какая опция управления выбрана?
-  uint8_t wateringWeekDays; // в какие дни недели управляем поливом?
-  uint16_t wateringTime; // время полива
-  uint8_t startWateringTime; // время начала полива
+  uint8_t wateringWeekDays; // в какие дни недели управляем поливом на всех каналах?
+  uint16_t wateringTime; // время полива на всех каналах
+  uint8_t startWateringTime; // время начала полива для всех каналов
+  uint8_t turnOnPump; // включать ли определённый канал реле при включенном поливе на любом из каналов (может использоваться для насоса)?
+
+  WateringChannelOptions wateringChannelsOptions[WATER_RELAYS_COUNT]; // настройки каналов полива
  
   public:
     GlobalSettings();
@@ -39,6 +51,15 @@ class GlobalSettings
     WateringOption GetWateringOption() {return wateringOption; }
     void SetWateringOption(WateringOption val) {wateringOption = val; }
 
+    uint8_t GetChannelWateringWeekDays(uint8_t idx) {return wateringChannelsOptions[idx].wateringWeekDays;};
+    uint8_t SetChannelWateringWeekDays(uint8_t idx, uint8_t val) {wateringChannelsOptions[idx].wateringWeekDays = val;};
+
+     uint16_t GetChannelWateringTime(uint8_t idx) {return wateringChannelsOptions[idx].wateringTime;}
+     void SetChannelWateringTime(uint8_t idx,uint16_t val) {wateringChannelsOptions[idx].wateringTime = val;}
+
+     uint8_t GetChannelStartWateringTime(uint8_t idx) {return wateringChannelsOptions[idx].startWateringTime;}
+     void SetChannelStartWateringTime(uint8_t idx,uint8_t val) {wateringChannelsOptions[idx].startWateringTime = val;}
+
      uint8_t GetWateringWeekDays() {return wateringWeekDays; }
      void SetWateringWeekDays(uint8_t val) {wateringWeekDays = val;}
 
@@ -47,6 +68,9 @@ class GlobalSettings
 
      uint8_t GetStartWateringTime() {return startWateringTime;}
      void SetStartWateringTime(uint8_t val) {startWateringTime = val;}
+
+    uint8_t GetTurnOnPump() {return turnOnPump;}
+    void SetTurnOnPump(uint8_t val) {turnOnPump = val;}
 
     uint8_t GetOpenTemp() {return tempOpen;}
     void SetOpenTemp(uint8_t val) {tempOpen = val;}
@@ -59,6 +83,7 @@ class GlobalSettings
 
     String GetSmsPhoneNumber() {return smsPhoneNumber; }
     void SetSmsPhoneNumber(const String& v) {smsPhoneNumber = v;}
+
 
     
     

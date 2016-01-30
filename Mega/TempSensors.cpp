@@ -137,6 +137,10 @@ void TempSensors::SetupWindows()
 void TempSensors::Setup()
 {
   // настройка модуля тут
+
+    lastBlinkInterval = 0xFFFF;// последний интервал, с которым мы вызывали команду мигания диодом.
+  // нужно для того, чтобы дёргать функцию мигания только при смене интервала.
+
   
   /*
    * Пишем в State настройки - кол-во поддерживаемых датчиков температуры
@@ -169,12 +173,10 @@ void TempSensors::Update(uint16_t dt)
     Temperature s;
     s.Value = random(20,40);
     s.Fract = random(50,100);
-    //String s = String(random(20,40)) + F(",") + String(random(50,100));
     State.SetTemp(0,s);
 
     s.Value = random(0,15);
     s.Fract = random(50,100);
-//    s = String(random(0,15)) + F(",") + String(random(50,100));
     State.SetTemp(1,s);
 
   // TEST CODE END //
@@ -182,10 +184,17 @@ void TempSensors::Update(uint16_t dt)
 }
 void TempSensors::BlinkWorkMode(uint16_t blinkInterval) // мигаем диодом индикации ручного режима работы
 {
-  String s = F("CTSET=LOOP|SET|");
+
+ if(lastBlinkInterval == blinkInterval)
+  // незачем выполнять команду с тем же интервалом
+  return;
+
+  lastBlinkInterval = blinkInterval;
+  
+  String s = F("CTSET=LOOP|SM|SET|");
   s += blinkInterval;
   s+= F("|0|PIN|");
-  s += DIODE_MANUAL_MODE_PIN;
+  s += String(DIODE_MANUAL_MODE_PIN);
   s += F("|T");
 
     ModuleController* c = GetController();
@@ -205,7 +214,7 @@ void TempSensors::BlinkWorkMode(uint16_t blinkInterval) // мигаем диод
         s = CMD_PREFIX;
         s += CMD_SET;
         s += F("=PIN|");
-        s += DIODE_MANUAL_MODE_PIN;
+        s += String(DIODE_MANUAL_MODE_PIN);
         s += PARAM_DELIMITER;
         s += F("0");
         
@@ -222,8 +231,6 @@ bool  TempSensors::ExecCommand(const Command& command)
   
   String answer = PARAMS_MISSED;  
   bool answerStatus = false;
-
- // Serial.println("RECEIVED=" + command.GetRawArguments());
 
   if(command.GetType() == ctSET) // напрямую запись в датчики запрещена, пишем только в состояние каналов
   {
@@ -257,7 +264,7 @@ bool  TempSensors::ExecCommand(const Command& command)
           whichCommand.toUpperCase();
           bool bOpen = (whichCommand == STATE_OPEN); // запросили открытие фрамуг?
           
-          bool bAll = (token == ALL); // на все реле распространяется запрос?
+          bool bAll = (token == ALL); // на все окна распространяется запрос?
           bool bIntervalAsked = token.indexOf("-") != -1; // запросили интервал каналов?
           uint8_t channelIdx = token.toInt();
           unsigned long interval = sett->GetOpenInterval();
@@ -323,11 +330,15 @@ bool  TempSensors::ExecCommand(const Command& command)
           else
           { 
             
-              if(Windows[channelIdx].ChangePosition( bOpen ? dirOPEN : dirCLOSE, interval) )
+              if(Windows[channelIdx].ChangePosition( bOpen ? dirOPEN : dirCLOSE, interval) ) // смогли сменить позицию окна
                   answer = bOpen ? STATE_OPENING : STATE_CLOSING;
                else
                {
-                answer =  bOpen ? STATE_OPEN : STATE_CLOSED;
+                // позицию окна не сменили, смотрим - занято ли оно?
+                if(Windows[channelIdx].IsBusy()) // занято, возвращаем состояние - открывается или закрывается
+                   answer = Windows[channelIdx].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING;    
+                else // окно ничем не занято, возвращаем положение - открыто или закрыто
+                  answer =  bOpen ? STATE_OPEN : STATE_CLOSED;
                }
           }
 
@@ -442,6 +453,8 @@ bool  TempSensors::ExecCommand(const Command& command)
              }
             else // запросили по индексу
             {
+              //TODO: Тут может быть запрос ALL, а не только индекс!!!
+              
              uint8_t windowIdx = s.toInt();
              if(windowIdx >= supportedWindowsCnt)
               answer = NOT_SUPPORTED; // неверный индекс

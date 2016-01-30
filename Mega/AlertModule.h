@@ -31,7 +31,7 @@ typedef enum
 class AlertRule
 {
   private:
-    RuleTarget target;
+    RuleTarget target; // за чем следит правило
     int8_t tempAlert; // температура, за которой следим
     uint8_t tempSensorIdx; // индекс датчика, за которым следим
     RuleOperand operand; // операнд, которым проверяем
@@ -41,7 +41,7 @@ class AlertRule
     String alertRule; // строка с правилом
     bool bEnabled; // включено или нет
 
-    RuleTemperatureSource temperatureSource;
+    RuleTemperatureSource temperatureSource; // источник, с которого получаем установку температуры для правила
 
     String ruleName; // имя правила
     uint8_t whichTime; // когда работает?
@@ -74,7 +74,7 @@ class AlertRule
     void Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK 
      ,uint8_t currentHour // текущий час
-    , uint8_t currentMinute // текущая минута
+     ,uint8_t currentMinute // текущая минута
   #endif
  );
 

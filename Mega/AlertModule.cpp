@@ -403,7 +403,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   
   // дальше идёт продолжительность работы, в минутах
   alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
-  workTime = command.GetArg(curArgIdx++).toInt()*60*1000; // переводим в миллисекунды
+  workTime = command.GetArg(curArgIdx++).toInt()*60000; // переводим в миллисекунды
 
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
@@ -550,7 +550,7 @@ void AlertModule::Setup()
   
   for(uint8_t i = 0;i<MAX_STORED_ALERTS;i++)
   {
-    strAlerts[i] = ""; // резервируем события
+    strAlerts[i] = F(""); // резервируем события
   } // for
 
   // загружаем правила
@@ -803,18 +803,18 @@ bool  AlertModule::ExecCommand(const Command& command)
                  } // if all
                  else // одно правило
                  {
-                     uint8_t idx = sParam.toInt();
-                     if(idx < rulesCnt)
-                     {
-                         AlertRule* rule = alertRules[idx];
-                         if(rule)
+                      // ищем правило по имени
+                      String rName = command.GetArg(1);
+                      for(uint8_t i=0;i<rulesCnt;i++)
+                      {
+                         AlertRule* rule = alertRules[i];
+                         if(rule && rule->GetName() == rName)
                          {
-                            rule->SetEnabled(bEnabled);
-    
-                            answerStatus = true;
-                            answer = RULE_STATE; answer += PARAM_DELIMITER; answer +=  sParam + PARAM_DELIMITER + state;
+                          rule->SetEnabled(bEnabled);
+                          break;
                          }
-                     } // if
+                      } // for
+                
                  } // else
             } // else
           } // else RULE_STATE
@@ -829,8 +829,7 @@ bool  AlertModule::ExecCommand(const Command& command)
             {
                  String sParam = command.GetArg(1);
                  sParam.toUpperCase();
-                // uint8_t idx = command.GetArg(1).toInt();
-
+ 
                 if(sParam == ALL) // удалить все правила
                 {
                   for(uint8_t i=0;i<rulesCnt;i++)

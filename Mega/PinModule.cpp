@@ -4,11 +4,7 @@
 
 void PinModule::Setup()
 {
- // pinMode(pinNumber, OUTPUT);
- // currentState = LOW;
   Update(0);
-
-  // Здесь можно выставлять какие-либо настройки в State
 }
 void PinModule::UpdatePinStates()
 {
@@ -40,7 +36,7 @@ bool PinModule::AddPin(uint8_t pinNumber,uint8_t currentState)
 {
   bool canAdd = true;
 
-   uint8_t sz = pinStates.size();
+  uint8_t sz = pinStates.size();
   for(uint8_t i=0;i<sz;i++)
   {
     PIN_STATE* s = &(pinStates[i]);
@@ -147,11 +143,13 @@ bool  PinModule::ExecCommand(const Command& command)
       else 
       if(state == PIN_TOGGLE) // toggle state
       {
+          
            if(!PinExist(pinNumber)) // ещё нет такого пина для слежения
            {
               pinMode(pinNumber,INPUT); // читаем из пина его текущее состояние
               AddPin(pinNumber,digitalRead(pinNumber));
            }
+           
 
           // инвертируем его состояние
           uint8_t sz = pinStates.size();

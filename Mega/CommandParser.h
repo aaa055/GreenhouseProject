@@ -90,7 +90,7 @@ class Command
     // возвращает аргумент по интексу
     String GetArg(uint16_t idx) const {return idx >= ArgsCount ? F("") : ArgsSplitted[idx];}
     
-    Command() : IncomingStream(NULL), bIsInternal(false) {}
+    Command() { Clear(); }
 };
 
 

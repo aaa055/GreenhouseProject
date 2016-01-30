@@ -45,7 +45,7 @@ void GlobalSettings::Load()
   *wrAddr++ = EEPROM.read(readPtr++);
   *wrAddr++ = EEPROM.read(readPtr++);
   *wrAddr++ = EEPROM.read(readPtr++);
-  *wrAddr++ = EEPROM.read(readPtr++);
+  *wrAddr = EEPROM.read(readPtr++);
 
   // читаем номер телефона для управления по СМС
   uint8_t smsnumlen = EEPROM.read(readPtr++);
@@ -76,7 +76,7 @@ void GlobalSettings::Load()
     // читаем длительность полива
     wrAddr = (byte*) &wateringTime;
     *wrAddr++ = EEPROM.read(readPtr++);
-    *wrAddr++ = EEPROM.read(readPtr++);
+    *wrAddr = EEPROM.read(readPtr++);
   }
 
   // читаем время начала полива
@@ -86,6 +86,47 @@ void GlobalSettings::Load()
     startWateringTime = bOpt;
   } // if
   
+ // читаем , включать ли насос во время полива?
+  bOpt = EEPROM.read(readPtr++);
+  if(bOpt != 0xFF) // есть настройка включение насоса
+  {
+    turnOnPump = bOpt;
+  } // if
+
+  // читаем сохранённое кол-во настроек каналов полива
+  bOpt = EEPROM.read(readPtr++);
+  uint8_t addToAddr = 0; // сколько пропустить при чтении каналов, чтобы нормально прочитать следующую настройку.
+  // нужно, если сначала скомпилировали с 8 каналами, сохранили настройки из конфигуратора, а потом - перекомпилировали
+  // в 2 канала. Нам надо вычитать первые два, а остальные 6 - пропустить, чтобы не покалечить настройки.
+  
+  if(bOpt != 0xFF)
+  {
+    // есть сохранённое кол-во каналов, читаем каналы
+    if(bOpt > WATER_RELAYS_COUNT) // только сначала убедимся, что мы не вылезем за границы массива
+    {
+      addToAddr = (bOpt - WATER_RELAYS_COUNT)*4; // 4 байта в каждой структуре настроек
+      bOpt = WATER_RELAYS_COUNT;
+    }
+
+    // теперь мы можем читать настройки каналов
+    uint16_t wTimeHelper = 0;
+    
+    for(uint8_t i=0;i<bOpt;i++)
+    {
+      wateringChannelsOptions[i].wateringWeekDays = EEPROM.read(readPtr++);
+      
+      wrAddr = (byte*) &wTimeHelper;
+      *wrAddr++ = EEPROM.read(readPtr++);
+      *wrAddr = EEPROM.read(readPtr++);
+      wateringChannelsOptions[i].wateringTime = wTimeHelper;
+      
+      wateringChannelsOptions[i].startWateringTime = EEPROM.read(readPtr++);
+    } // for
+    
+  } // if(bOpt != 0xFF)
+
+    // переходим на следующую настройку
+     readPtr += addToAddr;
 
   // читаем другие настройки!
 
@@ -111,7 +152,7 @@ void GlobalSettings::Save()
   EEPROM.write(addr++,*readAddr++);
   EEPROM.write(addr++,*readAddr++);
   EEPROM.write(addr++,*readAddr++);
-  EEPROM.write(addr++,*readAddr++);
+  EEPROM.write(addr++,*readAddr);
 
   // сохраняем номер телефона для управления по смс
   uint8_t smsnumlen = smsPhoneNumber.length();
@@ -132,11 +173,27 @@ void GlobalSettings::Save()
   // сохраняем продолжительность полива
   readAddr = (const byte*) &wateringTime;
   EEPROM.write(addr++,*readAddr++);
-  EEPROM.write(addr++,*readAddr++);
+  EEPROM.write(addr++,*readAddr);
 
   // сохраняем время начала полива
    EEPROM.write(addr++,startWateringTime);
  
+  // сохраняем опцию включения насоса при поливе
+   EEPROM.write(addr++,turnOnPump);
+
+   // сохраняем кол-во каналов полива
+   EEPROM.write(addr++,WATER_RELAYS_COUNT);
+
+   // пишем настройки каналов полива
+   for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
+   {
+      EEPROM.write(addr++,wateringChannelsOptions[i].wateringWeekDays);
+      readAddr = (const byte*) &(wateringChannelsOptions[i].wateringTime);
+      EEPROM.write(addr++,*readAddr++);
+      EEPROM.write(addr++,*readAddr);
+      EEPROM.write(addr++,wateringChannelsOptions[i].startWateringTime);
+   } // for
+
   
   // сохраняем другие настройки!
 

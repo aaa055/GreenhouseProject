@@ -4,7 +4,6 @@
 
 bool SerialPublisher::Publish(const PublishStruct* toPublish, Stream* commandStream)
 {
-//  return true; // состояние диода теперь не будет отображаться в сериал
 
     // публикуем ответ в сериал
      Serial.print(toPublish->Status ? OK_ANSWER : ERR_ANSWER);

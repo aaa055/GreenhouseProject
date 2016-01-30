@@ -26,7 +26,7 @@ class PinModule : public AbstractModule
     bool PinExist(uint8_t pinNumber);
    
   public:
-    PinModule(const String& id) : AbstractModule(id) {}
+    PinModule() : AbstractModule(F("PIN")) {}
 
     bool ExecCommand(const Command& command);
     void Setup();

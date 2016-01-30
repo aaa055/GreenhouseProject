@@ -9,7 +9,7 @@ class StatModule : public AbstractModule
   private:
    unsigned long uptime;
   public:
-    StatModule(const String& id) : AbstractModule(id) {}
+    StatModule() : AbstractModule(F("STAT")) {}
 
     bool ExecCommand(const Command& command);
     void Setup();

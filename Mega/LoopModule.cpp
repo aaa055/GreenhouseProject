@@ -63,8 +63,9 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
     return NULL;
   }
 
+ String loopName = command.GetArg(LOOP_NAME_IDX); // получили имя циклически вызываемой команды
  String moduleID = command.GetArg(MODULE_ID_IDX); // получили ID модуля
- LoopLink* lnk = GetLink(moduleID);
+ LoopLink* lnk = GetLink(loopName);
 
  if(!lnk) // надо регистрировать новый модуль
   {
@@ -85,6 +86,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
       
   } // if
 
+    lnk->loopName = loopName; // сохраняем имя команды
     lnk->IncomingCtream = command.GetIncomingStream();
     lnk->typeOfCommand = command.GetArg(COMMAND_TYPE_IDX);
     lnk->interval = command.GetArg(INTERVAL_IDX).toInt();
@@ -117,18 +119,15 @@ AbstractModule* LoopModule::GetRegisteredModule(const String& moduleID)
   return NULL;
 }
 
-LoopLink* LoopModule::GetLink(const String& moduleID)
+LoopLink* LoopModule::GetLink(const String& loopName)
 {
-  AbstractModule* m = GetRegisteredModule(moduleID);
-      if(m)
-      {
+
         size_t sz = vec.size();
         for(size_t i =0;i<sz;i++)
         { 
-          if(vec[i]->linkedModule == m) // нашли связанный модуль
+          if(vec[i]->loopName == loopName) // нашли команду с таким же именем
             return vec[i];
         } // for
-      } // if(m)
   
   return NULL;
 }
