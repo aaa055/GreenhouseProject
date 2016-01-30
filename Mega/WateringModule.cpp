@@ -418,16 +418,13 @@ bool  WateringModule::ExecCommand(const Command& command)
            
            if(param == WM_AUTOMATIC)
            {
-              // переходим в автоматический режим работы
-               workMode = wwmAutomatic;
-
+             workMode = wwmAutomatic; // переходим в автоматический режим работы
              BlinkWorkMode(0); // гасим диод
            }
            else
            {
             workMode = wwmManual; // переходим на ручной режим работы
-            
-           BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
+            BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
            }
 
               answerStatus = true;

@@ -75,17 +75,14 @@ class TempSensors : public AbstractModule // модуль опроса темп�
     void SetupWindows();
 
 
-    WindowWorkMode workMode;
+    WindowWorkMode workMode; // текущий режим работы (автоматический или ручной)
 
     void BlinkWorkMode(uint16_t blinkInterval = 0);
- 
-  uint8_t supportedWindowsCnt;
-  uint8_t supportedSensorsCnt;
 
-  uint16_t lastBlinkInterval;
+    uint16_t lastBlinkInterval;
     
   public:
-    TempSensors() : AbstractModule(F("STATE")),lastUpdateCall(0),supportedWindowsCnt(SUPPORTED_WINDOWS),supportedSensorsCnt(SUPPORTED_SENSORS), workMode(wmAutomatic) {}
+    TempSensors() : AbstractModule(F("STATE")){}
 
     bool ExecCommand(const Command& command);
     void Setup();

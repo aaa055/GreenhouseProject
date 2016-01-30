@@ -137,17 +137,19 @@ void TempSensors::SetupWindows()
 void TempSensors::Setup()
 {
   // настройка модуля тут
+   workMode = wmAutomatic; // автоматический режим работы по умолчанию
 
     lastBlinkInterval = 0xFFFF;// последний интервал, с которым мы вызывали команду мигания диодом.
   // нужно для того, чтобы дёргать функцию мигания только при смене интервала.
 
+   lastUpdateCall = 0;
   
   /*
    * Пишем в State настройки - кол-во поддерживаемых датчиков температуры
    * 
    */
-   State.SetTempSensors(supportedSensorsCnt); // сколько датчиков поддерживаем?
-   State.SetRelayChannels(supportedWindowsCnt*2); // сколько каналов реле? Каждым мотором фрамуги управляют два реле
+   State.SetTempSensors(SUPPORTED_SENSORS); // сколько датчиков поддерживаем?
+   State.SetRelayChannels(SUPPORTED_WINDOWS*2); // сколько каналов реле? Каждым мотором фрамуги управляют два реле
   
    SetupWindows(); // настраиваем фрамуги
 
@@ -276,7 +278,7 @@ bool  TempSensors::ExecCommand(const Command& command)
           answerStatus = true;
           // откуда до куда шаримся
           uint8_t from = 0;
-          uint8_t to = supportedWindowsCnt;
+          uint8_t to = SUPPORTED_WINDOWS;
 
 
           if(bIntervalAsked)
@@ -294,8 +296,8 @@ bool  TempSensors::ExecCommand(const Command& command)
           from = tmp;
 
              to++; // включаем to в интервал, это надо, если пришла команда интервала, например, 2-3, тогда в этом случае опросятся третий и четвертый каналы
-             if(to >= supportedWindowsCnt)
-              to = supportedWindowsCnt;
+             if(to >= SUPPORTED_WINDOWS)
+              to = SUPPORTED_WINDOWS;
           
           if(bAll || bIntervalAsked)
           {
@@ -428,7 +430,7 @@ bool  TempSensors::ExecCommand(const Command& command)
               else // запросили по индексу
               {
                 uint8_t sensorIdx = s.toInt();
-                if(sensorIdx >= supportedSensorsCnt)
+                if(sensorIdx >= SUPPORTED_SENSORS)
                    answer = NOT_SUPPORTED; // неверный индекс
                  else
                   {
@@ -456,7 +458,7 @@ bool  TempSensors::ExecCommand(const Command& command)
               //TODO: Тут может быть запрос ALL, а не только индекс!!!
               
              uint8_t windowIdx = s.toInt();
-             if(windowIdx >= supportedWindowsCnt)
+             if(windowIdx >= SUPPORTED_WINDOWS)
               answer = NOT_SUPPORTED; // неверный индекс
               else
               {

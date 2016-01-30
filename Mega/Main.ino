@@ -60,7 +60,6 @@ const char* const  INIT_COMMANDS[] PROGMEM  =
 unsigned long lastMillis = 0;
 
 
-
 // Ждем команды из сериала
 CommandBuffer commandsFromSerial(&Serial);
 

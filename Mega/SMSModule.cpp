@@ -722,11 +722,16 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     int16_t idx = streamAnswer.lastIndexOf(PARAM_DELIMITER);
     if(idx != -1)
     {
-      String state = streamAnswer.substring(idx+1,streamAnswer.length());
-      if(state == STATE_ON)
-        sms += WTR_ON;
-      else
-        sms += WTR_OFF;
+      streamAnswer = streamAnswer.substring(0,idx);
+      idx = streamAnswer.lastIndexOf(PARAM_DELIMITER);
+      if(idx != -1)
+      {
+        String state = streamAnswer.substring(idx+1,streamAnswer.length());
+        if(state == STATE_ON)
+          sms += WTR_ON;
+        else
+          sms += WTR_OFF;
+      }
     }
     
     
