@@ -50,7 +50,13 @@ class LuminosityModule : public AbstractModule // модуль управлен�
 {
   private:
 
-  BH1750Support lightMeter;
+  #if LIGHT_SENSORS_COUNT > 0
+  BH1750Support lightMeter; // первый датчик освещенности
+  #endif
+  
+  #if LIGHT_SENSORS_COUNT > 1
+  BH1750Support lightMeter2; // второй датчик освещенности
+  #endif
     
   public:
     LuminosityModule() : AbstractModule(F("LIGHT")) {}

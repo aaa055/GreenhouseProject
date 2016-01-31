@@ -57,7 +57,13 @@ uint16_t BH1750Support::GetCurrentLuminosity()
 
 void LuminosityModule::Setup()
 {
-  lightMeter.begin(); // запускаем датчик освещенности
+  #if LIGHT_SENSORS_COUNT > 0
+  lightMeter.begin(); // запускаем первый датчик освещенности
+  #endif
+
+  #if LIGHT_SENSORS_COUNT > 1
+  lightMeter2.begin(BH1750Address2);
+  #endif
   // настройка модуля тут
   
  }
@@ -90,8 +96,22 @@ bool  LuminosityModule::ExecCommand(const Command& command)
     t.toUpperCase();
     if(t == GetID()) // нет аргументов, попросили дать показания с датчика
     {
+      
       answerStatus = true;
-      answer = String(lightMeter.GetCurrentLuminosity());
+      answer = 
+     #if LIGHT_SENSORS_COUNT > 0
+      String(lightMeter.GetCurrentLuminosity());
+      #else
+        String(F("-1"));
+      #endif
+      
+      answer += PARAM_DELIMITER;
+      answer += 
+      #if LIGHT_SENSORS_COUNT > 1
+        String(lightMeter2.GetCurrentLuminosity());
+      #else
+        String(F("-1"));
+      #endif
     }
     else
     {
