@@ -24,18 +24,23 @@ typedef enum
 
 enum { BH1750PowerOff=0x00, BH1750PowerOn=0x01, BH1750Reset = 0x07 };
 
-enum { BH1750Address = 0x23 }; // адрес датчика освещенности на шине I2C
+typedef enum { BH1750Address1 = 0x23, BH1750Address2 = 0x5C } BH1750Address; // адрес датчика освещенности на шине I2C
 
 class BH1750Support
 {
   private:
     void writeByte(uint8_t toWrite);
+
+    BH1750Address deviceAddress;
+    BH1750Mode currentMode;
   
   public:
     BH1750Support();
     
-    void begin(BH1750Mode mode = ContinuousHighResolution);
+    void begin(BH1750Address addr = BH1750Address1, BH1750Mode mode = ContinuousHighResolution);
+    
     void ChangeMode(BH1750Mode newMode);
+    void ChangeAddress(BH1750Address newAddr);
      
     uint16_t GetCurrentLuminosity();
 };

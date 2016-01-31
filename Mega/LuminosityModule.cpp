@@ -5,21 +5,32 @@ BH1750Support::BH1750Support()
 {
 
 }
-void BH1750Support::begin(BH1750Mode mode)
+void BH1750Support::begin(BH1750Address addr, BH1750Mode mode)
 {
+  deviceAddress = addr;
   Wire.begin();
   writeByte(BH1750PowerOn); // включаем датчик
   ChangeMode(mode); 
 }
 void BH1750Support::ChangeMode(BH1750Mode mode) // смена режима работы
 {
-   writeByte((uint8_t)mode);
+   currentMode = mode; // сохраняем текущий режим опроса
+   writeByte((uint8_t)currentMode);
   _delay_ms(10);
 }
-
+void BH1750Support::ChangeAddress(BH1750Address newAddr)
+{
+  if(newAddr != deviceAddress) // только при смене адреса включаем датчик
+  { 
+    deviceAddress = newAddr;
+    
+    writeByte(BH1750PowerOn); // включаем датчик  
+    ChangeMode(currentMode); // меняем режим опроса на текущий
+  } // if
+}
 void BH1750Support::writeByte(uint8_t toWrite) 
 {
-  Wire.beginTransmission(BH1750Address);
+  Wire.beginTransmission(deviceAddress);
   BH1750_WIRE_WRITE(toWrite);
   Wire.endTransmission();
 }
@@ -28,8 +39,8 @@ uint16_t BH1750Support::GetCurrentLuminosity()
 
   uint16_t curLuminosity;
 
-  Wire.beginTransmission(BH1750Address); // начинаем опрос датчика освещенности
-  Wire.requestFrom(BH1750Address, 2); // ждём два байта
+  Wire.beginTransmission(deviceAddress); // начинаем опрос датчика освещенности
+  Wire.requestFrom(deviceAddress, 2); // ждём два байта
 
   // читаем два байта
   curLuminosity = BH1750_WIRE_READ();
