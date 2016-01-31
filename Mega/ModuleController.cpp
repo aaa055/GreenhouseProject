@@ -1,21 +1,16 @@
 #include "ModuleController.h"
 
-#ifdef USE_DS3231_REALTIME_CLOCK
-DS3231 _rtc(RTC_SDA_PIN, RTC_SCL_PIN);
-#endif
-
 ModuleController::ModuleController(COMMAND_DESTINATION wAs, const String& id) : workAs(wAs), ourID(id), cParser(NULL)
 {
   settings.Load(); // загружаем настройки
 }
 #ifdef USE_DS3231_REALTIME_CLOCK
-DS3231& ModuleController::GetClock()
+DS3231Clock& ModuleController::GetClock()
 {
   return _rtc;
 }
 #endif
-
-void ModuleController::Begin()
+void ModuleController::begin()
 {
 #ifdef USE_DS3231_REALTIME_CLOCK
 _rtc.begin();

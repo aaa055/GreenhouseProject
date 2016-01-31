@@ -241,7 +241,7 @@ void setup()
 
   ProcessInitCommands();
 
-  controller.Begin(); // начинаем работу
+  controller.begin(); // начинаем работу
   
   // Печатаем в Serial готовность
   Serial.print(READY);
@@ -249,14 +249,16 @@ void setup()
   // тест часов реального времени
   #ifdef USE_DS3231_REALTIME_CLOCK
   
-   DS3231 rtc = controller.GetClock();
+   DS3231Clock rtc = controller.GetClock();
+   DS3231Time tm = rtc.getTime();
+   
    String s = F(", ");
    
-   s += rtc.getDOWStr();
+   s += rtc.getDayOfWeekStr(tm);
    s += F(" ");
-   s += rtc.getDateStr();
+   s += rtc.getDateStr(tm);
    s += F(" - ");
-   s += rtc.getTimeStr();
+   s += rtc.getTimeStr(tm);
    Serial.print(s);
    
   #endif 

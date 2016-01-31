@@ -9,7 +9,7 @@
 #include "Settings.h"
 
 #ifdef USE_DS3231_REALTIME_CLOCK
-#include <DS3231.h>
+#include "DS3231Support.h"
 #endif
 
 typedef Vector<AbstractModule*> ModulesVec;
@@ -29,14 +29,19 @@ class ModuleController
 
   GlobalSettings settings; // глобальные настройки
 
+#ifdef USE_DS3231_REALTIME_CLOCK
+  DS3231Clock _rtc; // часы реального времени
+#endif
+
+
 public:
   ModuleController(COMMAND_DESTINATION wAs, const String& id);
 
-  void Begin(); // начинаем работу
+  void begin(); // начинаем работу
 
   #ifdef USE_DS3231_REALTIME_CLOCK
   // модуль реального времени
-  DS3231& GetClock();
+  DS3231Clock& GetClock();
   #endif
 
   // возвращает текущие настройки контроллера

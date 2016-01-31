@@ -185,23 +185,23 @@ void WateringModule::Update(uint16_t dt)
   #ifdef USE_DS3231_REALTIME_CLOCK
 
     // обновляем состояние часов
-    DS3231 watch =  controller->GetClock();
-    Time t =   watch.getTime();
+    DS3231Clock watch =  controller->GetClock();
+    DS3231Time t =   watch.getTime();
     
     if(currentDOW == -1) // если мы не сохраняли текущий день недели, то
     {
-      currentDOW = t.dow; // сохраним его, чтобы потом проверять переход через дни недели
-      lastDOW = t.dow; // сохраним и как предыдущий день недели
+      currentDOW = t.dayOfWeek; // сохраним его, чтобы потом проверять переход через дни недели
+      lastDOW = t.dayOfWeek; // сохраним и как предыдущий день недели
     }
 
-    if(currentDOW != t.dow)
+    if(currentDOW != t.dayOfWeek)
     {
       // начался новый день недели, принудительно переходим в автоматический режим работы
       // даже если до этого был включен полив командой от пользователя
       workMode = wwmAutomatic;
     }
 
-    currentDOW = t.dow; // сохраняем текущий день недели
+    currentDOW = t.dayOfWeek; // сохраняем текущий день недели
     currentHour = t.hour; // сохраняем текущий час
        
   #else

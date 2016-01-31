@@ -58,12 +58,13 @@ bool  StatModule::ExecCommand(const Command& command)
  #ifdef USE_DS3231_REALTIME_CLOCK   
     else if(t == CURDATETIME_COMMAND)
     {
-       DS3231 rtc = c->GetClock();
-       String s = rtc.getDOWStr();
+       DS3231Clock rtc = c->GetClock();
+       DS3231Time tm = rtc.getTime();
+       String s = rtc.getDayOfWeekStr(tm);
        s += F(" ");
-       s += rtc.getDateStr();
+       s += rtc.getDateStr(tm);
        s += F(" ");
-       s += rtc.getTimeStr();
+       s += rtc.getTimeStr(tm);
        answerStatus = true;
        answer = s;     
     }

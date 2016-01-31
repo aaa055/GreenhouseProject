@@ -573,8 +573,8 @@ void AlertModule::Update(uint16_t dt)
   String controllerID = c->GetControllerID();
  
 #ifdef USE_DS3231_REALTIME_CLOCK
-  DS3231 rtc = c->GetClock();
-  Time tm = rtc.getTime();
+  DS3231Clock rtc = c->GetClock();
+  DS3231Time tm = rtc.getTime();
 #endif
 
 
@@ -589,7 +589,7 @@ void AlertModule::Update(uint16_t dt)
       // сначала обновляем состояние правила
       r->Update(dt
 #ifdef USE_DS3231_REALTIME_CLOCK
-,tm.hour, tm.min
+,tm.hour, tm.minute
 #endif
         );
 
