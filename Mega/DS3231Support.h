@@ -41,7 +41,7 @@ class DS3231Clock
     void setTime(const DS3231Time& time);
 
     char* getDayOfWeekStr(const DS3231Time& t);
-    char* getMonthStr(const DS3231Time& t);
+   // char* getMonthStr(const DS3231Time& t);
     char* getTimeStr(const DS3231Time& t);
     char* getDateStr(const DS3231Time& t);
 

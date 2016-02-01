@@ -169,7 +169,6 @@
 #define WTR_STATE F("Полив: ") // состояние полива
 #define WTR_OFF F("выкл") // полив выкл
 #define WTR_ON F("вкл") // полив вкл
-#define NEOWAY_NEWLINE F("\r\n") // новая строка для модуля, при отсыле команды
 #define NEOWAY_SERIAL Serial1 // какой хардварный Serial будем использовать при работе с NEOWAY?
 #define NEOWAY_BAUDRATE 9600 // скорость работы с GSM-модемом NEOWAY
 #define SMS_OPEN_COMMAND F("#1") // открыть окна

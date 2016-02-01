@@ -18,7 +18,7 @@ enum SMSOperation // какой ответ на какую операцию мы
   
 };
 
-class SMSModule : public AbstractModule, public Stream // модуль поддержки управления по SMS
+class SMSModule : public AbstractModule // модуль поддержки управления по SMS
 {
   private:
     GlobalSettings* Settings;
@@ -38,8 +38,6 @@ class SMSModule : public AbstractModule, public Stream // модуль подд�
     bool IsNeowayReady(); // проверяет, готов ли модуль к работе?
     void FetchNeowayAnswer(bool& isOkAnswer); // получает данные до тех пор, пока не будет получена строка OK или ERROR
 
-    String streamAnswer; // ответ от другого модуля будет здесь
-
     void ParseIncomingSMS(const String& sms);
 
     String queuedWindowCommand; // команда на выполнение управления окнами, должна выполняться только когда окна не в движении
@@ -56,16 +54,6 @@ class SMSModule : public AbstractModule, public Stream // модуль подд�
     void SendStatToCaller(const String& phoneNum);
     void SendSMS(const String& sms);
 
-
-    // переопределяем фунции Stream тут
-    virtual int available(){ return false; };
-    virtual int read(){ return -1;};
-    virtual int peek(){return -1;};
-    virtual void flush(){};
-
-    virtual size_t print(const String &s);
-    virtual size_t println(const String &s);
-    virtual size_t write(uint8_t toWr);
         
 
 };

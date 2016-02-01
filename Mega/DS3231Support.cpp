@@ -1,4 +1,4 @@
-#include "DS3231Support.h"
+  #include "DS3231Support.h"
 
 char DS3231Clock::workBuff[12] = {0};
 
@@ -62,11 +62,13 @@ char* DS3231Clock::getDayOfWeekStr(const DS3231Time& t)
   static char* dow[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
   return dow[t.dayOfWeek-1];
 }
+/*
 char* DS3231Clock::getMonthStr(const DS3231Time& t)
 {
   static char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   return months[t.month-1];
 }
+*/
 char* DS3231Clock::getTimeStr(const DS3231Time& t)
 {
   char* writePtr = workBuff;
