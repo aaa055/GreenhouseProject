@@ -211,16 +211,20 @@
  *    Если для модуля поступила новая команда - старая перезаписывается, т.е. цепочка команд не поддерживается!
  */
 
+ // свойства модулей, которые мы можем проверять/устанавливать с помощью модуля 0.
+ // 8 каналов реле и до 4-х датчиков температур у каждого модуля есть "из коробки".
+ // 
+#define PROP_TEMP_CNT F("TEMP_CNT") // кол-во датчиков температуры CTGET=0|PROP|TEMP|TEMP_CNT, CTSET=0|PROP|TEMP|TEMP_CNT|2
+#define PROP_RELAY_CNT F("RELAY_CNT") // кол-во каналов реле CTGET=0|PROP|MODULE_NAME|RELAY_CNT, CTSET=0|PROP|MODULE_NAME|RELAY_CNT|2
+#define PROP_TEMP F("TEMP") // нам передали/запросили температуру CTGET=0|PROP|MODULE_NAME|TEMP|0, CTSET=0|PROP|MODULE_NAME|TEMP|0|36,6
+#define PROP_RELAY F("RELAY") // нам передали/запросили состояние канала реле CTGET=0|PROP|MODULE_NAME|RELAY|0, CTSET=0|PROP|MODULE_NAME|RELAY|0|ON
+
 // команды модуля "0"
 #define NEWLINE F("\r\n")
 #define ADD_COMMAND F("ADD") // команда регистрации модуля CTSET=0|ADD|MODULE_NAME
 #define PING_COMMAND F("PING") // команда пинга контроллера CTGET=0|PING
 #define REGISTERED_MODULES_COMMAND F("LIST") // пролистать зарегистрированные модули CTGET=0|LIST
 #define PROPERTIES_COMMAND F("PROP") // команда записи/получения настроек CTSET=0|PROP|MODULE_NAME|PROPERTY_NAME|IDX|VALUE, например CTSET=0|PROP|M|TEMP|0|123,45
-#define PROP_TEMP_CNT F("TEMP_CNT") // кол-во датчиков температуры CTGET=0|PROP|TEMP|TEMP_CNT, CTSET=0|PROP|TEMP|TEMP_CNT|2
-#define PROP_RELAY_CNT F("RELAY_CNT") // кол-во каналов реле CTGET=0|PROP|MODULE_NAME|RELAY_CNT, CTSET=0|PROP|MODULE_NAME|RELAY_CNT|2
-#define PROP_TEMP F("TEMP") // нам передали/запросили температуру CTGET=0|PROP|MODULE_NAME|TEMP|0, CTSET=0|PROP|MODULE_NAME|TEMP|0|36,6
-#define PROP_RELAY F("RELAY") // нам передали/запросили состояние канала реле CTGET=0|PROP|MODULE_NAME|RELAY|0, CTSET=0|PROP|MODULE_NAME|RELAY|0|ON
 #define SMS_NUMBER_COMMAND F("PHONE") // сохранить/вернуть номер телефона для управления контроллером по СМС: CTSET=0|PHONE|+7918..., CTGET=0|PHONE
 #define PONG F("PONG") // ответ на запрос пинга
 #define REG_SUCC F("ADDED") // модуль зарегистрирован

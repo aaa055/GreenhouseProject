@@ -3,15 +3,23 @@
 
 #include <Arduino.h>
 #include <WString.h>
+#include "ModuleController.h"
+#include "CommandParser.h"
 
 class InteropStream : public Stream
 {
 private:
   String data;
 
+  ModuleController* mainController;
+
 public:
 
   InteropStream();
+
+    void SetController(ModuleController* c) {mainController = c;}
+
+    bool QueryCommand(COMMAND_TYPE cType, const String& command, bool isInternalCommand); // вызывает команду для зарегистрированного модуля
     
     void Clear() { data = F("");}
     const String& GetData() { return data;}

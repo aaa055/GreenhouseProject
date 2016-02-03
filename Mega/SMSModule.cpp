@@ -112,21 +112,22 @@ void SMSModule::ProcessQueuedWindowCommand(uint16_t dt)
 
     queuedTimer = 0; // обнуляем таймер ожидания
 
-    ModuleController* c = GetController();
-    CommandParser* cParser = c->GetCommandParser();
+    //ModuleController* c = GetController();
+    //CommandParser* cParser = c->GetCommandParser();
   
     // для начала проверяем, в каком состоянии у нас окна
-      Command cmd;
-      if(cParser->ParseCommand(F("CTGET=STATE|WINDOW|ALL"), c->GetControllerID(), cmd))
+      //Command cmd;
+      //if(cParser->ParseCommand(F("CTGET=STATE|WINDOW|ALL"), c->GetControllerID(), cmd))
+      if(ModuleInterop.QueryCommand(ctGET,F("STATE|WINDOW|ALL"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTGET=STATE|WINDOW|ALL command parsed, process it...");
         #endif
     
-        ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-        cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-        c->ProcessModuleCommand(cmd,false);
+        //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+        //cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
+       // cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+      //  c->ProcessModuleCommand(cmd,false);
 
         // теперь проверяем ответ. Если окна не в движении - нам вернётся OPEN или CLOSED последним параметром.
         // только в этом случае мы можем исполнять команду
@@ -140,15 +141,16 @@ void SMSModule::ProcessQueuedWindowCommand(uint16_t dt)
               if(state == STATE_OPEN || state == STATE_CLOSED)
               {
                 // окна не двигаются, можем отправлять команду
-                 if(cParser->ParseCommand(queuedWindowCommand, c->GetControllerID(), cmd))
+                 //if(cParser->ParseCommand(queuedWindowCommand, c->GetControllerID(), cmd))
+                 if(ModuleInterop.QueryCommand(ctSET,queuedWindowCommand,false))
                  {
            
                   // команда разобрана, можно выполнять
                     queuedWindowCommand = F(""); // очищаем команду, нам она больше не нужна
-                    ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-                    cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-                    cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-                    c->ProcessModuleCommand(cmd,false);
+                   // ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+                   // cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
+                  //  cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+                  //  c->ProcessModuleCommand(cmd,false);
 
                     // всё, команда выполнена, когда окна не находились в движении
                  } // if
@@ -162,8 +164,8 @@ void SMSModule::ProcessQueuedWindowCommand(uint16_t dt)
 }
 void SMSModule::ParseIncomingSMS(const String& sms)
 {
-  ModuleController* c = GetController();
-  CommandParser* cParser = c->GetCommandParser();
+  //ModuleController* c = GetController();
+  //CommandParser* cParser = c->GetCommandParser();
   
   #ifdef NEOWAY_DEBUG_MODE
     Serial.println("ParseIncomingSMS(\"" + sms + "\")");
@@ -196,7 +198,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
 
         // открываем окна
         // сохраняем команду на выполнение тогда, когда окна будут открыты или закрыты - иначе она не отработает
-        queuedWindowCommand = F("CTSET=STATE|WINDOW|ALL|OPEN");
+        queuedWindowCommand = F("STATE|WINDOW|ALL|OPEN");
         shouldSendSMS = true;
     }
     
@@ -209,7 +211,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
 
       // закрываем окна
       // сохраняем команду на выполнение тогда, когда окна будут открыты или закрыты - иначе она не отработает
-      queuedWindowCommand = F("CTSET=STATE|WINDOW|ALL|CLOSE");
+      queuedWindowCommand = F("STATE|WINDOW|ALL|CLOSE");
       shouldSendSMS = true;
     }
     
@@ -221,30 +223,32 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     #endif
 
     // переводим контроллер в автоматический режим работы
-      Command cmd;
-      if(cParser->ParseCommand(F("CTSET=STATE|MODE|AUTO"), c->GetControllerID(), cmd))
+      //Command cmd;
+      //if(cParser->ParseCommand(F("CTSET=STATE|MODE|AUTO"), c->GetControllerID(), cmd))
+      if(ModuleInterop.QueryCommand(ctSET, F("STATE|MODE|AUTO"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=STATE|MODE|AUTO command parsed, process it...");
         #endif
     
-        ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер окон после выполнения команды перейдёт в автоматический режим
-        cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-        c->ProcessModuleCommand(cmd,false);
+        //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+        //cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер окон после выполнения команды перейдёт в автоматический режим
+        //cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+       // c->ProcessModuleCommand(cmd,false);
 
       }
 
-      if(cParser->ParseCommand(F("CTSET=WATER|MODE|AUTO"), c->GetControllerID(), cmd))
+      //if(cParser->ParseCommand(F("CTSET=WATER|MODE|AUTO"), c->GetControllerID(), cmd))
+      if(ModuleInterop.QueryCommand(ctSET, F("WATER|MODE|AUTO"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=WATER|MODE|AUTO command parsed, process it...");
         #endif
     
-        ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер полива после выполнения команды перейдёт в автоматический режим
-        cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-        c->ProcessModuleCommand(cmd,false);
+       // ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+       // cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер полива после выполнения команды перейдёт в автоматический режим
+       // cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+       // c->ProcessModuleCommand(cmd,false);
 
       }    
 
@@ -259,17 +263,18 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     #endif
 
     // включаем полив
-      Command cmd;
-      if(cParser->ParseCommand(F("CTSET=WATER|ON"), c->GetControllerID(), cmd))
+     // Command cmd;
+      //if(cParser->ParseCommand(F("CTSET=WATER|ON"), c->GetControllerID(), cmd))
+      if(ModuleInterop.QueryCommand(ctSET, F("WATER|ON"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=WATER|ON command parsed, process it...");
         #endif
     
-        ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-        cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-        c->ProcessModuleCommand(cmd,false);
+        //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+        //cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
+        //cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+        //c->ProcessModuleCommand(cmd,false);
 
        shouldSendSMS = true;
       }
@@ -283,17 +288,18 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     #endif
 
     // выключаем полив
-      Command cmd;
-      if(cParser->ParseCommand(F("CTSET=WATER|OFF"), c->GetControllerID(), cmd))
+      //Command cmd;
+      //if(cParser->ParseCommand(F("CTSET=WATER|OFF"), c->GetControllerID(), cmd))
+      if(ModuleInterop.QueryCommand(ctSET, F("WATER|OFF"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=WATER|OFF command parsed, process it...");
         #endif
     
-        ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-        cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-        c->ProcessModuleCommand(cmd,false);
+        //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+        //cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
+       // cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+       // c->ProcessModuleCommand(cmd,false);
 
         shouldSendSMS = true;
       }
@@ -654,9 +660,10 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
   sms += outsideTemp;
 
   // тут получаем состояние окон
-  CommandParser* cParser = c->GetCommandParser();
-  Command cmd;
-  if(cParser->ParseCommand(F("CTGET=STATE|WINDOW|0"), c->GetControllerID(), cmd))
+  //CommandParser* cParser = c->GetCommandParser();
+  //Command cmd;
+  //if(cParser->ParseCommand(F("CTGET=STATE|WINDOW|0"), c->GetControllerID(), cmd))
+  if(ModuleInterop.QueryCommand(ctGET,F("STATE|WINDOW|0"),true))
   {
     sms += NEWLINE;
     sms += W_STATE;
@@ -665,10 +672,10 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
       Serial.println("Command CTGET=STATE|WINDOW|0 parsed, execute it...");
     #endif
 
-    ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-    cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
-    cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-    c->ProcessModuleCommand(cmd,false);
+   // ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+   // cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
+   // cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+   // c->ProcessModuleCommand(cmd,false);
 
     String streamAnswer = ModuleInterop.GetData(); // получили ответ от другого модуля
     streamAnswer.trim();
@@ -687,7 +694,8 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     #endif
   }
     // получаем состояние полива
-  if(cParser->ParseCommand(F("CTGET=WATER"), c->GetControllerID(), cmd))
+  //if(cParser->ParseCommand(F("CTGET=WATER"), c->GetControllerID(), cmd))
+  if(ModuleInterop.QueryCommand(ctGET,F("WATER"),true))
   {
     sms += NEWLINE;
     sms += WTR_STATE;
@@ -696,10 +704,10 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
       Serial.println("Command CTGET=WATER parsed, execute it...");
     #endif
 
-    ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-    cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
-    cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-    c->ProcessModuleCommand(cmd,false);
+    //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
+    //cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
+    //cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+    //c->ProcessModuleCommand(cmd,false);
 
     String streamAnswer = ModuleInterop.GetData(); // получили ответ от другого модуля
     streamAnswer.trim();

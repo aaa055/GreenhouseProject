@@ -1,4 +1,5 @@
 #include "ModuleController.h"
+#include "InteropStream.h"
 
 ModuleController::ModuleController(COMMAND_DESTINATION wAs, const String& id) : workAs(wAs), ourID(id), cParser(NULL)
 {
@@ -15,6 +16,8 @@ void ModuleController::begin()
 #ifdef USE_DS3231_REALTIME_CLOCK
 _rtc.begin();
 #endif
+
+  ModuleInterop.SetController(this); // устанавливаем контроллер для класса взаимодействия между модулями
 }
 void ModuleController::RegisterModule(AbstractModule* mod)
 {

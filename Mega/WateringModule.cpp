@@ -1,5 +1,6 @@
 #include "WateringModule.h"
 #include "ModuleController.h"
+#include "InteropStream.h"
 
 static uint8_t WATER_RELAYS[] = { WATER_RELAYS_PINS }; // объявляем массив пинов реле
 
@@ -270,36 +271,40 @@ void WateringModule::BlinkWorkMode(uint16_t blinkInterval) // мигаем ди�
 
   lastBlinkInterval = blinkInterval;
   
-  String s = F("CTSET=LOOP|WM|SET|");
+ // String s = F("CTSET=LOOP|WM|SET|");
+  String s = F("LOOP|WM|SET|");
   s += blinkInterval;
   s+= F("|0|PIN|");
   s += String(DIODE_WATERING_MANUAL_MODE_PIN);
   s += F("|T");
 
-    ModuleController* c = GetController();
-    CommandParser* cParser = c->GetCommandParser();
-      Command cmd;
-      if(cParser->ParseCommand(s, c->GetControllerID(), cmd))
+   // ModuleController* c = GetController();
+  //  CommandParser* cParser = c->GetCommandParser();
+   //   Command cmd;
+      //if(cParser->ParseCommand(s, c->GetControllerID(), cmd))
+      if(ModuleInterop.QueryCommand(ctSET,s,true))
       {
-         cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
+       //  cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
 
         // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
         //cmd.SetIncomingStream(pStream);
-        c->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой    
+     //   c->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой    
       } // if  
 
       if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
       {
-        s = CMD_PREFIX;
-        s += CMD_SET;
-        s += F("=PIN|");
+       // s = CMD_PREFIX;
+      //  s += CMD_SET;
+      //  s += F("=PIN|");
+        s = F("PIN|");
         s += String(DIODE_WATERING_MANUAL_MODE_PIN);
         s += PARAM_DELIMITER;
         s += F("0");
-        
-        cParser->ParseCommand(s, c->GetControllerID(), cmd);
-        cmd.SetInternal(true); 
-        c->ProcessModuleCommand(cmd,false);
+
+        ModuleInterop.QueryCommand(ctSET,s,true);
+        //cParser->ParseCommand(s, c->GetControllerID(), cmd);
+        //cmd.SetInternal(true); 
+       // c->ProcessModuleCommand(cmd,false);
       } // if
   
 }

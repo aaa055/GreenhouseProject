@@ -239,10 +239,10 @@ void setup()
     controller.RegisterModule(&alerts);
   #endif
 
+  controller.begin(); // начинаем работу
+
   ProcessInitCommands();
 
-  controller.begin(); // начинаем работу
-  
   // Печатаем в Serial готовность
   Serial.print(READY);
 
