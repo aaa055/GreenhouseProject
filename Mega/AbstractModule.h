@@ -7,6 +7,8 @@
 #include "CommandParser.h"
 #include "Publishers.h"
 #include "ModuleController.h"
+#include "TinyVector.h"
+
 
 class ModuleController;
 
@@ -31,60 +33,46 @@ struct Temperature // структура показаний с датчика т
   }
 };
 
-class ModuleState // состояние модуля - датчики, реле и пр.
+
+typedef enum
 {
-  uint8_t TempSensors; // кол-во температурных датчиков
-  Temperature prevTemp[MAX_TEMP_SENSORS]; // предыдущие показания температуры
-  Temperature Temp[MAX_TEMP_SENSORS]; // температура по датчикам
+StateTemperature = 1, // есть температурные датчики
+StateRelay = 2, // есть реле
+StateLuminosity = 4 // есть датчики освещенности
 
-  uint8_t RelayChannels; // кол-во каналов реле, МАКСИМУМ - 8
+} ModuleStates; // вид состояния
 
-  uint8_t prevRelayStates; // предыдущее состояние каналов реле
-  uint8_t RelayStates; // текущее состояние каналов реле
- 
-public:
-
-  
-  bool HasTemperature() {return TempSensors > 0;} // поддерживаем датчики температуры?
-  bool HasRelay() {return RelayChannels > 0; } // поддерживаем реле?
-   
-  void SetTempSensors(uint8_t cnt);
-  uint8_t GetTempSensors() {return TempSensors;}
-
-  void SetRelayChannels(uint8_t cnt);
-  uint8_t GetRelayChannels() {return RelayChannels;}
-
-  bool GetRelayState(uint8_t idx);
-  bool GetPrevRelayState(uint8_t idx);
-
-  void SetRelayState(uint8_t idx,const String& state);
-  void SetRelayState(uint8_t idx,bool bOn);
-  bool IsRelayStateChanged(uint8_t idx); // изменилось ли состояние канала реле?
-
-  Temperature GetTemp(uint8_t idx);
-  Temperature GetPrevTemp(uint8_t idx);
-  
-  void SetTemp(uint8_t idx, const Temperature& dt);
-  bool IsTempChanged(uint8_t idx); // изменилась ли температура на датчике по переданному индексу?
-  
-  ModuleState() :
-  TempSensors(0)
-  , RelayChannels(0)
-  , prevRelayStates(0)
-  , RelayStates(0)
-  {
-
-    for(uint8_t i=0;i<MAX_TEMP_SENSORS;i++)
-    {
-        Temp[i].Value = NO_TEMPERATURE_DATA;
-        prevTemp[i].Value = NO_TEMPERATURE_DATA;
-
-        Temp[i].Fract = 0;
-        prevTemp[i].Fract = 0;
-
-    } // for
-  }
+struct OneState
+{
+    ModuleStates Type; // тип состояния (температура, освещенность, каналы реле)
+    uint8_t Index; // индекс (например, датчика температуры)
+    void* Data; // данные с датчика
+    void* PreviousData; // предыдущие данные с датчика
 };
+
+typedef Vector<OneState*> StateVec;
+
+class ModuleState
+{
+ uint8_t supportedStates; // какие состояния поддерживаем?
+ StateVec states; // какие состояния поддерживаем?
+
+ bool IsStateChanged(OneState* s);
+
+public:
+  ModuleState();
+
+  bool HasState(ModuleStates state); // проверяет, поддерживаются ли такие состояния?
+  bool HasChanges(); // проверяет, есть ли изменения во внутреннем состоянии модуля?
+  void AddState(ModuleStates state, uint8_t idx); // добавляем состояние и привязываем его к индексу
+  void UpdateState(ModuleStates state, uint8_t idx, void* newData); // обновляем состояние модуля (например, показания с температурных датчиков);
+  uint8_t GetStateCount(ModuleStates state); // возвращает кол-во состояний определённого вида (например, кол-во датчиков температуры)
+  OneState* GetState(ModuleStates state, uint8_t idx); // возвращает состояние определённого вида по индексу
+  bool IsStateChanged(ModuleStates state, uint8_t idx); // проверяет, не изменилось ли состояние по индексу?
+
+ 
+};
+
 
 class AbstractModule
 {

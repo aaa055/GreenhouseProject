@@ -57,9 +57,11 @@ class LuminosityModule : public AbstractModule // модуль управлен�
   #if LIGHT_SENSORS_COUNT > 1
   BH1750Support lightMeter2; // второй датчик освещенности
   #endif
+
+  uint16_t lastUpdateCall;
     
   public:
-    LuminosityModule() : AbstractModule(F("LIGHT")) {}
+    LuminosityModule() : AbstractModule(F("LIGHT")), lastUpdateCall(0) {}
 
     bool ExecCommand(const Command& command);
     void Setup();

@@ -28,14 +28,31 @@ void WateringModule::Setup()
     bIsRTClockPresent = false; // нет часов реального времени
   #endif
 
-  State.SetRelayChannels(WATER_RELAYS_COUNT); // устанавливаем кол-во каналов реле
+  //State.SetRelayChannels(WATER_RELAYS_COUNT); // устанавливаем кол-во каналов реле
+   uint8_t relayCnt = WATER_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
+   if(relayCnt < 1)
+    relayCnt = 1;
+    
+   for(uint8_t i=0;i<relayCnt;i++) // добавляем состояния реле (каждый канал - 8 реле)
+    State.AddState(StateRelay,i);  
 
+    
   // выключаем все реле
   for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
   {
     pinMode(WATER_RELAYS[i],OUTPUT);
     digitalWrite(WATER_RELAYS[i],WATER_RELAY_OFF);
-    State.SetRelayState(i,dummyAllChannels.IsChannelRelayOn);
+  
+    //State.SetRelayState(i,dummyAllChannels.IsChannelRelayOn);
+    uint8_t idx = i/8;
+    uint8_t bitNum1 = i % 8;
+    OneState* os = State.GetState(StateRelay,idx);
+    if(os)
+    {
+      uint8_t curRelayStates = *((uint8_t*) os->Data);
+      bitWrite(curRelayStates,bitNum1, dummyAllChannels.IsChannelRelayOn);
+      State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+    }
 
     // настраиваем все каналы
     wateringChannels[i].IsChannelRelayOn = dummyAllChannels.IsChannelRelayOn;
@@ -129,14 +146,36 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
       for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
       {
         digitalWrite(WATER_RELAYS[i],state);
-        State.SetRelayState(i,channel->IsChannelRelayOn);
+//        State.SetRelayState(i,channel->IsChannelRelayOn);
+
+         uint8_t idx = i/8; // выясняем, какой индекс
+         uint8_t bitNum1 = i % 8;
+         OneState* os = State.GetState(StateRelay,idx);
+         if(os)
+         {
+          uint8_t curRelayStates = *((uint8_t*) os->Data); // получаем текущую маску состояния реле
+          bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn);
+          State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+         }
+      
       }   
       return;
     } // if
 
     // работаем с одним каналом
     digitalWrite(WATER_RELAYS[channelIdx],state);
-    State.SetRelayState(channelIdx,channel->IsChannelRelayOn);
+
+     uint8_t idx = channelIdx/8; // выясняем, какой индекс
+     uint8_t bitNum1 = channelIdx % 8;
+     OneState* os = State.GetState(StateRelay,idx);
+     if(os)
+     {
+      uint8_t curRelayStates = *((uint8_t*) os->Data); // получаем текущую маску состояния реле
+      bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn);
+      State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+     }
+     
+    //State.SetRelayState(channelIdx,channel->IsChannelRelayOn);
     
 }
 

@@ -86,15 +86,22 @@ bool AlertRule::HasAlert()
   switch(target)
   {
     case rtTemp: // проверяем температуру
-      if(!linkedModule->State.HasTemperature()) // не поддерживаем температуру
+    {
+     // if(!linkedModule->State.HasTemperature()) // не поддерживаем температуру
+     if(!linkedModule->State.HasState(StateTemperature))  // не поддерживаем температуру
         return false;
 
-      if(!linkedModule->State.IsTempChanged(tempSensorIdx)) // ничего не изменилось
+     // if(!linkedModule->State.IsTempChanged(tempSensorIdx)) // ничего не изменилось
+     if(!linkedModule->State.IsStateChanged(StateTemperature,tempSensorIdx)) // ничего не изменилось
       {
         return false;
       }
-       Temperature t = linkedModule->State.GetTemp(tempSensorIdx);
-       int8_t curTemp = t.Value;
+       OneState* os = linkedModule->State.GetState(StateTemperature,tempSensorIdx);
+       if(!os)
+        return false;
+        
+       Temperature* t = (Temperature*) os->Data;//linkedModule->State.GetTemp(tempSensorIdx);
+       int8_t curTemp = t->Value;
 
        int8_t tAlert = tempAlert; // следим за переданной температурой
        switch(temperatureSource)
@@ -116,7 +123,7 @@ bool AlertRule::HasAlert()
           case roGreaterOrEqual: return curTemp >= tAlert;
           default: return false;
        } // switch
-        
+    }  
     break; // rtTemp
   } // switch
 

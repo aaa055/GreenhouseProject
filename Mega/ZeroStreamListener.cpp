@@ -69,11 +69,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                 AbstractModule* m = c->GetModule(i);
                 if(m != this)
                 {
-                  uint8_t tempCnt = m->State.GetTempSensors();                 
-                  uint8_t relayCnt = m->State.GetRelayChannels();
+                  uint8_t tempCnt = m->State.GetStateCount(StateTemperature);//GetTempSensors();                 
+                  uint8_t relayCnt = m->State.GetStateCount(StateRelay);//GetRelayChannels();
 
                   for(uint8_t j=0;j<tempCnt;j++)
-                    if(m->State.IsTempChanged(j))
+                    if(m->State.IsStateChanged(StateTemperature,j))//IsTempChanged(j))
                     {
                         hasChanges = true;
                         break;
@@ -82,7 +82,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                   if(!hasChanges)
                   {
                     for(uint8_t j=0;j<relayCnt;j++)
-                      if(m->State.IsRelayStateChanged(j))
+                      if(m->State.IsStateChanged(StateRelay,j))//IsRelayStateChanged(j))
                       {
                         hasChanges = true;
                         break;
@@ -116,31 +116,65 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                 {
                  // состояние модуля изменилось, проверяем, чего именно изменилось
                  String mName = m->GetID();
-                 uint8_t tempCnt = m->State.GetTempSensors();
-                 uint8_t relayCnt = m->State.GetRelayChannels();
+                 uint8_t tempCnt = m->State.GetStateCount(StateTemperature);//GetTempSensors();
+                 //uint8_t relayCnt = m->State.GetStateCount(StateRelay);//GetRelayChannels();
 
                  for(uint8_t i=0;i<tempCnt;i++)
                  {
-                    if( m->State.IsTempChanged(i)) // температура на датчике изменилась
+                    if( m->State.IsStateChanged(StateTemperature,i))//IsTempChanged(i)) // температура на датчике изменилась
                     {
-                      answer += mName + PARAM_DELIMITER + PROP_TEMP + PARAM_DELIMITER + String(i) 
-                      + PARAM_DELIMITER + m->State.GetPrevTemp(i) + PARAM_DELIMITER + m->State.GetTemp(i) + NEWLINE;
-                    }
+                      OneState* os =  m->State.GetState(StateTemperature,i);
+                      if(os)
+                      {
+                        Temperature* tCurrent = (Temperature*) os->Data;
+                        Temperature* tPrev = (Temperature*) os->PreviousData;
+                      
+                        answer += mName + PARAM_DELIMITER + PROP_TEMP + PARAM_DELIMITER + String(i) 
+                        + PARAM_DELIMITER + *tPrev + PARAM_DELIMITER + *tCurrent + NEWLINE;
+                      } // if
+                    } // if
                       
                  } // for
-                 for(uint8_t i=0;i<relayCnt;i++)
+                 /*
+                 for(uint8_t i=0;i<relayCnt;i++) // нам вернули кол-во каналов реле, по 8 в каждом
                  {
-                    if( m->State.IsRelayStateChanged(i)) // состояние реле изменилось
+                    if( m->State.IsStateChanged(StateRelay,i))//IsRelayStateChanged(i)) // состояние реле изменилось
                     {
+                      // в канале есть изменения, надо их искать
+                      //Serial.println("RELAY STATE CHANGED!");
+                      
                       String prevState, curState;
-                      prevState = m->State.GetPrevRelayState(i) ? STATE_ON : STATE_OFF;
-                      curState = m->State.GetRelayState(i) ? STATE_ON : STATE_OFF;
+                      OneState* os =  m->State.GetState(StateRelay,i);
+                      if(os)
+                      {
+                          uint8_t prevRelayStates = *((uint8_t*) os->PreviousData);
+                          uint8_t curRelayStates = *((uint8_t*) os->Data);
+    
+                          for(uint8_t j = 0; j<8;j++)
+                          {
+                            bool bPrevOn = bitRead(prevRelayStates,j);
+                            bool bCurOn = bitRead(curRelayStates,j);
+                            if(bPrevOn != bCurOn)
+                            {
+                               // состояние конкретного реле изменилось, пишем его
+                               prevState = bPrevOn ? STATE_ON : STATE_OFF;
+                               curState =  bCurOn ? STATE_ON : STATE_OFF;
+                               answer += mName + PARAM_DELIMITER + PROP_RELAY + PARAM_DELIMITER + String(i*8 + j) +
+                               PARAM_DELIMITER + prevState + PARAM_DELIMITER + curState + NEWLINE;
+                            }
+                          } // for
+                          
+                      } // if(os)
+                      //prevState = m->State.GetPrevRelayState(i) ? STATE_ON : STATE_OFF;
+                      //curState = m->State.GetRelayState(i) ? STATE_ON : STATE_OFF;
                       
-                      answer += mName + PARAM_DELIMITER + PROP_RELAY + PARAM_DELIMITER + String(i) + 
-                      PARAM_DELIMITER + prevState + PARAM_DELIMITER + curState + NEWLINE;
-                    }
+                      //answer += mName + PARAM_DELIMITER + PROP_RELAY + PARAM_DELIMITER + String(i) + 
+                      //PARAM_DELIMITER + prevState + PARAM_DELIMITER + curState + NEWLINE;
+                    } // if
                       
-                 } // for                 
+                 } // for 
+                 */
+                                 
                  
                 } // if
             } // for
@@ -194,16 +228,16 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                     {
                        // ПРИМЕР:
                       // CTGET=0|PROP|M|TEMP_CNT
-                      uint8_t tempCnt = mod->State.GetTempSensors();
+                      uint8_t tempCnt = mod->State.GetStateCount(StateTemperature);//GetTempSensors();
 
                       answerStatus = true;
                       answer = String(PROP_TEMP_CNT) + PARAM_DELIMITER + String(tempCnt);
                     }
-                    else if(propName == PROP_RELAY_CNT) // кол-во каналов реле
+                    else if(propName == PROP_RELAY_CNT) // кол-во каналов реле - в каждом канале - 8 реле
                     {
                        // ПРИМЕР:
                       // CTGET=0|PROP|M|RELAY_CNT
-                      uint8_t relayCnt = mod->State.GetRelayChannels();
+                      uint8_t relayCnt = mod->State.GetStateCount(StateRelay);//GetRelayChannels();
                       
                       answerStatus = true;
                       answer = String(PROP_RELAY_CNT) + PARAM_DELIMITER + String(relayCnt);
@@ -222,15 +256,20 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                          else
                          {
                            // получаем сохраненную температуру от датчика
-                           if(mod->State.HasTemperature()) // если поддерживаем температуру
+                           if(mod->State.HasState(StateTemperature))//HasTemperature()) // если поддерживаем температуру
                            {
                             uint8_t sensorIdx = command.GetArg(3).toInt();
 
-                            if(sensorIdx < mod->State.GetTempSensors())
+                            if(sensorIdx < mod->State.GetStateCount(StateTemperature))//mod->State.GetTempSensors())
                             {
-                              String curTemp = mod->State.GetTemp(sensorIdx);
-                              answerStatus = true;
-                              answer = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + curTemp;
+                              OneState* os = mod->State.GetState(StateTemperature,sensorIdx);
+                              if(os)
+                              {
+                                Temperature* t = (Temperature*) os->Data;
+                                String curTemp = *t;//mod->State.GetTemp(sensorIdx);
+                                answerStatus = true;
+                                answer = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + curTemp;
+                              } // if(os)
                             }
  
                            }
@@ -250,15 +289,25 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                          else
                          {
                            // получаем состояние реле
-                           if(mod->State.HasRelay()) // если поддерживаем реле
+                           if(mod->State.HasState(StateRelay))//HasRelay()) // если поддерживаем реле
                            {
                             uint8_t relayIdx = command.GetArg(3).toInt();
 
-                              if(relayIdx < mod->State.GetRelayChannels())
+                              if(relayIdx < mod->State.GetStateCount(StateRelay)*8)//GetRelayChannels())
                               {
-                                String curRelayState = mod->State.GetRelayState(relayIdx) ? STATE_ON : STATE_OFF;
-                                answerStatus = true;
-                                answer = String(PROP_RELAY) + PARAM_DELIMITER + String(relayIdx) +  PARAM_DELIMITER + curRelayState;
+                                
+                                uint8_t stateIdx = relayIdx/8;
+                                uint8_t bitNum = relayIdx % 8;
+
+                                OneState* os = mod->State.GetState(StateRelay,stateIdx);
+                                if(os)
+                                {
+                                  bool bOn = bitRead(*((uint8_t*)os->Data),bitNum);
+                                
+                                  String curRelayState = bOn ? STATE_ON : STATE_OFF;
+                                  answerStatus = true;
+                                  answer = String(PROP_RELAY) + PARAM_DELIMITER + String(relayIdx) +  PARAM_DELIMITER + curRelayState;
+                                } // if(os)
                               }
                              
                             }
@@ -374,7 +423,9 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                       // CTSET=0|PROP|M|TEMP_CNT|2
                       uint8_t tempCnt = command.GetArg(3).toInt();
 
-                      mod->State.SetTempSensors(tempCnt);
+                      //mod->State.SetTempSensors(tempCnt);
+                      for(uint8_t toAdd = 0; toAdd < tempCnt; toAdd++)
+                        mod->State.AddState(StateTemperature,toAdd);
                       
                       answerStatus = true;
                       answer = REG_SUCC;
@@ -385,7 +436,13 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                       // CTSET=0|PROP|M|RELAY_CNT|5
                       uint8_t relayCnt = command.GetArg(3).toInt();
 
-                      mod->State.SetRelayChannels(relayCnt);
+                      //mod->State.SetRelayChannels(relayCnt);
+                      uint8_t channelsCnt = relayCnt/8;
+                      if(channelsCnt < 1)
+                        channelsCnt = 1;
+
+                      for(uint8_t k = 0;k<channelsCnt;k++)
+                        mod->State.AddState(StateRelay,k);
 
                       answerStatus = true;
                       answer = REG_SUCC;
@@ -416,7 +473,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                               t.Fract = curTemp.toInt();
                            }
 
-                           mod->State.SetTemp(sensorIdx,t);
+                           //mod->State.SetTemp(sensorIdx,t);
+                           mod->State.UpdateState(StateTemperature,sensorIdx,(void*)&t);
  
                             answerStatus = true;
                             answer = REG_SUCC;
@@ -439,7 +497,18 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                            String curRelayState = command.GetArg(4);
                            uint8_t relayIdx = command.GetArg(3).toInt();
 
-                           mod->State.SetRelayState(relayIdx,curRelayState);
+                           uint8_t channelIdx = relayIdx/8;
+                           uint8_t bitNum = relayIdx % 8;
+
+                           OneState* os = mod->State.GetState(StateRelay,channelIdx);
+                           if(os)
+                           {
+                            uint8_t curRState = *((uint8_t*)os->Data);
+                            bitWrite(curRState,bitNum,(curRelayState == STATE_ON));
+                            mod->State.UpdateState(StateRelay,channelIdx,(void*) &curRState);
+                           } 
+
+                           //mod->State.SetRelayState(relayIdx,curRelayState);
                            
                             answerStatus = true;
                             answer = REG_SUCC;

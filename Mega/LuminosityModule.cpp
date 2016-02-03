@@ -59,10 +59,12 @@ void LuminosityModule::Setup()
 {
   #if LIGHT_SENSORS_COUNT > 0
   lightMeter.begin(); // запускаем первый датчик освещенности
+  State.AddState(StateLuminosity,0); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексов 0
   #endif
 
   #if LIGHT_SENSORS_COUNT > 1
   lightMeter2.begin(BH1750Address2);
+  State.AddState(StateLuminosity,1); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексов 1
   #endif
   // настройка модуля тут
   
@@ -71,6 +73,22 @@ void LuminosityModule::Setup()
 void LuminosityModule::Update(uint16_t dt)
 { 
   // обновление модуля тут
+  lastUpdateCall += dt;
+  if(lastUpdateCall < 2000) // не будем обновлять чаще, чем раз в две секунды
+  {
+    return;
+  }
+  lastUpdateCall = 0;
+
+  #if LIGHT_SENSORS_COUNT > 0
+    uint16_t lum = lightMeter.GetCurrentLuminosity();
+    State.UpdateState(StateLuminosity,0,(void*)&lum);
+  #endif
+    
+  #if LIGHT_SENSORS_COUNT > 1
+    lum = lightMeter2.GetCurrentLuminosity();
+    State.UpdateState(StateLuminosity,1,(void*)&lum);
+  #endif
 
 }
 

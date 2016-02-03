@@ -649,15 +649,27 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     return;
   }
 
+
   // получаем температуры
-  Temperature insideTemp = stateModule->State.GetTemp(0);
-  Temperature outsideTemp = stateModule->State.GetTemp(1);
+  //Temperature insideTemp = stateModule->State.GetTemp(0);
+  //Temperature outsideTemp = stateModule->State.GetTemp(1);
+  OneState* os1 = stateModule->State.GetState(StateTemperature,0);
+  OneState* os2 = stateModule->State.GetState(StateTemperature,1);
+
+  String sms;
+
+  if(os1 && os2)
+  {
+    Temperature* insideTemp = (Temperature*) os1->Data;
+    Temperature* outsideTemp = (Temperature*) os2->Data;
   
-  String sms = T_INDOOR; // сообщение
-  sms += insideTemp;
-  sms += NEWLINE;
-  sms += T_OUTDOOR;
-  sms += outsideTemp;
+    sms = T_INDOOR; // сообщение
+    sms += *insideTemp;
+    sms += NEWLINE;
+    sms += T_OUTDOOR;
+    sms += *outsideTemp;
+  } // if
+
 
   // тут получаем состояние окон
   //CommandParser* cParser = c->GetCommandParser();
@@ -776,6 +788,8 @@ void SMSModule::SendSMS(const String& sms)
             
             break;
           }
+          else
+            return; // не тот символ!
         }
       } // while(1)
     

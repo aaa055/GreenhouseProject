@@ -1,90 +1,220 @@
 #include "AbstractModule.h"
 
-void ModuleState::SetTempSensors(uint8_t cnt)
+ModuleState::ModuleState() : supportedStates(0)
 {
-  if(cnt > MAX_TEMP_SENSORS)
-    cnt = MAX_TEMP_SENSORS;
-
-    TempSensors = cnt;
-}
-Temperature ModuleState::GetTemp(uint8_t idx)
-{
-  if(idx >= MAX_TEMP_SENSORS)
-    idx = MAX_TEMP_SENSORS - 1;
-
-  return Temp[idx];
-}
-Temperature ModuleState::GetPrevTemp(uint8_t idx)
-{
-  if(idx >= MAX_TEMP_SENSORS)
-    idx = MAX_TEMP_SENSORS - 1;
-
-  return prevTemp[idx];
-}
-void ModuleState::SetTemp(uint8_t idx, const Temperature& dt)
-{ 
-  if(idx >= MAX_TEMP_SENSORS)
-    idx = MAX_TEMP_SENSORS - 1;
-
-  prevTemp[idx] = Temp[idx]; // сохраняем предыдущую температуру
-  Temp[idx] = dt; // записываем новую
-
   
 }
-bool ModuleState::GetRelayState(uint8_t idx)
+bool ModuleState::HasState(ModuleStates state)
 {
-    if(idx >= MAX_RELAY_CHANNELS)
-      idx = MAX_RELAY_CHANNELS - 1;
- 
-    return bitRead(RelayStates,idx);
-
+  return ( (supportedStates & state) == state);
 }
-bool ModuleState::GetPrevRelayState(uint8_t idx)
+
+void ModuleState::AddState(ModuleStates state, uint8_t idx)
 {
-    if(idx >= MAX_RELAY_CHANNELS)
-      idx = MAX_RELAY_CHANNELS - 1;
+    supportedStates |= state;
+    OneState* s = new OneState;
+    s->Type = state;
+    s->Index = idx;
+
+    switch(state)
+    {
+      case StateTemperature:
+      {
       
-     return bitRead(prevRelayStates,idx);
+        Temperature* t1 = new Temperature;
+        Temperature* t2 = new Temperature;
+        t1->Value = NO_TEMPERATURE_DATA;
+        t2->Value = NO_TEMPERATURE_DATA;
+        t1->Fract = 0;
+        t2->Fract = 0;
+        
+        s->Data = t1;
+        s->PreviousData = t2;
+      }
+        
+      break;
 
+      case StateRelay:
+        {
+        uint8_t*  ui1 = new uint8_t;
+        uint8_t*  ui2 = new uint8_t;
+
+        *ui1 = 0;
+        *ui2 = 0;
+        
+        s->Data = ui1;
+        s->PreviousData = ui2;
+        }
+        
+      break;
+
+      case StateLuminosity:
+      {
+        uint16_t*  ui1 = new uint16_t;
+        uint16_t*  ui2 = new uint16_t;
+
+        *ui1 = 0;
+        *ui2 = 0;
+        
+        s->Data = ui1;
+        s->PreviousData = ui2;
+      }
+      break;
+    } // switch
+
+    states.push_back(s); // сохраняем состояние
+    
 }
-bool  ModuleState::IsTempChanged(uint8_t idx)
+bool ModuleState::HasChanges()
 {
-   if(idx >= MAX_TEMP_SENSORS)
-    idx = MAX_TEMP_SENSORS - 1;
-
-     return Temp[idx] != prevTemp[idx];
-}
-void ModuleState::SetRelayState(uint8_t idx,const String& state)
-{
-  SetRelayState(idx,(state == STATE_ON || state == STATE_ON_ALT));  
-}
-void  ModuleState::SetRelayState(uint8_t idx,bool bOn)
-{
-    if(idx >= MAX_RELAY_CHANNELS)
-      idx = MAX_RELAY_CHANNELS - 1;
-
-    bitWrite(prevRelayStates,idx,bitRead(RelayStates,idx));
-    bitWrite(RelayStates,idx, bOn);
-  
-}
-bool ModuleState::IsRelayStateChanged(uint8_t idx)
-{
-    if(idx >= MAX_RELAY_CHANNELS)
-      idx = MAX_RELAY_CHANNELS - 1;  
-
-  return bitRead(prevRelayStates,idx) != bitRead(RelayStates,idx);
-}
-void ModuleState::SetRelayChannels(uint8_t cnt)
-{
-  if(cnt > MAX_RELAY_CHANNELS)
-    cnt = MAX_RELAY_CHANNELS;
-
-    RelayChannels = cnt;
-  
-}
-
-  void AbstractModule::Publish()
+  size_t sz = states.size();
+  for(uint8_t i=0;i<sz;i++)
   {
+      OneState* s = states[i];
+
+      if(IsStateChanged(s))
+        return true;
+
+  } // for
+
+  return false;
+  
+}
+bool ModuleState::IsStateChanged(OneState* s)
+{
+      switch(s->Type)
+      {
+        case StateTemperature:
+        {
+          Temperature* t1 = (Temperature*) s->Data;
+          Temperature* t2 = (Temperature*) s->PreviousData;
+
+          if(*t1 != *t2)
+            return true; // температура изменилась
+        }
+        break;
+  
+        case StateRelay:
+        {
+          uint8_t*  ui1 = (uint8_t*) s->Data;
+          uint8_t*  ui2 = (uint8_t*) s->PreviousData;
+  
+         if(*ui1 != *ui2)
+          return true; // состояние реле изменилось
+        }  
+        break;
+  
+        case StateLuminosity:
+        {
+          uint16_t*  ui1 = (uint16_t*) s->Data;
+          uint16_t*  ui2 = (uint16_t*) s->PreviousData;
+  
+         if(*ui1 != *ui2)
+          return true; // состояние освещенности изменилось
+        }  
+        break;
+      } // switch
+
+ return false;
+  
+}
+bool ModuleState::IsStateChanged(ModuleStates state, uint8_t idx)
+{
+  size_t sz = states.size();
+  for(uint8_t i=0;i<sz;i++)
+  {
+      OneState* s = states[i];
+      
+      if(s->Type == state && s->Index == idx)
+        return IsStateChanged(s);
+
+  } // for
+
+  return false;
+  
+}
+void ModuleState::UpdateState(ModuleStates state, uint8_t idx, void* newData)
+{
+  size_t sz = states.size();
+  for(uint8_t i=0;i<sz;i++)
+  {
+      OneState* s = states[i];
+      if(s->Type == state && s->Index == idx)
+      {
+                switch(state)
+                {
+                  
+                  case StateTemperature:
+                  {
+                    Temperature* t1 = (Temperature*) s->Data;
+                    Temperature* t2 = (Temperature*) s->PreviousData;
+
+                    *t2 = *t1; // сохраняем предыдущую температуру
+
+                    Temperature* tNew = (Temperature*) newData;
+                    *t1 = *tNew; // пишем новую
+                  } 
+                  break;
+            
+                  case StateRelay:
+                  {
+                    uint8_t*  ui1 = (uint8_t*) s->Data;
+                    uint8_t*  ui2 = (uint8_t*) s->PreviousData;
+            
+                    *ui2 = *ui1; // сохраняем предыдущее состояние каналов реле
+
+                    uint8_t* newState = (uint8_t*) newData;
+                    *ui1 = *newState; // пишем новое состояние каналов реле
+                  }  
+                  break;
+                  
+            
+                  case StateLuminosity:
+                  {
+                    uint16_t*  ui1 = (uint16_t*) s->Data;
+                    uint16_t*  ui2 = (uint16_t*) s->PreviousData;
+            
+                    *ui2 = *ui1; // сохраняем предыдущее состояние освещенности
+
+                    uint16_t* newState = (uint16_t*) newData;
+                    *ui1 = *newState; // пишем новое состояние освещенности
+                  } 
+                  break;
+                  
+                } // switch
+        break;
+      } // if
+  } // for
+}
+uint8_t ModuleState::GetStateCount(ModuleStates state)
+{
+  uint8_t result = 0;
+  size_t sz = states.size();
+  
+  for(uint8_t i=0;i<sz;i++)
+  {
+      OneState* s = states[i];
+      if(s->Type == state)
+        result++;
+  }
+  
+  return result;
+}
+OneState* ModuleState::GetState(ModuleStates state, uint8_t idx)
+{
+  size_t sz = states.size();
+  for(uint8_t i=0;i<sz;i++)
+  {
+      OneState* s = states[i];
+      if(s->Type == state && s->Index == idx)
+        return s;
+  }
+
+    return NULL;
+}
+
+void AbstractModule::Publish()
+{
     toPublish.Module = this; // сохраняем указатель на нас, все остальное уже должно быть заполнено
     Stream* streamDefOut = toPublish.SourceCommand->GetIncomingStream(); // в какой поток вывести по умолчанию
     uint8_t streamFillCnt = 0; // был ли вывод в поток, в который мы собираемся вывести информацию?
@@ -110,10 +240,10 @@ void ModuleState::SetRelayChannels(uint8_t cnt)
       controller->PublishToStream(streamDefOut,toPublish.Status,txt);
     } // if
     
-  }
+}
 
-  bool AbstractModule::AddPublisher(AbstractPublisher* p)
-  {
+bool AbstractModule::AddPublisher(AbstractPublisher* p)
+{
      for(uint8_t i=0;i<MAX_PUBLISHERS;i++)
     {
       if(!publishers[i])
@@ -123,6 +253,5 @@ void ModuleState::SetRelayChannels(uint8_t cnt)
       }
     } // for
     return false;
-   
-  }
+}
 

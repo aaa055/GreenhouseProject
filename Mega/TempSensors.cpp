@@ -66,8 +66,36 @@ void WindowState::SwitchRelays(uint16_t rel1State, uint16_t rel2State)
   
   if(RelayStateHolder) // сообщаем, что реле мы выключили или включили
   {
-    RelayStateHolder->SetRelayState(RelayChannel1,rel1State == HIGH);
-    RelayStateHolder->SetRelayState(RelayChannel2,rel2State == HIGH);
+   // RelayStateHolder->SetRelayState(RelayChannel1,rel1State == HIGH);
+  //  RelayStateHolder->SetRelayState(RelayChannel2,rel2State == HIGH);
+
+  // сначала вычисляем индекс, по которому находятся наши каналы реле.
+  // у нас 8 реле на одно свойство StateRelay, значит, в первом свойстве
+  // находятся каналы с 0 по 7, во втором - с 8 по 15 и т.п.
+   uint8_t idx = RelayChannel1/8; // выясняем, какой индекс
+
+ // теперь мы должны выяснить, в какой бит писать
+  uint8_t bitNum1 = RelayChannel1 % 8;
+  uint8_t bitNum2 = RelayChannel2 % 8;
+   
+
+   OneState* os = RelayStateHolder->GetState(StateRelay,idx);
+   if(os)
+   {
+     uint8_t curRelayStates = *((uint8_t*) os->Data); // получаем текущую маску состояния реле
+
+     // устанавливаем нужные биты
+     bitWrite(curRelayStates,bitNum1, (rel1State == HIGH));
+     bitWrite(curRelayStates,bitNum2, (rel2State == HIGH));
+     
+     // записываем новую маску состояния реле
+     RelayStateHolder->UpdateState(StateRelay,idx,(void*)&curRelayStates);
+   }
+
+   
+  
+    
+   
   } // if
   
 }
@@ -149,8 +177,20 @@ void TempSensors::Setup()
    * Пишем в State настройки - кол-во поддерживаемых датчиков температуры
    * 
    */
-   State.SetTempSensors(SUPPORTED_SENSORS); // сколько датчиков поддерживаем?
-   State.SetRelayChannels(SUPPORTED_WINDOWS*2); // сколько каналов реле? Каждым мотором фрамуги управляют два реле
+   //State.SetTempSensors(SUPPORTED_SENSORS); // сколько датчиков поддерживаем?
+   // добавляем датчики температуры
+   for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
+    State.AddState(StateTemperature,i);
+   
+   //State.SetRelayChannels(SUPPORTED_WINDOWS*2); // сколько каналов реле? Каждым мотором фрамуги управляют два реле
+   
+   // добавляем N восьмиканальных состояний реле
+   uint8_t relayCnt = (SUPPORTED_WINDOWS*2)/8;
+   if(relayCnt < 1)
+    relayCnt = 1;
+    
+   for(uint8_t i=0;i<relayCnt;i++)
+    State.AddState(StateRelay,i);  
   
    SetupWindows(); // настраиваем фрамуги
 
@@ -176,11 +216,13 @@ void TempSensors::Update(uint16_t dt)
     Temperature s;
     s.Value = random(20,40);
     s.Fract = random(50,100);
-    State.SetTemp(0,s);
+    //State.SetTemp(0,s);
+    State.UpdateState(StateTemperature,0,(void*)&s);
 
     s.Value = random(0,15);
     s.Fract = random(50,100);
-    State.SetTemp(1,s);
+    //State.SetTemp(1,s);
+     State.UpdateState(StateTemperature,1,(void*)&s);
 
   // TEST CODE END //
 
@@ -430,7 +472,7 @@ bool  TempSensors::ExecCommand(const Command& command)
               if(s == PROP_TEMP_CNT) // кол-во датчиков
               {
                  answerStatus = true;
-                 answer = String(PROP_TEMP_CNT) + PARAM_DELIMITER + State.GetTempSensors();
+                 answer = String(PROP_TEMP_CNT) + PARAM_DELIMITER + State.GetStateCount(StateTemperature);//State.GetTempSensors();
               } // if
               else // запросили по индексу
               {
@@ -442,7 +484,12 @@ bool  TempSensors::ExecCommand(const Command& command)
                     // получаем текущее значение датчика
                     answerStatus = true;
 
-                    answer = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + State.GetTemp(sensorIdx);
+                    OneState* os = State.GetState(StateTemperature,sensorIdx);
+                    if(os)
+                    {
+                      Temperature* t = (Temperature*) os->Data;
+                      answer = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + *t;//State.GetTemp(sensorIdx);
+                    }
                   }
               } // else
               
@@ -455,7 +502,7 @@ bool  TempSensors::ExecCommand(const Command& command)
              if(s == PROP_WINDOW_CNT)
              {
                     answerStatus = true;
-                    answer = String(PROP_WINDOW_CNT) + PARAM_DELIMITER + State.GetRelayChannels();
+                    answer = String(PROP_WINDOW_CNT) + PARAM_DELIMITER + String(SUPPORTED_WINDOWS);//State.GetRelayChannels();
 
              }
             else // запросили по индексу

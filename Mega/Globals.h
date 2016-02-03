@@ -57,7 +57,6 @@
 
 #define MAX_PUBLISHERS 2 // максимальное количество паблишеров для модуля
 #define MAX_TEMP_SENSORS 4 // максимальное кол-во поддерживаемых датчиков температуры
-#define MAX_RELAY_CHANNELS 8 // максимальное кол-во каналов реле в структуре состояния модуля (максимум - 8)
 #define STATE_ON F("ON") // Включено
 #define STATE_ON_ALT F("1") // Включено
 #define STATE_OFF F("OFF") // Выключено
