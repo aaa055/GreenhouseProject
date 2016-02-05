@@ -57,9 +57,9 @@ DS3231Time DS3231Clock::getTime()
   t.year += 2000; // приводим время к нормальному формату
   return t;
 }
-char* DS3231Clock::getDayOfWeekStr(const DS3231Time& t)
+const char* DS3231Clock::getDayOfWeekStr(const DS3231Time& t)
 {
-  static char* dow[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+  static const char* dow[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
   return dow[t.dayOfWeek-1];
 }
 /*
@@ -69,7 +69,7 @@ char* DS3231Clock::getMonthStr(const DS3231Time& t)
   return months[t.month-1];
 }
 */
-char* DS3231Clock::getTimeStr(const DS3231Time& t)
+const char* DS3231Clock::getTimeStr(const DS3231Time& t)
 {
   char* writePtr = workBuff;
   
@@ -102,7 +102,7 @@ char* DS3231Clock::getTimeStr(const DS3231Time& t)
 
  return workBuff;
 }
-char* DS3231Clock::getDateStr(const DS3231Time& t)
+const char* DS3231Clock::getDateStr(const DS3231Time& t)
 {
   char* writePtr = workBuff;
   if(t.dayOfMonth < 10)

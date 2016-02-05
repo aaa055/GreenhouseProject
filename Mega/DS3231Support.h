@@ -40,10 +40,10 @@ class DS3231Clock
     void setTime(uint8_t second, uint8_t minute, uint8_t hour, uint8_t dayOfWeek, uint8_t dayOfMonth, uint8_t month, uint16_t year);
     void setTime(const DS3231Time& time);
 
-    char* getDayOfWeekStr(const DS3231Time& t);
+    const char* getDayOfWeekStr(const DS3231Time& t);
    // char* getMonthStr(const DS3231Time& t);
-    char* getTimeStr(const DS3231Time& t);
-    char* getDateStr(const DS3231Time& t);
+    const char* getTimeStr(const DS3231Time& t);
+    const char* getDateStr(const DS3231Time& t);
 
     DS3231Time getTime();
  

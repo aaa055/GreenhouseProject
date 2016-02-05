@@ -45,7 +45,7 @@ class PDUMessageDecoder // декодировщик сообщений из UCS2
     String exchangeOctets(const String& src); // меняет соседние октеты местами
     char mapChar(char ch);
     uint8_t DCS_Bits(const String& tp_DCS);
-    int UCS2ToUTF8(int ucs2, unsigned char * utf8);
+    int UCS2ToUTF8(unsigned long ucs2, unsigned char * utf8);
 
     String getUTF8From16BitEncoding(const String& ucs2Message);
     String getUTF8From8BitEncoding(const String& ucs2Message);

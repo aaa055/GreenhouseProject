@@ -98,7 +98,7 @@ String PDUMessageEncoder::EncodePhoneNumber(const String& nm)
   if(num.length() % 2 > 0)
     num += F("F");
     
-    int i=0;
+    unsigned int i=0;
     while(i < num.length())
     {
       result += String((char) num[i+1]);
@@ -293,7 +293,7 @@ String PDUMessageDecoder::getUTF8From16BitEncoding(const String& ucs2Message)
   {
      String hex1 = ucs2Message.substring(i,i+2);
      String hex2 = ucs2Message.substring(i+2,i+4);
-     int ucs2Code = HexToNum(hex1)*256 + HexToNum(hex2);
+     unsigned long ucs2Code = HexToNum(hex1)*256 + HexToNum(hex2);
 
      if(UCS2ToUTF8(ucs2Code,buff) > 0)
       result += (char*) buff;
@@ -310,7 +310,7 @@ String PDUMessageDecoder::getUTF8From8BitEncoding(const String& ucs2Message)
   for(uint16_t i=0;i<ucs2Message.length();i+=2)
   {
      String hex1 = ucs2Message.substring(i,i+2);
-     uint16_t ucs2Code = HexToNum(hex1);
+     unsigned long ucs2Code = HexToNum(hex1);
 
     if(UCS2ToUTF8(ucs2Code,buff) > 0)
       result += (char*) buff;
@@ -334,7 +334,8 @@ String PDUMessageDecoder::getUTF8From7BitEncoding(const String& ucs2Message, uin
   } // for
     
    // начинаем декодировать семибитную кодировку
-   int bits=0, i = 0, j = 0, last = 0;
+   int bits=0, i = 0, last = 0;
+   uint16_t j = 0;
 
     while(j < trueLength)
       {
@@ -352,7 +353,7 @@ String PDUMessageDecoder::getUTF8From7BitEncoding(const String& ucs2Message, uin
 
  return result;
 }
-int PDUMessageDecoder::UCS2ToUTF8 (int ucs2, unsigned char * utf8)
+int PDUMessageDecoder::UCS2ToUTF8 (unsigned long ucs2, unsigned char * utf8)
 {
     if (ucs2 < 0x80) 
     {
