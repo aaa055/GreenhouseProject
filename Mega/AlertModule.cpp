@@ -1,6 +1,6 @@
 #include "AlertModule.h"
 #include "ModuleController.h"
-
+#include <EEPROM.h>
 
 AlertRule::AlertRule()
 {
@@ -126,6 +126,9 @@ bool AlertRule::HasAlert()
           case tsCloseTemperature: // попросили подставить температуру закрытия из настроек
             tAlert = linkedModule->GetController()->GetSettings()->GetCloseTemp();
           break;
+
+          case tsPassed:
+          break;
        }
 
        switch(operand)
@@ -152,7 +155,7 @@ bool AlertRule::HasAlert()
        if(!os)
         return false;
         
-       uint16_t* lum = (uint16_t*) os->Data;
+       long* lum = (long*) os->Data;
 
        if(*lum == -1) // нет датчика на линии
         return false;
@@ -171,6 +174,9 @@ bool AlertRule::HasAlert()
        } // switch
       
     }
+    break;
+
+    case rtUnknown:
     break;
   } // switch
 
@@ -340,6 +346,9 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
       
       case rtLuminosity:
       alertRule += PROP_LIGHT;
+      break;
+
+      case rtUnknown:
       break;
       
     }
@@ -523,7 +532,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
       targetCommand += command.GetArg(i);
   } // for
  
-  
+  return true;
 }
 void AlertModule::LoadRules() // читаем настройки из EEPROM
 {
@@ -608,6 +617,7 @@ bool AlertModule::AddRule(AbstractModule* m, const Command& c)
    alertRules[rulesCnt] = ar;
 
     rulesCnt++;
+    return true;
 }
 
 void AlertModule::Setup()

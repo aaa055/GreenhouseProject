@@ -3,7 +3,6 @@
 
 #include "AbstractModule.h"
 #include "Globals.h"
-#include <EEPROM.h>
 
 typedef enum
 {
@@ -105,7 +104,7 @@ class AlertModule : public AbstractModule
     void SaveRules();
     
   public:
-    AlertModule() : AbstractModule(F("ALERT")), cntAlerts(0),curAlertIdx(0) {InitRules();}
+    AlertModule() : AbstractModule(F("ALERT")) {cntAlerts = 0; curAlertIdx = 0; InitRules();}
 
     bool ExecCommand(const Command& command);
     void Setup();

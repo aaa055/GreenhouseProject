@@ -49,4 +49,5 @@ size_t InteropStream::println(const String &s)
 size_t InteropStream::write(uint8_t toWr)
 {
   data += (char) toWr;
+  return 1;
 }

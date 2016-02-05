@@ -50,8 +50,8 @@ void ModuleState::AddState(ModuleStates state, uint8_t idx)
 
       case StateLuminosity:
       {
-        uint16_t*  ui1 = new uint16_t;
-        uint16_t*  ui2 = new uint16_t;
+        long*  ui1 = new long;
+        long*  ui2 = new long;
 
         *ui1 = 0;
         *ui2 = 0;
@@ -106,8 +106,8 @@ bool ModuleState::IsStateChanged(OneState* s)
   
         case StateLuminosity:
         {
-          uint16_t*  ui1 = (uint16_t*) s->Data;
-          uint16_t*  ui2 = (uint16_t*) s->PreviousData;
+          long*  ui1 = (long*) s->Data;
+          long*  ui2 = (long*) s->PreviousData;
   
          if(*ui1 != *ui2)
           return true; // состояние освещенности изменилось
@@ -171,12 +171,12 @@ void ModuleState::UpdateState(ModuleStates state, uint8_t idx, void* newData)
             
                   case StateLuminosity:
                   {
-                    uint16_t*  ui1 = (uint16_t*) s->Data;
-                    uint16_t*  ui2 = (uint16_t*) s->PreviousData;
+                    long*  ui1 = (long*) s->Data;
+                    long*  ui2 = (long*) s->PreviousData;
             
                     *ui2 = *ui1; // сохраняем предыдущее состояние освещенности
 
-                    uint16_t* newState = (uint16_t*) newData;
+                    long* newState = (long*) newData;
                     *ui1 = *newState; // пишем новое состояние освещенности
                   } 
                   break;
@@ -200,7 +200,7 @@ uint8_t ModuleState::GetStateCount(ModuleStates state)
   
   return result;
 }
-OneState* const ModuleState::GetState(ModuleStates state, uint8_t idx)
+OneState* ModuleState::GetState(ModuleStates state, uint8_t idx)
 {
   size_t sz = states.size();
   for(uint8_t i=0;i<sz;i++)

@@ -80,7 +80,7 @@ void LuminosityModule::Update(uint16_t dt)
   }
   lastUpdateCall = 0;
 
-  uint16_t lum = -1;
+  long lum = -1;
 
   #if LIGHT_SENSORS_COUNT > 0
     lum = lightMeter.GetCurrentLuminosity();
@@ -97,7 +97,7 @@ void LuminosityModule::Update(uint16_t dt)
 bool  LuminosityModule::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
-  GlobalSettings* settings = c->GetSettings();
+  //GlobalSettings* settings = c->GetSettings();
   
   String answer = UNKNOWN_COMMAND;
   

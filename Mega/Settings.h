@@ -52,7 +52,7 @@ class GlobalSettings
     void SetWateringOption(WateringOption val) {wateringOption = val; }
 
     uint8_t GetChannelWateringWeekDays(uint8_t idx) {return wateringChannelsOptions[idx].wateringWeekDays;};
-    uint8_t SetChannelWateringWeekDays(uint8_t idx, uint8_t val) {wateringChannelsOptions[idx].wateringWeekDays = val;};
+    void SetChannelWateringWeekDays(uint8_t idx, uint8_t val) {wateringChannelsOptions[idx].wateringWeekDays = val;};
 
      uint16_t GetChannelWateringTime(uint8_t idx) {return wateringChannelsOptions[idx].wateringTime;}
      void SetChannelWateringTime(uint8_t idx,uint16_t val) {wateringChannelsOptions[idx].wateringTime = val;}
