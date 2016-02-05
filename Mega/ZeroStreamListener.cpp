@@ -438,8 +438,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
 
                       //mod->State.SetRelayChannels(relayCnt);
                       uint8_t channelsCnt = relayCnt/8;
-                      if(channelsCnt < 1)
-                        channelsCnt = 1;
+                      if(relayCnt > 8 && relayCnt % 8)
+                        channelsCnt++;
 
                       for(uint8_t k = 0;k<channelsCnt;k++)
                         mod->State.AddState(StateRelay,k);

@@ -200,7 +200,7 @@ uint8_t ModuleState::GetStateCount(ModuleStates state)
   
   return result;
 }
-OneState* ModuleState::GetState(ModuleStates state, uint8_t idx)
+OneState* const ModuleState::GetState(ModuleStates state, uint8_t idx)
 {
   size_t sz = states.size();
   for(uint8_t i=0;i<sz;i++)

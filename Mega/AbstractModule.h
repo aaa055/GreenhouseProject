@@ -67,7 +67,7 @@ public:
   void AddState(ModuleStates state, uint8_t idx); // добавляем состояние и привязываем его к индексу
   void UpdateState(ModuleStates state, uint8_t idx, void* newData); // обновляем состояние модуля (например, показания с температурных датчиков);
   uint8_t GetStateCount(ModuleStates state); // возвращает кол-во состояний определённого вида (например, кол-во датчиков температуры)
-  OneState* GetState(ModuleStates state, uint8_t idx); // возвращает состояние определённого вида по индексу
+  OneState* const GetState(ModuleStates state, uint8_t idx); // возвращает состояние определённого вида по индексу
   bool IsStateChanged(ModuleStates state, uint8_t idx); // проверяет, не изменилось ли состояние по индексу?
 
  

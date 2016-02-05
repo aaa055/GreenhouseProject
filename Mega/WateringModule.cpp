@@ -30,8 +30,8 @@ void WateringModule::Setup()
 
   //State.SetRelayChannels(WATER_RELAYS_COUNT); // устанавливаем кол-во каналов реле
    uint8_t relayCnt = WATER_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
-   if(relayCnt < 1)
-    relayCnt = 1;
+   if(WATER_RELAYS_COUNT > 8 && WATER_RELAYS_COUNT % 8)
+    relayCnt++;
     
    for(uint8_t i=0;i<relayCnt;i++) // добавляем состояния реле (каждый канал - 8 реле)
     State.AddState(StateRelay,i);  

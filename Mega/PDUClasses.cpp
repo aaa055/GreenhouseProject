@@ -101,8 +101,8 @@ String PDUMessageEncoder::EncodePhoneNumber(const String& nm)
     int i=0;
     while(i < num.length())
     {
-      result += (char) num[i+1];
-      result += (char) num[i];
+      result += String((char) num[i+1]);
+      result += String((char) num[i]);
       i+=2;
     }
     
@@ -118,7 +118,7 @@ String PDUMessageEncoder::ToHex(int i)
   i>>=4;
   idx = i & 0xF;
   char char2 = (char) pgm_read_byte_near( HEX_CHARS + idx );
-  Out = char2; Out += char1;
+  Out = String(char2); Out += String(char1);
   
   return Out;
 

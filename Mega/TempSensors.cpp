@@ -186,8 +186,8 @@ void TempSensors::Setup()
    
    // добавляем N восьмиканальных состояний реле
    uint8_t relayCnt = (SUPPORTED_WINDOWS*2)/8;
-   if(relayCnt < 1)
-    relayCnt = 1;
+   if((SUPPORTED_WINDOWS*2) > 8 && (SUPPORTED_WINDOWS*2) % 8)
+    relayCnt++;
     
    for(uint8_t i=0;i<relayCnt;i++)
     State.AddState(StateRelay,i);  

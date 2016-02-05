@@ -29,6 +29,15 @@ void AlertRule::Update(uint16_t dt
  //  Serial.println("SHOULD TEST ALERT CODE WITH USE_DS3231_REALTIME_CLOCK DEFINE!"); delay(5000);
 
       // проверяем, можем ли мы работать со временем?
+      // сначала переводим текущее время суток в минуты,
+      // потом - сравниваем с настройками
+      
+      uint16_t curMinutes = currentHour*60 + currentMinute; // текущее время в минутах
+      uint16_t weCanStartAt = whichTime*60; // дата начала нашей работы, в минутах
+      
+      canWork = curMinutes >= weCanStartAt; // если текущее время больше времени начала нашей работы, то мы можем работать  
+      
+      /*
       if(whichTime > 0)
       {
         // время срабатывания выставлено, надо проверять интервал
@@ -58,6 +67,7 @@ void AlertRule::Update(uint16_t dt
           timerTicks = 0; // по-любому обнуляем таймер работы, потому что мы все равно работать не можем
         }
       } // if whichTime > 0
+      */
 
   #endif
 
@@ -92,19 +102,19 @@ bool AlertRule::HasAlert()
         return false;
 
      // if(!linkedModule->State.IsTempChanged(tempSensorIdx)) // ничего не изменилось
-     if(!linkedModule->State.IsStateChanged(StateTemperature,tempSensorIdx)) // ничего не изменилось
+     if(!linkedModule->State.IsStateChanged(StateTemperature,sensorIdx)) // ничего не изменилось
       {
         return false;
       }
-       OneState* os = linkedModule->State.GetState(StateTemperature,tempSensorIdx);
+       OneState* os = linkedModule->State.GetState(StateTemperature,sensorIdx);
        if(!os)
         return false;
         
        Temperature* t = (Temperature*) os->Data;//linkedModule->State.GetTemp(tempSensorIdx);
        int8_t curTemp = t->Value;
 
-       int8_t tAlert = tempAlert; // следим за переданной температурой
-       switch(temperatureSource)
+       int8_t tAlert = dataAlert; // следим за переданной температурой
+       switch(dataSource)
        {
           case tsOpenTemperature: // попросили подставить температуру открытия из настроек
             tAlert = linkedModule->GetController()->GetSettings()->GetOpenTemp();
@@ -125,6 +135,37 @@ bool AlertRule::HasAlert()
        } // switch
     }  
     break; // rtTemp
+
+    case rtLuminosity: // следим за освещенностью
+    {
+     if(!linkedModule->State.HasState(StateLuminosity))  // не поддерживаем освещенность
+        return false;
+
+     if(!linkedModule->State.IsStateChanged(StateLuminosity,sensorIdx)) // ничего не изменилось
+      {
+        return false;
+      }
+       OneState* os = linkedModule->State.GetState(StateLuminosity,sensorIdx);
+       if(!os)
+        return false;
+        
+       uint16_t* lum = (uint16_t*) os->Data;
+
+       // поскольку у нас только один байт настройки слежения - то мы разворачиваем его значение
+       // до двух байт, т.к. освещенность у нас - два байта.
+       uint16_t mappedLum = map(dataAlert,0,0xFF,0,0xFFFF);
+
+       switch(operand)
+       {
+          case roLessThan: return *lum < mappedLum;
+          case roLessOrEqual: return *lum <= mappedLum;
+          case roGreaterThan: return *lum > mappedLum;
+          case roGreaterOrEqual: return *lum >= mappedLum;
+          default: return false;
+       } // switch
+      
+    }
+    break;
   } // switch
 
   return false;
@@ -135,11 +176,11 @@ uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EE
   uint8_t written = 0;
 
   EEPROM.write(curWriteAddr++,target); written++;// записали, за чем следим
-  EEPROM.write(curWriteAddr++,tempAlert); written++;// записали температуру, за которой следим
-  EEPROM.write(curWriteAddr++,tempSensorIdx); written++;// записали индекс датчика, за которым следим
+  EEPROM.write(curWriteAddr++,dataAlert); written++;// записали установку, за которой следим
+  EEPROM.write(curWriteAddr++,sensorIdx); written++;// записали индекс датчика, за которым следим
   EEPROM.write(curWriteAddr++,operand); written++;// записали оператор сравнения
   EEPROM.write(curWriteAddr++,bEnabled); written++;// записали флаг - активно правило или нет?
-  EEPROM.write(curWriteAddr++,temperatureSource); written++;// записали источник, с которого надо брать установку температуры
+  EEPROM.write(curWriteAddr++,dataSource); written++;// записали источник, с которого надо брать установку
   EEPROM.write(curWriteAddr++,whichTime); written++;// записали, когда работаем
 
   // записали, сколько времени работать
@@ -211,11 +252,11 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
 
 
   target = (RuleTarget) EEPROM.read(curReadAddr++); readed++;// прочитали, за чем следим
-  tempAlert = EEPROM.read(curReadAddr++); readed++;// прочитали температуру, за которой следим
-  tempSensorIdx = EEPROM.read(curReadAddr++); readed++;// прочитали индекс датчика, за которым следим
+  dataAlert = EEPROM.read(curReadAddr++); readed++;// прочитали установку, за которой следим
+  sensorIdx = EEPROM.read(curReadAddr++); readed++;// прочитали индекс датчика, за которым следим
   operand = (RuleOperand) EEPROM.read(curReadAddr++); readed++;// прочитали оператор сравнения
   bEnabled = EEPROM.read(curReadAddr++); readed++;// прочитали флаг - активно правило или нет?
-  temperatureSource = (RuleTemperatureSource) EEPROM.read(curReadAddr++); readed++;// прочитали источник, с которого надо брать установку температуры
+  dataSource = (RuleDataSource) EEPROM.read(curReadAddr++); readed++;// прочитали источник, с которого надо брать установку
   whichTime = EEPROM.read(curReadAddr++); readed++;// прочитали, когда работаем
 
   // прочитали, сколько времени работать
@@ -284,8 +325,19 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
    // теперь конструируем правило, это нужно для запроса просмотра правила
     alertRule = ruleName + PARAM_DELIMITER;
     alertRule += lmName + PARAM_DELIMITER;
-    alertRule += (target == rtTemp ? PROP_TEMP : F(""));
-    alertRule += String(PARAM_DELIMITER) + String(tempSensorIdx) + PARAM_DELIMITER;
+    //alertRule += (target == rtTemp ? PROP_TEMP : F(""));
+    switch(target)
+    {
+      case rtTemp:
+      alertRule += PROP_TEMP;
+      break;
+      
+      case rtLuminosity:
+      alertRule += PROP_LIGHT;
+      break;
+      
+    }
+    alertRule += String(PARAM_DELIMITER) + String(sensorIdx) + PARAM_DELIMITER;
 
     switch(operand)
     {
@@ -305,7 +357,7 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
     
     alertRule += PARAM_DELIMITER;
 
-    switch(temperatureSource)
+    switch(dataSource)
     {
       case tsOpenTemperature:
         alertRule += T_OPEN_MACRO;
@@ -314,7 +366,7 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
         alertRule += T_CLOSE_MACRO;
       break;
       case tsPassed:
-        alertRule += tempAlert;
+        alertRule += dataAlert;
       break;
     }
     alertRule += PARAM_DELIMITER;
@@ -369,11 +421,14 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   
   if(ruleTargetStr == PROP_TEMP) // следим за температурой
     target = rtTemp;
+  else
+  if(ruleTargetStr == PROP_LIGHT) // следим за освещенностью
+    target = rtLuminosity;
 
   alertRule += ruleTargetStr + PARAM_DELIMITER;
 
   alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
-  tempSensorIdx = command.GetArg(curArgIdx++).toInt();
+  sensorIdx = command.GetArg(curArgIdx++).toInt();
   String op = command.GetArg(curArgIdx++);
   alertRule += op + PARAM_DELIMITER;
   
@@ -392,14 +447,14 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
 
   // выясняем, за какой температурой следим
   if(strTempAlert == T_OPEN_MACRO)
-    temperatureSource = tsOpenTemperature;
+    dataSource = tsOpenTemperature;
   else if(strTempAlert == T_CLOSE_MACRO)
-    temperatureSource = tsCloseTemperature;
+    dataSource = tsCloseTemperature;
   else
-    temperatureSource = tsPassed;
+    dataSource = tsPassed;
     
   
-  tempAlert = strTempAlert.toInt();
+  dataAlert = strTempAlert.toInt();
 
   // дошли до температуры, после неё - настройки срабатывания
 

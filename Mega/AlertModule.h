@@ -8,7 +8,8 @@
 typedef enum
 {
   rtUnknown,
-  rtTemp// за температурой следим
+  rtTemp, // за температурой следим
+  rtLuminosity // за освещенностью следим
 } RuleTarget; // за чем следит правило
 
 typedef enum
@@ -17,7 +18,7 @@ typedef enum
   tsOpenTemperature, // берём температуру открытия из настроек
   tsCloseTemperature // берём температуру закрытия из настроек
   
-} RuleTemperatureSource; // откуда брать настройку температуры для слежения?
+} RuleDataSource; // откуда брать настройку для слежения?
 
 typedef enum
 {
@@ -32,8 +33,8 @@ class AlertRule
 {
   private:
     RuleTarget target; // за чем следит правило
-    int8_t tempAlert; // температура, за которой следим
-    uint8_t tempSensorIdx; // индекс датчика, за которым следим
+    int8_t dataAlert; // установка, за которой следим
+    uint8_t sensorIdx; // индекс датчика, за которым следим
     RuleOperand operand; // операнд, которым проверяем
     String targetCommand; // команда, которую надо выполнить при срабатывании правила
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
@@ -41,7 +42,7 @@ class AlertRule
     String alertRule; // строка с правилом
     bool bEnabled; // включено или нет
 
-    RuleTemperatureSource temperatureSource; // источник, с которого получаем установку температуры для правила
+    RuleDataSource dataSource; // источник, с которого получаем установку значения для правила
 
     String ruleName; // имя правила
     uint8_t whichTime; // когда работает?
