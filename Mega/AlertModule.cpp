@@ -113,6 +113,9 @@ bool AlertRule::HasAlert()
        Temperature* t = (Temperature*) os->Data;//linkedModule->State.GetTemp(tempSensorIdx);
        int8_t curTemp = t->Value;
 
+       if(curTemp == NO_TEMPERATURE_DATA) // нет датчика на линии
+        return false;
+
        int8_t tAlert = dataAlert; // следим за переданной температурой
        switch(dataSource)
        {
@@ -150,6 +153,9 @@ bool AlertRule::HasAlert()
         return false;
         
        uint16_t* lum = (uint16_t*) os->Data;
+
+       if(*lum == -1) // нет датчика на линии
+        return false;
 
        // поскольку у нас только один байт настройки слежения - то мы разворачиваем его значение
        // до двух байт, т.к. освещенность у нас - два байта.

@@ -81,6 +81,7 @@
 #define TEMP_SETTINGS F("T_SETT") // получить/установить температуры срабатывания, CTGET=STATE|T_SETT, CTSET=STATE|T_SETT|t open|t close
 #define NO_TEMPERATURE_DATA -128 // нет данных с датчика температуры
 #define SUPPORTED_SENSORS 2 // кол-во поддерживаемых датчиков температуры "из коробки"
+#define TEMP_SENSORS_PINS 31,32 // пины, на которых висят наши датчики температуры (указываются через запятую, общее кол-во равно SUPPORTED_SENSORS)
 #define SUPPORTED_WINDOWS 4 // кол-во поддерживаемых окон (по два реле на мотор, для 8-ми канального модуля реле - 4 окна)
 #define SHORT_CIRQUIT_STATE LOW // статус пинов, на которых висит реле, чтобы закоротить мотор и не дать ему крутиться
 

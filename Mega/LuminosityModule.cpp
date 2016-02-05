@@ -80,8 +80,10 @@ void LuminosityModule::Update(uint16_t dt)
   }
   lastUpdateCall = 0;
 
+  uint16_t lum = -1;
+
   #if LIGHT_SENSORS_COUNT > 0
-    uint16_t lum = lightMeter.GetCurrentLuminosity();
+    lum = lightMeter.GetCurrentLuminosity();
     State.UpdateState(StateLuminosity,0,(void*)&lum);
   #endif
     

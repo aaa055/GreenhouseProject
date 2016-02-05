@@ -2,6 +2,7 @@
 #define _TEMP_SENSORS_H
 
 #include "AbstractModule.h"
+#include "DS18B20Query.h"
 
 typedef enum
 {
@@ -80,6 +81,9 @@ class TempSensors : public AbstractModule // модуль опроса темп�
     void BlinkWorkMode(uint16_t blinkInterval = 0);
 
     uint16_t lastBlinkInterval;
+
+    DS18B20Support tempSensor;
+    DS18B20Temperature tempData;
     
   public:
     TempSensors() : AbstractModule(F("STATE")){}

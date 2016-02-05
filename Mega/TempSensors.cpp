@@ -2,6 +2,8 @@
 #include "ModuleController.h"
 #include "InteropStream.h"
 
+static uint8_t TEMP_SENSORS[] = { TEMP_SENSORS_PINS };
+
 void WindowState::Setup(ModuleState* state, uint8_t relay1, uint8_t relay2)
 {
   RelayStateHolder = state;
@@ -177,13 +179,18 @@ void TempSensors::Setup()
    * Пишем в State настройки - кол-во поддерживаемых датчиков температуры
    * 
    */
-   //State.SetTempSensors(SUPPORTED_SENSORS); // сколько датчиков поддерживаем?
    // добавляем датчики температуры
+
+   tempData.Whole = 0;
+   tempData.Fract = 0;
    for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
+   {
     State.AddState(StateTemperature,i);
-   
-   //State.SetRelayChannels(SUPPORTED_WINDOWS*2); // сколько каналов реле? Каждым мотором фрамуги управляют два реле
-   
+    // запускаем конвертацию с датчиков при старте, через 2 секунды нам вернётся измеренная температура
+    tempSensor.begin(TEMP_SENSORS[i]);
+    tempSensor.readTemperature(&tempData);
+   }
+      
    // добавляем N восьмиканальных состояний реле
    uint8_t relayCnt = (SUPPORTED_WINDOWS*2)/8;
    if((SUPPORTED_WINDOWS*2) > 8 && (SUPPORTED_WINDOWS*2) % 8)
@@ -205,26 +212,32 @@ void TempSensors::Update(uint16_t dt)
   } // for 
 
 
-  // TEST CODE BEGIN //
   lastUpdateCall += dt;
   if(lastUpdateCall < 2000) // нечего обновлять раньше, чем раз в две секунды
     return;
 
   lastUpdateCall = 0;
-  
-  // обновляем значения температуры
-    Temperature s;
-    s.Value = random(20,40);
-    s.Fract = random(50,100);
-    //State.SetTemp(0,s);
-    State.UpdateState(StateTemperature,0,(void*)&s);
 
-    s.Value = random(0,15);
-    s.Fract = random(50,100);
-    //State.SetTemp(1,s);
-     State.UpdateState(StateTemperature,1,(void*)&s);
+  // опрашиваем наши датчики
+  Temperature t;
+  for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
+  {
+    t.Value = NO_TEMPERATURE_DATA;
+    t.Fract = 0;
+    
+    tempSensor.begin(TEMP_SENSORS[i]);
+    if(tempSensor.readTemperature(&tempData))
+    {
+      t.Value = tempData.Whole;
+    
+      if(tempData.Negative)
+        t.Value = -t.Value;
 
-  // TEST CODE END //
+      t.Fract = tempData.Fract;
+    }
+    State.UpdateState(StateTemperature,i,(void*)&t);
+  } // for
+
 
 }
 void TempSensors::BlinkWorkMode(uint16_t blinkInterval) // мигаем диодом индикации ручного режима работы
