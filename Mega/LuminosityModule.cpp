@@ -34,22 +34,23 @@ void BH1750Support::writeByte(uint8_t toWrite)
   BH1750_WIRE_WRITE(toWrite);
   Wire.endTransmission();
 }
-uint16_t BH1750Support::GetCurrentLuminosity() 
+long BH1750Support::GetCurrentLuminosity() 
 {
 
-  uint16_t curLuminosity;
+  long curLuminosity = -1;
 
   Wire.beginTransmission(deviceAddress); // начинаем опрос датчика освещенности
-  Wire.requestFrom(deviceAddress, 2); // ждём два байта
-
+ if(Wire.requestFrom(deviceAddress, 2) == 2)// ждём два байта
+ {
   // читаем два байта
   curLuminosity = BH1750_WIRE_READ();
   curLuminosity <<= 8;
   curLuminosity |= BH1750_WIRE_READ();
+  curLuminosity = curLuminosity/1.2; // конвертируем в люксы
+ }
 
   Wire.endTransmission();
 
-  curLuminosity = curLuminosity/1.2; // конвертируем в люксы
 
   return curLuminosity;
 }

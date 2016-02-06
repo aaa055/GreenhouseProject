@@ -42,7 +42,7 @@ class BH1750Support
     void ChangeMode(BH1750Mode newMode);
     void ChangeAddress(BH1750Address newAddr);
      
-    uint16_t GetCurrentLuminosity();
+    long GetCurrentLuminosity();
 };
 
 
