@@ -31,7 +31,7 @@
 #include "SMSModule.h"
 #endif
 
-#ifdef USE_WATERING_MOSULE
+#ifdef USE_WATERING_MODULE
 #include "WateringModule.h"
 #endif
 
@@ -109,7 +109,7 @@ TempSensors tempSensors;
  SMSModule smsModule;
 #endif
 
-#ifdef USE_WATERING_MOSULE
+#ifdef USE_WATERING_MODULE
 // модуль управления поливом
 WateringModule wateringModule;
 #endif
@@ -225,7 +225,7 @@ void setup()
   controller.RegisterModule(&smsModule);
   #endif
 
-  #ifdef USE_WATERING_MOSULE
+  #ifdef USE_WATERING_MODULE
   controller.RegisterModule(&wateringModule);
   #endif
 

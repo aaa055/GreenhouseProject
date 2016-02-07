@@ -487,8 +487,30 @@ bool  TempSensors::ExecCommand(const Command& command)
                  answerStatus = true;
                  answer = String(PROP_TEMP_CNT) + PARAM_DELIMITER + State.GetStateCount(StateTemperature);//State.GetTempSensors();
               } // if
-              else // запросили по индексу
+              else // запросили по индексу или запрос ALL
               {
+                if(s == ALL)
+                {
+                  // все датчики
+                  answerStatus = true;
+                  answer = PROP_TEMP;
+                  // получаем значение всех датчиков
+                  for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
+                  {
+
+                     OneState* os = State.GetState(StateTemperature,i);
+                     if(os)
+                     {
+                        answer += PARAM_DELIMITER;
+                        Temperature* t = (Temperature*) os->Data;
+                        answer += *t;
+                     } // if(os)
+                  } // for
+                  
+                }
+                else
+                {
+                   // по индексу
                 uint8_t sensorIdx = s.toInt();
                 if(sensorIdx >= SUPPORTED_SENSORS)
                    answer = NOT_SUPPORTED; // неверный индекс
@@ -504,6 +526,7 @@ bool  TempSensors::ExecCommand(const Command& command)
                       answer = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + *t;//State.GetTemp(sensorIdx);
                     }
                   }
+                } // else
               } // else
               
           } // if
