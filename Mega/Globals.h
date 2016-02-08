@@ -177,6 +177,7 @@
 #define SMS_AUTOMODE_COMMAND F("#8") // установить автоматический режим работы
 #define SMS_WATER_ON_COMMAND F("#4") // включить полив
 #define SMS_WATER_OFF_COMMAND F("#6") // выключить полив
+#define SMS_NO_DATA F("<нет данных>") // нет данных с датчика
 #define NEOWAY_WAIT_FOR_SMS_SEND_COMPLETE 6000 // интервал, в течение которого мы ждём откравку смс модулем (ждём асинхронно, без блокирования!)
 #define NEOWAY_VCCIO_CHECK_PIN 2 // пин, на котором будем проверять сигнал от VCCIO (6 пин) модуля NEOWAY
 

@@ -23,7 +23,8 @@ void ModuleState::AddState(ModuleStates state, uint8_t idx)
       
         Temperature* t1 = new Temperature;
         Temperature* t2 = new Temperature;
-        t1->Value = NO_TEMPERATURE_DATA;
+        
+        t1->Value = NO_TEMPERATURE_DATA; // нет данных о температуре
         t2->Value = NO_TEMPERATURE_DATA;
         t1->Fract = 0;
         t2->Fract = 0;
@@ -39,7 +40,7 @@ void ModuleState::AddState(ModuleStates state, uint8_t idx)
         uint8_t*  ui1 = new uint8_t;
         uint8_t*  ui2 = new uint8_t;
 
-        *ui1 = 0;
+        *ui1 = 0; // никакое реле не включено
         *ui2 = 0;
         
         s->Data = ui1;
@@ -53,8 +54,8 @@ void ModuleState::AddState(ModuleStates state, uint8_t idx)
         long*  ui1 = new long;
         long*  ui2 = new long;
 
-        *ui1 = 0;
-        *ui2 = 0;
+        *ui1 = -1; // нет данных об освещенности
+        *ui2 = -1;
         
         s->Data = ui1;
         s->PreviousData = ui2;

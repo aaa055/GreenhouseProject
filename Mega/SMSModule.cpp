@@ -658,16 +658,31 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
 
   String sms;
 
-  if(os1 && os2)
+   if(os1)
   {
     Temperature* insideTemp = (Temperature*) os1->Data;
+  
+    sms += T_INDOOR; // сообщение
+    if(insideTemp->Value != NO_TEMPERATURE_DATA)
+      sms += *insideTemp;
+    else
+      sms += SMS_NO_DATA;
+      
+    sms += NEWLINE;
+    
+  } // if 
+
+  if(os2)
+  {
     Temperature* outsideTemp = (Temperature*) os2->Data;
   
-    sms = T_INDOOR; // сообщение
-    sms += *insideTemp;
-    sms += NEWLINE;
     sms += T_OUTDOOR;
-    sms += *outsideTemp;
+    if(outsideTemp->Value != NO_TEMPERATURE_DATA)
+      sms += *outsideTemp;
+    else
+      sms += SMS_NO_DATA;
+    
+    sms += NEWLINE;
   } // if
 
 
@@ -677,7 +692,7 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
   //if(cParser->ParseCommand(F("CTGET=STATE|WINDOW|0"), c->GetControllerID(), cmd))
   if(ModuleInterop.QueryCommand(ctGET,F("STATE|WINDOW|0"),true))
   {
-    sms += NEWLINE;
+
     sms += W_STATE;
 
     #ifdef NEOWAY_DEBUG_MODE
@@ -700,7 +715,9 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
       else
         sms += W_CLOSED;
     }
-  
+
+     sms += NEWLINE;
+ 
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println("Receive answer from STATE: \"" + streamAnswer + "\"");
     #endif
@@ -709,7 +726,6 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
   //if(cParser->ParseCommand(F("CTGET=WATER"), c->GetControllerID(), cmd))
   if(ModuleInterop.QueryCommand(ctGET,F("WATER"),true))
   {
-    sms += NEWLINE;
     sms += WTR_STATE;
 
     #ifdef NEOWAY_DEBUG_MODE
@@ -780,6 +796,10 @@ void SMSModule::SendSMS(const String& sms)
         if(NEOWAY_SERIAL.available())
         {
           char ch = (char) NEOWAY_SERIAL.read();
+          
+          if(ch == '\r' || ch == '\n') // ждём данных с новой строки
+            continue;
+            
           if(ch == '>') // дождались приглашения, можем посылать дальше
           {
             #ifdef NEOWAY_DEBUG_MODE
@@ -789,7 +809,12 @@ void SMSModule::SendSMS(const String& sms)
             break;
           }
           else
+          {
+            #ifdef NEOWAY_DEBUG_MODE
+              Serial.println(String((byte)ch) + " found - bad symbol!");
+            #endif
             return; // не тот символ!
+          }
         }
       } // while(1)
     
