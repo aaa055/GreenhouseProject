@@ -164,9 +164,6 @@ void SMSModule::ProcessQueuedWindowCommand(uint16_t dt)
 }
 void SMSModule::ParseIncomingSMS(const String& sms)
 {
-  //ModuleController* c = GetController();
-  //CommandParser* cParser = c->GetCommandParser();
-  
   #ifdef NEOWAY_DEBUG_MODE
     Serial.println("ParseIncomingSMS(\"" + sms + "\")");
   #endif
@@ -223,33 +220,20 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     #endif
 
     // переводим контроллер в автоматический режим работы
-      //Command cmd;
-      //if(cParser->ParseCommand(F("CTSET=STATE|MODE|AUTO"), c->GetControllerID(), cmd))
       if(ModuleInterop.QueryCommand(ctSET, F("STATE|MODE|AUTO"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=STATE|MODE|AUTO command parsed, process it...");
         #endif
     
-        //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        //cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер окон после выполнения команды перейдёт в автоматический режим
-        //cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-       // c->ProcessModuleCommand(cmd,false);
-
       }
 
-      //if(cParser->ParseCommand(F("CTSET=WATER|MODE|AUTO"), c->GetControllerID(), cmd))
       if(ModuleInterop.QueryCommand(ctSET, F("WATER|MODE|AUTO"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=WATER|MODE|AUTO command parsed, process it...");
         #endif
     
-       // ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-       // cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер полива после выполнения команды перейдёт в автоматический режим
-       // cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-       // c->ProcessModuleCommand(cmd,false);
-
       }    
 
       shouldSendSMS = true;
@@ -263,19 +247,12 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     #endif
 
     // включаем полив
-     // Command cmd;
-      //if(cParser->ParseCommand(F("CTSET=WATER|ON"), c->GetControllerID(), cmd))
       if(ModuleInterop.QueryCommand(ctSET, F("WATER|ON"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=WATER|ON command parsed, process it...");
         #endif
     
-        //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        //cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-        //cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-        //c->ProcessModuleCommand(cmd,false);
-
        shouldSendSMS = true;
       }
     }
@@ -288,19 +265,12 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     #endif
 
     // выключаем полив
-      //Command cmd;
-      //if(cParser->ParseCommand(F("CTSET=WATER|OFF"), c->GetControllerID(), cmd))
       if(ModuleInterop.QueryCommand(ctSET, F("WATER|OFF"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=WATER|OFF command parsed, process it...");
         #endif
     
-        //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-        //cmd.SetInternal(false); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-       // cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-       // c->ProcessModuleCommand(cmd,false);
-
         shouldSendSMS = true;
       }
 
@@ -651,8 +621,6 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
 
 
   // получаем температуры
-  //Temperature insideTemp = stateModule->State.GetTemp(0);
-  //Temperature outsideTemp = stateModule->State.GetTemp(1);
   OneState* os1 = stateModule->State.GetState(StateTemperature,0);
   OneState* os2 = stateModule->State.GetState(StateTemperature,1);
 
@@ -687,9 +655,6 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
 
 
   // тут получаем состояние окон
-  //CommandParser* cParser = c->GetCommandParser();
-  //Command cmd;
-  //if(cParser->ParseCommand(F("CTGET=STATE|WINDOW|0"), c->GetControllerID(), cmd))
   if(ModuleInterop.QueryCommand(ctGET,F("STATE|WINDOW|0"),true))
   {
 
@@ -698,11 +663,6 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println("Command CTGET=STATE|WINDOW|0 parsed, execute it...");
     #endif
-
-   // ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-   // cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
-   // cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-   // c->ProcessModuleCommand(cmd,false);
 
     String streamAnswer = ModuleInterop.GetData(); // получили ответ от другого модуля
     streamAnswer.trim();
@@ -723,7 +683,6 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     #endif
   }
     // получаем состояние полива
-  //if(cParser->ParseCommand(F("CTGET=WATER"), c->GetControllerID(), cmd))
   if(ModuleInterop.QueryCommand(ctGET,F("WATER"),true))
   {
     sms += WTR_STATE;
@@ -731,11 +690,6 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println("Command CTGET=WATER parsed, execute it...");
     #endif
-
-    //ModuleInterop.Clear(); // очищаем ответ, который будет после вызова команды ProcessModuleCommand
-    //cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
-    //cmd.SetIncomingStream(&ModuleInterop); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-    //c->ProcessModuleCommand(cmd,false);
 
     String streamAnswer = ModuleInterop.GetData(); // получили ответ от другого модуля
     streamAnswer.trim();

@@ -15,6 +15,9 @@
 #define DIODE_MANUAL_MODE_PIN 7 // пин, на котором будет диод, мигающий, когда мы в ручном режиме управления окнами
 #define WORK_MODE_BLINK_INTERVAL 750 // с какой частотой мигать на пине индикации ручного режима работы, мс
 #define DIODE_WATERING_MANUAL_MODE_PIN 8 // пин, на котором висит диод индикации ручного режима управления поливом
+#define DIODE_LIGHT_MANUAL_MODE_PIN 9 // пин, на котором висит диод индикации ручного режима управления досветкой
+#define RELAY_ON LOW // уровень для включения реле
+#define RELAY_OFF HIGH // уровень для выключения реле
 
 // директивы условной компиляции 
 #define AS_CONTROLLER // закомментировать для дочерних модулей
@@ -33,7 +36,7 @@
 #define VIEW_ALERT_COMMAND F("VIEW") // команда просмотра события CTGET=ALERT|VIEW|0
 #define CNT_COMMAND F("CNT") // сколько зарегистрировано событий CTGET=ALERT|CNT
 
-// правило алерта CTSET=ALERT|RULE_ADD|RuleName|STATE|TEMP|1|>|23|Когда работает (0-всегда, 1 - утром, 2 - днём, 3 - вечером,4 - ночью)|Продолжительность работы, мин|Список связанных правил|Команды для стороннего модуля
+// правило алерта CTSET=ALERT|RULE_ADD|RuleName|STATE|TEMP|1|>|23|Час начала работы|Продолжительность работы, мин|Список связанных правил|Команды для стороннего модуля
 // пример №1: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|30|N3,N4|CTSET=STATE|WINDOW|ALL|OPEN
 // пример №2: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|0|_|CTSET=STATE|WINDOW|ALL|OPEN
 #define ADD_RULE F("RULE_ADD") // добавить правило
@@ -53,7 +56,10 @@
 
 // настройки модуля освещенности тут
 // команда, на которую модуль выдаёт текущую освещенность - CTGET=LIGHT
-#define LIGHT_SENSORS_COUNT 2 // кол-во датчиков освещенности, 0, 1 или 2. 2 - максимум
+#define LIGHT_SENSORS_COUNT 2 // кол-во датчиков освещенности, 0, 1 или 2, 2 - максимум
+#define LAMP_RELAYS_COUNT 1 // кол-во реле для управления досветкой
+#define LAMP_RELAYS_PINS 34 // пины, на которых сидят реле управления досветкой (через запятую, кол-во равно LAMP_RELAYS_COUNT!)
+#define LIGHT_STATE_COMMAND F("STATE") // CTGET=LIGHT|STATE
 
 #define MAX_PUBLISHERS 2 // максимальное количество паблишеров для модуля
 #define MAX_TEMP_SENSORS 4 // максимальное кол-во поддерживаемых датчиков температуры
@@ -95,8 +101,6 @@
 // TurnOnPump - включать (1) или нет (0) насос при активном поливе на любом из каналов
 #define WATER_CHANNEL_SETTINGS F("CH_SETT") // получить/установить настройки отдельного канала управления поливом: CTGET=WATER|CH_SETT|0, CTSET=WATER|CH_SETT|0|WateringDays|WateringTime|StartTime
 #define WATER_CHANNELS_COUNT_COMMAND F("CHANNELS") // получить кол-во поддерживаемых каналов полива: CTGET=WATER|CHANNELS
-#define WATER_RELAY_ON LOW // уровень для включения реле
-#define WATER_RELAY_OFF HIGH // уровень для выключения реле
 #define PUMP_RELAY_PIN 22 // пин, на котором сидит реле управления насосом
 #define WATER_RELAYS_COUNT 2 // сколько каналов управления поливом используется
 // объявляем пины для управления каналами реле - дописывать в этот массив, через запятую!
@@ -244,5 +248,6 @@
  * 
  */
 
+#define UNUSED(expr) do { (void)(expr); } while (0)
 
 #endif

@@ -44,6 +44,9 @@ void ModuleController::PublishToStream(Stream* pStream,bool bOk, const String& A
 
 void ModuleController::CallRemoteModuleCommand(AbstractModule* mod, const String& command)
 {
+
+  UNUSED(mod);
+  
   pStream->println("BROADCAST THE COMMAND \"" + command + "\"");
 
   /* ВОТ ТУТ ПОСЫЛКА КОМАНДЫ ПО ПРОТОКОЛУ (НАПРИМЕР RS485) МОДУЛЮ И ПОЛУЧЕНИЕ ОТВЕТА ОТ НЕГО.

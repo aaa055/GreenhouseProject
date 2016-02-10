@@ -87,8 +87,8 @@ void WindowState::SwitchRelays(uint16_t rel1State, uint16_t rel2State)
      uint8_t curRelayStates = *((uint8_t*) os->Data); // получаем текущую маску состояния реле
 
      // устанавливаем нужные биты
-     bitWrite(curRelayStates,bitNum1, (rel1State == HIGH));
-     bitWrite(curRelayStates,bitNum2, (rel2State == HIGH));
+     bitWrite(curRelayStates,bitNum1, (rel1State == RELAY_ON));
+     bitWrite(curRelayStates,bitNum2, (rel2State == RELAY_ON));
      
      // записываем новую маску состояния реле
      RelayStateHolder->UpdateState(StateRelay,idx,(void*)&curRelayStates);
@@ -112,14 +112,14 @@ void WindowState::UpdateState(uint16_t dt)
    switch(Direction)
    {
       case dirOPEN:
-        bRelay1State = HIGH; // крутимся в одну сторону
-        bRelay2State = LOW;
+        bRelay1State = RELAY_ON; // крутимся в одну сторону
+        bRelay2State = RELAY_OFF;
         
       break;
 
       case dirCLOSE:
-        bRelay1State = LOW; // или в другую
-        bRelay2State = HIGH;
+        bRelay1State = RELAY_OFF; // или в другую
+        bRelay2State = RELAY_ON;
         
       break;
 
@@ -195,6 +195,9 @@ void TempSensors::Setup()
    uint8_t relayCnt = (SUPPORTED_WINDOWS*2)/8;
    if((SUPPORTED_WINDOWS*2) > 8 && (SUPPORTED_WINDOWS*2) % 8)
     relayCnt++;
+
+   if((SUPPORTED_WINDOWS*2) < 9)
+    relayCnt = 1;
     
    for(uint8_t i=0;i<relayCnt;i++)
     State.AddState(StateRelay,i);  
@@ -256,33 +259,18 @@ void TempSensors::BlinkWorkMode(uint16_t blinkInterval) // мигаем диод
   s += String(DIODE_MANUAL_MODE_PIN);
   s += F("|T");
 
-    //ModuleController* c = GetController();
-   // CommandParser* cParser = c->GetCommandParser();
-    //  Command cmd;
-    //  if(cParser->ParseCommand(s, c->GetControllerID(), cmd))
     if(ModuleInterop.QueryCommand(ctSET,s,true))
       {
-       //  cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
-
-        // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
-        //cmd.SetIncomingStream(pStream);
-    //    c->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой    
       } // if  
 
       if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
       {
-       // s = CMD_PREFIX;
-       // s += CMD_SET;
-      //  s += F("=PIN|");
         s = F("PIN|");
         s += String(DIODE_MANUAL_MODE_PIN);
         s += PARAM_DELIMITER;
         s += F("0");
 
         ModuleInterop.QueryCommand(ctSET,s,true);
-        //cParser->ParseCommand(s, c->GetControllerID(), cmd);
-        //cmd.SetInternal(true); 
-       // c->ProcessModuleCommand(cmd,false);
       } // if
   
 }

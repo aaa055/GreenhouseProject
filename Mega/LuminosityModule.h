@@ -4,6 +4,11 @@
 #include "AbstractModule.h"
 #include <Wire.h>
 
+typedef enum
+{
+  lightAutomatic,
+  lightManual
+} LightWorkMode; // режим управления досветкой
 
 // смотрим, какие методы Wire актуальны - чтоб не париться с препроцессором в рабочем коде
 #if (ARDUINO >= 100)
@@ -50,6 +55,13 @@ class LuminosityModule : public AbstractModule // модуль управлен�
 {
   private:
 
+  ModuleController* controller; // контроллер
+  GlobalSettings* settings; // настройки
+
+  uint16_t lastBlinkInterval;
+  void BlinkWorkMode(uint16_t blinkInterval = 0);
+
+
   #if LIGHT_SENSORS_COUNT > 0
   BH1750Support lightMeter; // первый датчик освещенности
   #endif
@@ -58,6 +70,8 @@ class LuminosityModule : public AbstractModule // модуль управлен�
   BH1750Support lightMeter2; // второй датчик освещенности
   #endif
 
+  LightWorkMode workMode;
+  bool bRelaysIsOn; // включены ли реле досветки?
   uint16_t lastUpdateCall;
     
   public:

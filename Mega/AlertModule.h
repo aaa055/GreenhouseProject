@@ -37,6 +37,7 @@ class AlertRule
     RuleOperand operand; // операнд, которым проверяем
     String targetCommand; // команда, которую надо выполнить при срабатывании правила
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
+    long dataAlertLong; // настройка, за которой следим (4 байта)
     
     String alertRule; // строка с правилом
     bool bEnabled; // включено или нет
@@ -50,7 +51,6 @@ class AlertRule
     String linkedRuleNames[MAX_ALERT_RULES]; // с какими правилами связано наше?
     uint8_t linkedRulesCnt; // кол-во связанных правил
 
-    unsigned long timerTicks; // внутренний таймер
     bool canWork; // можем ли мы работать?
     
     

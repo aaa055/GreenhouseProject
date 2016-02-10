@@ -1,5 +1,8 @@
 #include "LuminosityModule.h"
 #include "ModuleController.h"
+#include "InteropStream.h"
+
+static uint8_t LAMP_RELAYS[] = { LAMP_RELAYS_PINS }; // объявляем массив пинов реле
 
 BH1750Support::BH1750Support()
 {
@@ -67,13 +70,99 @@ void LuminosityModule::Setup()
   lightMeter2.begin(BH1750Address2);
   State.AddState(StateLuminosity,1); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексов 1
   #endif
-  // настройка модуля тут
+
   
+  // настройка модуля тут
+  controller = GetController();
+  settings = controller->GetSettings();
+
+  workMode = lightAutomatic; // автоматический режим работы
+  bRelaysIsOn = false; // все реле выключены
+
+  lastBlinkInterval = 0xFFFF;// последний интервал, с которым мы вызывали команду мигания диодом.
+  // нужно для того, чтобы дёргать функцию мигания только при смене интервала.
+
+   uint8_t relayCnt = LAMP_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
+   if(LAMP_RELAYS_COUNT > 8 && LAMP_RELAYS_COUNT % 8)
+    relayCnt++;
+
+  if(LAMP_RELAYS_COUNT < 9)
+    relayCnt = 1;
+    
+   for(uint8_t i=0;i<relayCnt;i++) // добавляем состояния реле (каждый канал - 8 реле)
+    State.AddState(StateRelay,i);  
+
+
+ // выключаем все реле
+  for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
+  {
+    pinMode(LAMP_RELAYS[i],OUTPUT);
+    digitalWrite(LAMP_RELAYS[i],RELAY_OFF);
+  
+    uint8_t idx = i/8;
+    uint8_t bitNum1 = i % 8;
+    OneState* os = State.GetState(StateRelay,idx);
+    if(os)
+    {
+      uint8_t curRelayStates = *((uint8_t*) os->Data);
+      bitWrite(curRelayStates,bitNum1, bRelaysIsOn);
+      State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+    }
+  } // for
+    
+       
  }
+void LuminosityModule::BlinkWorkMode(uint16_t blinkInterval) // мигаем диодом индикации ручного режима работы
+{
+
+  if(lastBlinkInterval == blinkInterval)
+    return; // не дёргаем несколько раз с одним и тем же интервалом - незачем.
+
+  lastBlinkInterval = blinkInterval;
+  
+  String s = F("LOOP|LUX|SET|");
+  s += blinkInterval;
+  s+= F("|0|PIN|");
+  s += String(DIODE_LIGHT_MANUAL_MODE_PIN);
+  s += F("|T");
+
+      if(ModuleInterop.QueryCommand(ctSET,s,true))
+      {
+      } // if  
+
+      if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
+      {
+        s = F("PIN|");
+        s += String(DIODE_LIGHT_MANUAL_MODE_PIN);
+        s += PARAM_DELIMITER;
+        s += F("0");
+
+        ModuleInterop.QueryCommand(ctSET,s,true);
+      } // if
+  
+}
 
 void LuminosityModule::Update(uint16_t dt)
 { 
-  // обновление модуля тут
+  // обновление модуля тут  
+
+ // обновляем состояние всех реле управления досветкой
+  for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
+  {
+    digitalWrite(LAMP_RELAYS[i],bRelaysIsOn ? RELAY_ON : RELAY_OFF);
+  
+    uint8_t idx = i/8;
+    uint8_t bitNum1 = i % 8;
+    OneState* os = State.GetState(StateRelay,idx);
+    if(os)
+    {
+      uint8_t curRelayStates = *((uint8_t*) os->Data);
+      bitWrite(curRelayStates,bitNum1, bRelaysIsOn);
+      State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+    }
+  } // for 
+
+
   lastUpdateCall += dt;
   if(lastUpdateCall < 2000) // не будем обновлять чаще, чем раз в две секунды
   {
@@ -91,23 +180,110 @@ void LuminosityModule::Update(uint16_t dt)
   #if LIGHT_SENSORS_COUNT > 1
     lum = lightMeter2.GetCurrentLuminosity();
     State.UpdateState(StateLuminosity,1,(void*)&lum);
-  #endif
+  #endif   
 
 }
 
 bool  LuminosityModule::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
-  //GlobalSettings* settings = c->GetSettings();
   
   String answer = UNKNOWN_COMMAND;
   
   bool answerStatus = false; 
   
+  uint8_t argsCnt = command.GetArgsCount();
+  
   if(command.GetType() == ctSET) 
   {
       answerStatus = false;
-      answer = NOT_SUPPORTED;      
+      answer = PARAMS_MISSED;
+
+      if(argsCnt > 0)
+      {
+         String s = command.GetArg(0);
+         if(s == STATE_ON) // CTSET=LIGHT|ON
+         {
+          
+          // попросили включить досветку
+          if(command.IsInternal() // если команда пришла от другого модуля
+          && workMode == lightManual)  // и мы в ручном режиме, то
+          {
+            // просто игнорируем команду, потому что нами управляют в ручном режиме
+           } // if
+           else
+           {
+              if(!command.IsInternal()) // пришла команда от пользователя,
+              {
+                workMode = lightManual; // переходим на ручной режим работы
+                // мигаем светодиодом на 8 пине
+                BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+              }
+
+            bRelaysIsOn = true; // включаем реле досветки
+            
+            answerStatus = true;
+            answer = STATE_ON;
+            
+           } // else
+ 
+          
+         } // STATE_ON
+         else
+         if(s == STATE_OFF) // CTSET=LIGHT|OFF
+         {
+          // попросили выключить досветку
+          if(command.IsInternal() // если команда пришла от другого модуля
+          && workMode == lightManual)  // и мы в ручном режиме, то
+          {
+            // просто игнорируем команду, потому что нами управляют в ручном режиме
+           } // if
+           else
+           {
+              if(!command.IsInternal()) // пришла команда от пользователя,
+              {
+                workMode = lightManual; // переходим на ручной режим работы
+                // мигаем светодиодом на 8 пине
+                BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+              }
+
+            bRelaysIsOn = false; // выключаем реле досветки
+            
+            answerStatus = true;
+            answer = STATE_OFF;
+            
+           } // else
+         } // STATE_OFF
+         else
+         if(s == WORK_MODE) // CTSET=LIGHT|MODE|AUTO, CTSET=LIGHT|MODE|MANUAL
+         {
+           // попросили установить режим работы
+           if(argsCnt > 1)
+           {
+              s = command.GetArg(1);
+              if(s == WM_MANUAL)
+              {
+                // попросили перейти в ручной режим работы
+                workMode = lightManual; // переходим на ручной режим работы
+                 // мигаем светодиодом на 8 пине
+                BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+              }
+              else
+              if(s == WM_AUTOMATIC)
+              {
+                // попросили перейти в автоматический режим работы
+                workMode = lightAutomatic; // переходим на автоматический режим работы
+                 // гасим диод на 8 пине
+                BlinkWorkMode();
+              }
+
+              answerStatus = true;
+              answer = WORK_MODE; answer += PARAM_DELIMITER;
+              answer += workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+              
+           } // if (argsCnt > 1)
+         } // WORK_MODE
+         
+      } // if(argsCnt > 0)
   }
   else
   if(command.GetType() == ctGET) //получить данные
@@ -135,15 +311,39 @@ bool  LuminosityModule::ExecCommand(const Command& command)
       #endif
     }
     else
+    if(argsCnt > 0)
     {
+       String s = command.GetArg(0);
+       if(s == WORK_MODE) // запросили режим работы
+       {
+          String wm = workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+          answerStatus = true;
+          answer = String(WORK_MODE) + PARAM_DELIMITER + wm;
+          
+       } // if(s == WORK_MODE)
+       else
+       if(s == LIGHT_STATE_COMMAND) // CTGET=LIGHT|STATE
+       {
+          answer = LIGHT_STATE_COMMAND;
+          answer += PARAM_DELIMITER;
+          answer += bRelaysIsOn ? STATE_ON : STATE_OFF;
+          answer += PARAM_DELIMITER;
+          answer += workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+          
+          answerStatus = true;
+             
+       } // LIGHT_STATE_COMMAND
+        
       // разбор других команд
-    } // else
+
+      
+    } // if(argsCnt > 0)
     
   } // if
  
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    c->Publish(this);
+    controller->Publish(this);
     
   return answerStatus;
 }

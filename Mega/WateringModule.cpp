@@ -28,10 +28,12 @@ void WateringModule::Setup()
     bIsRTClockPresent = false; // нет часов реального времени
   #endif
 
-  //State.SetRelayChannels(WATER_RELAYS_COUNT); // устанавливаем кол-во каналов реле
    uint8_t relayCnt = WATER_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
    if(WATER_RELAYS_COUNT > 8 && WATER_RELAYS_COUNT % 8)
     relayCnt++;
+
+   if(WATER_RELAYS_COUNT < 9)
+    relayCnt = 1;
     
    for(uint8_t i=0;i<relayCnt;i++) // добавляем состояния реле (каждый канал - 8 реле)
     State.AddState(StateRelay,i);  
@@ -41,9 +43,8 @@ void WateringModule::Setup()
   for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
   {
     pinMode(WATER_RELAYS[i],OUTPUT);
-    digitalWrite(WATER_RELAYS[i],WATER_RELAY_OFF);
+    digitalWrite(WATER_RELAYS[i],RELAY_OFF);
   
-    //State.SetRelayState(i,dummyAllChannels.IsChannelRelayOn);
     uint8_t idx = i/8;
     uint8_t bitNum1 = i % 8;
     OneState* os = State.GetState(StateRelay,idx);
@@ -61,7 +62,7 @@ void WateringModule::Setup()
 
   // выключаем реле насоса
   pinMode(PUMP_RELAY_PIN,OUTPUT);
-  digitalWrite(PUMP_RELAY_PIN,WATER_RELAY_OFF);
+  digitalWrite(PUMP_RELAY_PIN,RELAY_OFF);
 
     // настраиваем режим работы перед стартом
     WateringOption currentWateringOption = settings->GetWateringOption();
@@ -139,7 +140,7 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
 }
 void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channel)
 {
-    uint8_t state = channel->IsChannelRelayOn ? WATER_RELAY_ON : WATER_RELAY_OFF;
+    uint8_t state = channel->IsChannelRelayOn ? RELAY_ON : RELAY_OFF;
 
     if(channelIdx == -1) // работаем со всеми каналами
     {
@@ -210,7 +211,7 @@ void WateringModule::HoldPumpState(WateringOption wateringOption)
       bPumpIsOn = IsAnyChannelActive(wateringOption); // то делаем это только тогда, когда полив включен на любом из каналов
 
     // пишем в реле насоса вкл или выкл в зависимости от настройки "включать насос при поливе"
-    uint8_t state = bPumpIsOn ? WATER_RELAY_ON : WATER_RELAY_OFF;
+    uint8_t state = bPumpIsOn ? RELAY_ON : RELAY_OFF;
     digitalWrite(PUMP_RELAY_PIN,state); 
 }
 

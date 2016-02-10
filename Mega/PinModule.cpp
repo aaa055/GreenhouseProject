@@ -81,6 +81,7 @@ uint8_t PinModule::GetPinState(uint8_t pinNumber)
 }
 void PinModule::Update(uint16_t dt)
 { 
+  UNUSED(dt);
   UpdatePinStates(); // обновляем состояние пинов
 }
 

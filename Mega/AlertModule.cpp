@@ -9,8 +9,8 @@ AlertRule::AlertRule()
   whichTime = 0;
   workTime = 0;
   linkedRulesCnt = 0;
-  timerTicks = 0;
   canWork = true;
+  dataAlertLong = 0;
   
 }
 void AlertRule::Update(uint16_t dt
@@ -20,71 +20,48 @@ void AlertRule::Update(uint16_t dt
   #endif
  )
 {
-  canWork = true; // считаем, что мы можем работать
+
+  UNUSED(dt);
   
+  canWork = true; // считаем, что мы можем работать
+
+  if(whichTime == 0  && workTime == 0) // работаем всегда
+  {
+     return;
+  }
+
+
   #ifdef USE_DS3231_REALTIME_CLOCK
 
-   // поставим заглушку, чтобы не забыть
-   //TODO: протестировать этот код!!!
- //  Serial.println("SHOULD TEST ALERT CODE WITH USE_DS3231_REALTIME_CLOCK DEFINE!"); delay(5000);
+  // создаём диапазон для проверки
+  uint16_t startDia = whichTime*60;
+  uint16_t stopDia = startDia + workTime;
 
-      // проверяем, можем ли мы работать со временем?
-      // сначала переводим текущее время суток в минуты,
-      // потом - сравниваем с настройками
-      
-      uint16_t curMinutes = currentHour*60 + currentMinute; // текущее время в минутах
-      uint16_t weCanStartAt = whichTime*60; // дата начала нашей работы, в минутах
-      
-      canWork = curMinutes >= weCanStartAt; // если текущее время больше времени начала нашей работы, то мы можем работать  
-      
-      /*
-      if(whichTime > 0)
-      {
-        // время срабатывания выставлено, надо проверять интервал
- 
-        switch(whichTime) // когда работаем?
-        {
-          case 1: // утро, 07:00-12:00
-            canWork = 7*60 <= (currentHour*60 + currentMinute) < 12*60;
-         break;
+  // если мы находимся между этим диапазоном, то мы можем работать в это время,
+  // иначе - не можем, и просто выставляем флаг работы в false.
+  // надо отразить текущее время в этот диапазон. Существует одна особенность диапазона:
+  // если он полностью попадает в текущие сутки, то мы просто смотрим, попадает ли
+  // текущее время в этот диапазон. Иначе (например, час начала 23, продолжительность - 
+  // 120 минут, т.е. работа закончится на следующие сутки, в час ночи) нам надо отразить
+  // текущий час на этот диапазон, т.е. виртуально продлить сутки. Для этого к текущему 
+  // времени прибавляем кол-во минут в сутках.
 
-         case 2: // день, 12:00-19:00
-            canWork = 12*60 <= (currentHour*60 + currentMinute) < 19*60;
-         break;
+  const uint16_t mins_in_day = 1440; // кол-во минут в сутках
+  uint16_t checkMinutes = currentHour*60 + currentMinute; // текущее время в минутах
 
-         case 3: // вечер, 19:00-24:00
-            canWork = 19*60 <= (currentHour*60 + currentMinute) < 24*60;
-         break;
+  if(stopDia >= mins_in_day)
+  {
+    // правая граница диапазона перешагнула на следующие сутки,
+    // отражаем диапазон текущего часа на следующие сутки
+    // только в том случае, если текущий час меньше, чем час начала работы
+    if(currentHour < whichTime)
+      checkMinutes += mins_in_day;
+  }
 
-         case 4: // ночь, 00:00-07:00
-            canWork = 0 <= (currentHour*60 + currentMinute) < 7*60;
-         break;
-
-        } // switch
-
-        if(!canWork) // не наше время работы, игнорируем
-        {
-          timerTicks = 0; // по-любому обнуляем таймер работы, потому что мы все равно работать не можем
-        }
-      } // if whichTime > 0
-      */
-
-  #endif
-
-    if(canWork) // можем работать, выставляем внутренний статус дальше
-    {
-        if(workTime > 0)
-        {
-          // выставлена продолжительность работы правила, обновляем внутренний таймер
-          timerTicks += dt;
-          if(timerTicks > workTime)
-          {
-            // работу закончили, выставляем флаг работы
-            canWork = false;
-          }
-          
-        } // if workTime > 0
-    } // if canWork
+    // проверяем попадание в диапазон
+    canWork = checkMinutes >= startDia && checkMinutes <= stopDia;
+     
+  #endif  
   
 }
 bool AlertRule::HasAlert()
@@ -160,9 +137,7 @@ bool AlertRule::HasAlert()
        if(*lum == -1) // нет датчика на линии
         return false;
 
-       // поскольку у нас только один байт настройки слежения - то мы разворачиваем его значение
-       // до двух байт, т.к. освещенность у нас - два байта.
-       uint16_t mappedLum = map(dataAlert,0,0xFF,0,0xFFFF);
+       long mappedLum = dataAlertLong;//map(dataAlert,0,0xFF,0,0xFFFF);
 
        switch(operand)
        {
@@ -252,10 +227,15 @@ uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EE
      
    } // for
  
+  readAddr = (const byte*) &dataAlertLong;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
 
   // записали всё, оставим заглушку в несколько байт, вдруг что ещё будет в правиле?
   
-  return (written + 10); // оставляем 10 байт на будущее
+  return (written + 6); // оставляем 6 байт на будущее
 }
 uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
 {
@@ -333,6 +313,18 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
       
      
    } // for
+   
+   writeAddr = (byte*) &dataAlertLong;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+
+  writeAddr = (byte*) &dataAlertLong;
+  if(*writeAddr == 0xFF) // расширенной настройки не сохранено для правила
+    dataAlertLong = dataAlert; // применяем короткую настройку
+
+
 
    // теперь конструируем правило, это нужно для запроса просмотра правила
     alertRule = ruleName + PARAM_DELIMITER;
@@ -381,13 +373,13 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
         alertRule += T_CLOSE_MACRO;
       break;
       case tsPassed:
-        alertRule += dataAlert;
+        alertRule += dataAlertLong;
       break;
     }
     alertRule += PARAM_DELIMITER;
     
   alertRule += String(whichTime) + PARAM_DELIMITER;
-  alertRule += String((uint16_t)workTime/60000) + PARAM_DELIMITER;
+  alertRule += String((uint16_t)workTime) + PARAM_DELIMITER;
 
   String lRulesNames;
   for(uint8_t i=0;i<linkedRulesCnt;i++)
@@ -403,8 +395,10 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
     lRulesNames = F("_");
  
   alertRule += lRulesNames;
+
+
   
-  return (readed+10); // оставляем в хвосте 10 свободных байт на будущее
+  return (readed+6); // оставляем в хвосте 6 свободных байт на будущее
 }
 String AlertRule::GetLinkedRuleName(uint8_t idx)
 {
@@ -470,17 +464,18 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
     
   
   dataAlert = strTempAlert.toInt();
-
+  dataAlertLong = strTempAlert.toInt();
+  
   // дошли до температуры, после неё - настройки срабатывания
 
-  // следом идёт время, когда правило работает (0-всегда, 1-Утром (07:00-12:00), 2-Днем (12:00-19:00), 3-Вечером (19:00-24:00), 4-Ночью (00:00-07:00)
+  // следом идёт час начала работы
   alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
   whichTime = command.GetArg(curArgIdx++).toInt();
 
   
   // дальше идёт продолжительность работы, в минутах
   alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
-  workTime = command.GetArg(curArgIdx++).toInt()*60000; // переводим в миллисекунды
+  workTime = command.GetArg(curArgIdx++).toInt(); // переводим в миллисекунды
 
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
@@ -820,6 +815,7 @@ bool  AlertModule::ExecCommand(const Command& command)
     answer = NOT_SUPPORTED;
     String t = command.GetRawArguments();
     t.toUpperCase();
+   
     if(t == GetID()) // нет аргументов
     {
       answerStatus = false;
@@ -832,6 +828,7 @@ bool  AlertModule::ExecCommand(const Command& command)
         {
           t = command.GetArg(0);
           t.toUpperCase();
+
           if(t == ADD_RULE)
           {
 
@@ -853,17 +850,15 @@ bool  AlertModule::ExecCommand(const Command& command)
           else 
           if(t == RULE_STATE) // установить состояние правила - включено или выключено
           {
-            if(cnt < 3)
+            if(cnt < 2)
             {
               answer = PARAMS_MISSED;
             } // if
             else
             {
-                 String sParam = command.GetArg(1);
-                 sParam.toUpperCase();
-                 
+                 String sParam = command.GetArg(1);                 
                  String state = command.GetArg(2);
-                 state.toUpperCase();
+
                  bool bEnabled = (state == STATE_ON) || (state == STATE_ON_ALT);
                         
                 if(sParam == ALL)
@@ -889,6 +884,8 @@ bool  AlertModule::ExecCommand(const Command& command)
                          if(rule && rule->GetName() == rName)
                          {
                           rule->SetEnabled(bEnabled);
+                          answerStatus = true;
+                          answer = RULE_STATE; answer += PARAM_DELIMITER; answer +=  sParam + PARAM_DELIMITER + state;
                           break;
                          }
                       } // for

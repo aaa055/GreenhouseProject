@@ -8,6 +8,7 @@ void RemoteModule::Setup()
 
 void RemoteModule::Update(uint16_t dt)
 { 
+  UNUSED(dt);
   // обновление модуля тут
 
 }

@@ -9,6 +9,7 @@ void ZeroStreamListener::Setup()
 
 void ZeroStreamListener::Update(uint16_t dt)
 { 
+  UNUSED(dt);
   // обновление модуля тут
 
 }
@@ -440,6 +441,10 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                       uint8_t channelsCnt = relayCnt/8;
                       if(relayCnt > 8 && relayCnt % 8)
                         channelsCnt++;
+
+                      if(relayCnt < 9)
+                        channelsCnt = 1;
+                        
 
                       for(uint8_t k = 0;k<channelsCnt;k++)
                         mod->State.AddState(StateRelay,k);
