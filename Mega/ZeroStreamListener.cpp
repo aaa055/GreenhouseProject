@@ -397,6 +397,73 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           answer = SMS_NUMBER_COMMAND; answer += PARAM_DELIMITER; answer += REG_SUCC;
           
        }
+       else
+       if(t == SETTIME_COMMAND)
+       {
+         // установка даты/времени
+         String rawDatetime = command.GetArg(1);
+         int8_t idx = rawDatetime.indexOf(F(" "));
+         String tm, dt;
+         if(idx != -1)
+         {
+          dt = rawDatetime.substring(0,idx);
+          tm = rawDatetime.substring(idx+1);
+
+            String month,day,year;
+            String hour,minute,sec;
+            idx = dt.indexOf(F("."));
+            if(idx != -1)
+             {
+              day = dt.substring(0,idx);
+              dt = dt.substring(idx+1);
+             }
+             
+            idx = dt.indexOf(F("."));
+            if(idx != -1)
+             {
+              month = dt.substring(0,idx);
+              year = dt.substring(idx+1);
+             }
+
+             idx = tm.indexOf(F(":"));
+             if(idx != -1)
+             {
+              hour = tm.substring(0,idx);
+              tm = tm.substring(idx+1);
+             }
+
+             idx = tm.indexOf(F(":"));
+             if(idx != -1)
+             {
+              minute = tm.substring(0,idx);
+              sec = tm.substring(idx+1);
+             }
+
+             // вычисляем день недели
+             int yearint = year.toInt();
+             int monthint = month.toInt();
+             int dayint = day.toInt();
+             
+             int dow;
+             byte mArr[12] = {6,2,2,5,0,3,5,1,4,6,2,4};
+             dow = (yearint % 100);
+             dow = dow*1.25;
+             dow += dayint;
+             dow += mArr[monthint-1];
+             
+             if (((yearint % 4)==0) && (monthint<3))
+               dow -= 1;
+               
+             while (dow>7)
+               dow -= 7;             
+
+             DS3231Clock cl = c->GetClock();
+             cl.setTime(sec.toInt(),minute.toInt(),hour.toInt(),dow,dayint,monthint,yearint);
+
+             answerStatus = true;
+             answer = REG_SUCC;
+         } // if
+       }
        
        else if(t == PROPERTIES_COMMAND)
        {

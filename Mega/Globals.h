@@ -227,6 +227,7 @@
 
 // команды модуля "0"
 #define NEWLINE F("\r\n")
+#define SETTIME_COMMAND F("DATETIME") // установка даты/времени CTSET=0|DATETIME|DD.MM.YYYY hh:mm:ss
 #define ADD_COMMAND F("ADD") // команда регистрации модуля CTSET=0|ADD|MODULE_NAME
 #define PING_COMMAND F("PING") // команда пинга контроллера CTGET=0|PING
 #define REGISTERED_MODULES_COMMAND F("LIST") // пролистать зарегистрированные модули CTGET=0|LIST
