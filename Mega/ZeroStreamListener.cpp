@@ -401,6 +401,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
        if(t == SETTIME_COMMAND)
        {
          // установка даты/времени
+         #ifdef USE_DS3231_REALTIME_CLOCK
          String rawDatetime = command.GetArg(1);
          int8_t idx = rawDatetime.indexOf(F(" "));
          String tm, dt;
@@ -457,8 +458,10 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
              while (dow>7)
                dow -= 7;             
 
+            
              DS3231Clock cl = c->GetClock();
              cl.setTime(sec.toInt(),minute.toInt(),hour.toInt(),dow,dayint,monthint,yearint);
+            #endif
 
              answerStatus = true;
              answer = REG_SUCC;
