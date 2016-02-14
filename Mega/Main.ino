@@ -100,7 +100,7 @@ StatModule statModule;
 #endif
 
 #ifdef USE_TEMP_SENSORS
-// модуль опроса температурных датчиков
+// модуль опроса температурных датчиков и управления фрамугами
 TempSensors tempSensors;
 #endif
 
@@ -115,7 +115,7 @@ WateringModule wateringModule;
 #endif
 
 #ifdef USE_LUMINOSITY_MODULE
-// модуль освещенности
+// модуль управления досветкой и получения значений освещённости
 LuminosityModule luminosityModule;
 #endif
 
@@ -164,7 +164,7 @@ void setup()
   // устанавливаем провайдера команд для контроллера
   controller.SetCommandParser(&commandParser);
 
-  Serial.begin(SERIAL_BAUD_RATE);
+  Serial.begin(SERIAL_BAUD_RATE); // запускаем Serial на нужной скорости
 
   // назначаем поток вывода по умолчанию для контроллера
   controller.SetCurrentStream(commandsFromSerial.GetStream());
@@ -241,7 +241,7 @@ void setup()
 
   controller.begin(); // начинаем работу
 
-  ProcessInitCommands();
+  ProcessInitCommands(); // запускаем на обработку команды инициализации
 
   // Печатаем в Serial готовность
   Serial.print(READY);

@@ -1,4 +1,5 @@
  #include "DS3231Support.h"
+ #include <Arduino.h>
 
 char DS3231Clock::workBuff[12] = {0};
 
@@ -20,7 +21,12 @@ void DS3231Clock::setTime(const DS3231Time& time)
 }
 void DS3231Clock::setTime(uint8_t second, uint8_t minute, uint8_t hour, uint8_t dayOfWeek, uint8_t dayOfMonth, uint8_t month, uint16_t year)
 {
+
+  while(year > 100) // приводим к диапазону 0-99
+    year -= 100;
+ 
   Wire.beginTransmission(DS3231Address);
+  
   DS3231_WIRE_WRITE(0); // указываем, что начинаем писать с регистра секунд
   DS3231_WIRE_WRITE(dec2bcd(second)); // пишем секунды
   DS3231_WIRE_WRITE(dec2bcd(minute)); // пишем минуты
@@ -28,12 +34,11 @@ void DS3231Clock::setTime(uint8_t second, uint8_t minute, uint8_t hour, uint8_t 
   DS3231_WIRE_WRITE(dec2bcd(dayOfWeek)); // пишем день недели
   DS3231_WIRE_WRITE(dec2bcd(dayOfMonth)); // пишем дату
   DS3231_WIRE_WRITE(dec2bcd(month)); // пишем месяц
-
-  while(year > 100) // приводим к диапазону 0-99
-    year -= 100;
-  
   DS3231_WIRE_WRITE(dec2bcd(year)); // пишем год
-  Wire.endTransmission();  
+  
+  Wire.endTransmission();
+
+  delay(10); // немного подождём для надёжности
 }
 DS3231Time DS3231Clock::getTime()
 {
@@ -43,18 +48,18 @@ DS3231Time DS3231Clock::getTime()
   DS3231_WIRE_WRITE(0); // говорим, что мы собираемся читать с регистра 0
   Wire.endTransmission();
   
-  Wire.requestFrom(DS3231Address, 7); // читаем 7 байт, начиная с регистра 0
+  if(Wire.requestFrom(DS3231Address, 7) == 7) // читаем 7 байт, начиная с регистра 0
+  {
+      t.second = bcd2dec(DS3231_WIRE_READ() & 0x7F);
+      t.minute = bcd2dec(DS3231_WIRE_READ());
+      t.hour = bcd2dec(DS3231_WIRE_READ() & 0x3F);
+      t.dayOfWeek = bcd2dec(DS3231_WIRE_READ());
+      t.dayOfMonth = bcd2dec(DS3231_WIRE_READ());
+      t.month = bcd2dec(DS3231_WIRE_READ());
+      t.year = bcd2dec(DS3231_WIRE_READ());     
+      t.year += 2000; // приводим время к нормальному формату
+  } // if
   
-  t.second = bcd2dec(DS3231_WIRE_READ() & 0x7F);
-  t.minute = bcd2dec(DS3231_WIRE_READ());
-  t.hour = bcd2dec(DS3231_WIRE_READ() & 0x3F);
-  t.dayOfWeek = bcd2dec(DS3231_WIRE_READ());
-  t.dayOfMonth = bcd2dec(DS3231_WIRE_READ());
-  t.month = bcd2dec(DS3231_WIRE_READ());
-  
-  t.year = bcd2dec(DS3231_WIRE_READ());  
-
-  t.year += 2000; // приводим время к нормальному формату
   return t;
 }
 const char* DS3231Clock::getDayOfWeekStr(const DS3231Time& t)

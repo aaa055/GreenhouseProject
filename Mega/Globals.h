@@ -1,24 +1,6 @@
 #ifndef _GLOBALS_H
 #define _GLOBALS_H
 
-// ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ!
-#define OUR_ID  "CHILD" // имя модуля (при CONTROLLER_MODE == cdCHILDMODULE), для разрешения конфликтов, кому адресована команда
-
-#define SETT_HEADER1 0xDE // байты, сигнализирующие о наличии сохранённых настроек
-#define SETT_HEADER2 0xAD
-#define EEPROM_RULES_START_ADDR 1025 // со второго килобайта в EEPROM идут правила
-
-// настройки Serial
-#define SERIAL_BAUD_RATE 9600 // скорость работы с портом, бод
-#define READY F("READY") // будет напечатано в Serial после загрузки
-#define DIODE_READY_PIN 6 // пин, на котором будет диод, мигающий при старте и горящий в режиме работы
-#define DIODE_MANUAL_MODE_PIN 7 // пин, на котором будет диод, мигающий, когда мы в ручном режиме управления окнами
-#define WORK_MODE_BLINK_INTERVAL 750 // с какой частотой мигать на пине индикации ручного режима работы, мс
-#define DIODE_WATERING_MANUAL_MODE_PIN 8 // пин, на котором висит диод индикации ручного режима управления поливом
-#define DIODE_LIGHT_MANUAL_MODE_PIN 9 // пин, на котором висит диод индикации ручного режима управления досветкой
-#define RELAY_ON LOW // уровень для включения реле
-#define RELAY_OFF HIGH // уровень для выключения реле
-
 // директивы условной компиляции 
 #define AS_CONTROLLER // закомментировать для дочерних модулей
 #define USE_DS3231_REALTIME_CLOCK // закомментировать, если не хотим использовать модуль реального времени
@@ -30,12 +12,43 @@
 #define USE_WATERING_MODULE // закомментировать, если не нужно управление поливом
 #define USE_LUMINOSITY_MODULE // закомментировать, если не нужен модуль контроля освещенности
 
-// настройки модуля алертов (событий по срабатыванию каких-либо условий)
+
+// ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ, СДЕЛАННОГО В ЖЕЛЕЗЕ!
+#define OUR_ID  "CHILD" // имя модуля (при CONTROLLER_MODE == cdCHILDMODULE), для разрешения конфликтов, кому адресована команда
+
+// Настройки EEPROM
+#define SETT_HEADER1 0xDE // байты, сигнализирующие о наличии сохранённых настроек
+#define SETT_HEADER2 0xAD
+#define EEPROM_RULES_START_ADDR 1025 // со второго килобайта в EEPROM идут правила
+
+// настройки Serial
+#define SERIAL_BAUD_RATE 9600 // скорость работы с портом, бод
+#define READY F("READY") // будет напечатано в Serial после загрузки
+
+// настройки информационных диодов
+#define DIODE_READY_PIN 6 // пин, на котором будет диод, мигающий при старте и горящий в режиме работы
+#define DIODE_MANUAL_MODE_PIN 7 // пин, на котором будет диод, мигающий, когда мы в ручном режиме управления окнами
+#define WORK_MODE_BLINK_INTERVAL 750 // с какой частотой мигать на пине индикации ручного режима работы, мс
+#define DIODE_WATERING_MANUAL_MODE_PIN 8 // пин, на котором висит диод индикации ручного режима управления поливом
+#define DIODE_LIGHT_MANUAL_MODE_PIN 9 // пин, на котором висит диод индикации ручного режима управления досветкой
+
+// настройки железных модулей реле 
+#define RELAY_ON LOW // уровень для включения реле
+#define RELAY_OFF HIGH // уровень для выключения реле
+#define SHORT_CIRQUIT_STATE HIGH // статус пинов, на которых висит реле, чтобы закоротить мотор и не дать ему крутиться
+
+// настройки максимумов
 #define MAX_STORED_ALERTS 3 // максимальное кол-во сохраняемых последних алертов
+#define MAX_TEMP_SENSORS 4 // максимальное кол-во поддерживаемых датчиков температуры
+#define MAX_ALERT_RULES 20 // максимальное кол-во поддерживаемых правил
+#define MAX_RECEIVE_BUFFER_LENGTH 256 // максимальная длина (в байтах) пакета в сети, дла защиты от спама
+#define MAX_ARGS_IN_LIST 30 // максимальное кол-во аргументов у команды
+
+
+// настройки модуля алертов (событий по срабатыванию каких-либо условий)
 #define ALERT F("ALERT") // произошло событие
 #define VIEW_ALERT_COMMAND F("VIEW") // команда просмотра события CTGET=ALERT|VIEW|0
 #define CNT_COMMAND F("CNT") // сколько зарегистрировано событий CTGET=ALERT|CNT
-
 // правило алерта CTSET=ALERT|RULE_ADD|RuleName|STATE|TEMP|1|>|23|Час начала работы|Продолжительность работы, мин|Список связанных правил|Команды для стороннего модуля
 // пример №1: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|30|N3,N4|CTSET=STATE|WINDOW|ALL|OPEN
 // пример №2: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|0|_|CTSET=STATE|WINDOW|ALL|OPEN
@@ -50,26 +63,25 @@
 #define GREATER_OR_EQUAL_THAN F(">=") // больше либо равно
 #define LESS_THAN F("<") // меньше чем
 #define LESS_OR_EQUAL_THAN F("<=") // меньше или равно
-#define MAX_ALERT_RULES 20 // максимальное кол-во поддерживаемых правил
 #define T_OPEN_MACRO F("%TO%") // макроподстановка температуры открытия из настроек
 #define T_CLOSE_MACRO F("%TC%") // макроподстановка температуры закрытия из настроек
 
-// настройки модуля освещенности тут
+// настройки модуля освещенности
 // команда, на которую модуль выдаёт текущую освещенность - CTGET=LIGHT
 #define LIGHT_SENSORS_COUNT 2 // кол-во датчиков освещенности, 0, 1 или 2, 2 - максимум
 #define LAMP_RELAYS_COUNT 1 // кол-во реле для управления досветкой
 #define LAMP_RELAYS_PINS 34 // пины, на которых сидят реле управления досветкой (через запятую, кол-во равно LAMP_RELAYS_COUNT!)
 #define LIGHT_STATE_COMMAND F("STATE") // CTGET=LIGHT|STATE
 
-#define MAX_PUBLISHERS 2 // максимальное количество паблишеров для модуля
-#define MAX_TEMP_SENSORS 4 // максимальное кол-во поддерживаемых датчиков температуры
+
+// состояния вкл/выкл, для команд
 #define STATE_ON F("ON") // Включено
 #define STATE_ON_ALT F("1") // Включено
 #define STATE_OFF F("OFF") // Выключено
 #define STATE_OFF_ALT F("0") // Выключено
 
 
-// состояние канала управления фрамугой
+// настройки модуля управления фрамугами
 #define DEF_OPEN_INTERVAL 30000 // по умолчанию 30 секунд на полное открытие/закрытие
 #define DEF_OPEN_TEMP 25 // температура открытия по умолчанию
 #define DEF_CLOSE_TEMP 24 // температура закрытия по умолчанию
@@ -89,8 +101,13 @@
 #define SUPPORTED_SENSORS 2 // кол-во поддерживаемых датчиков температуры "из коробки"
 #define TEMP_SENSORS_PINS 31,32 // пины, на которых висят наши датчики температуры (указываются через запятую, общее кол-во равно SUPPORTED_SENSORS)
 #define SUPPORTED_WINDOWS 4 // кол-во поддерживаемых окон (по два реле на мотор, для 8-ми канального модуля реле - 4 окна)
-#define SHORT_CIRQUIT_STATE LOW // статус пинов, на которых висит реле, чтобы закоротить мотор и не дать ему крутиться
-
+// пины реле управления фрамугами (попарно, через запятую!) На каждом пине висит одно реле, пара реле (например,
+// 40 и 41) образуют одну пару управления DC-мотором. Кол-во реле равно SUPPORTED_WINDOWS*2, соответственно, кол-во используемых
+// пинов - всегда чётно! Поэтому будьте внимательны при редактировании этой настройки!
+// Как подключается мотор: контакты двигателя подключаются к общим (COM) контактам пары реле.
+// Плюс питания - к NO (нормально разомкнутым контактам пары реле).
+// Минус питания - к NC (нормально замкнутым контактам реле).
+#define WINDOWS_RELAYS_PINS 40,41,42,43,44,45,46,47 
 
 // настройки модуля управления поливом
 #define WATER_SETTINGS_COMMAND F("T_SETT") // получить/установить настройки управления поливом: CTGET=WATER|T_SETT, CTSET=WATER|T_SETT|WateringOption|WateringDays|WateringTime|StartTime|TurnOnPump , где
@@ -103,32 +120,13 @@
 #define WATER_CHANNELS_COUNT_COMMAND F("CHANNELS") // получить кол-во поддерживаемых каналов полива: CTGET=WATER|CHANNELS
 #define PUMP_RELAY_PIN 22 // пин, на котором сидит реле управления насосом
 #define WATER_RELAYS_COUNT 2 // сколько каналов управления поливом используется
-// объявляем пины для управления каналами реле - дописывать в этот массив, через запятую!
+// объявляем пины для управления каналами реле - дописывать в этот массив, через запятую,
+// кол-во равно WATER_RELAYS_COUNT!
 #define WATER_RELAYS_PINS 23,24 
-
-/*
- * Команды модуля STATE - модуль следит за температурой и управляет открытием/закрытием фрамуг:
- * 
- * CTGET=STATE|TEMP|TEMP_CNT - возвращает кол-во температурных датчиков
- * CTGET=STATE|TEMP|0 - получить данные с первого датчика (и т.д.)
- * 
- * CTGET=STATE|WINDOW|WINDOW_CNT - получить кол-во фрамуг
- * CTGET=STATE|WINDOW|2 - получить состояние третьей фрамуги (возможные состояния: OPEN - открыто, OPENING - фрамуга открывается, CLOSING - фрамуга закрываетсяб CLOSED - фрамуга закрыта)
- * 
- * CTSET=STATE|WINDOW|0|OPEN - ОТКРЫТЬ ФРАМУГУ НА ПЕРВОМ КАНАЛЕ (БЕЗ УКАЗАНИЯ ВРЕМЕНИ РАБОТЫ, берётся значение по умолчанию
- * CTSET=STATE|WINDOW|ALL|CLOSE - закрыть все фрамуги
- * CTSET=STATE|WINDOW|ALL|OPEN - открыть все фрамуги
- * CTSET=STATE|WINDOW|2-7|OPEN|12000 - открыть фрамуги с 3 по восьмой канал, держать реле включенным 12 секунд
- * 
- */
 
 
 // настройки главного контроллера
-#define MAX_RECEIVE_BUFFER_LENGTH 256 // максимальная длина (в байтах) пакета в сети, дла защиты от спама
 #define MIN_COMMAND_LENGTH 6 // минимальная длина правильной текстовой команды
-#define OK_ANSWER F("OK") // ответ - всё ок
-#define ERR_ANSWER F("ER") // ответ - ошибка
-
 #define CMD_PREFIX  F("CT") // запрос к контроллеру
 #define CHILD_PREFIX F("CD") // запрос к дочернему модулю
 #define CMD_PREFIX_LEN  2  // длина префикса команды
@@ -138,6 +136,8 @@
 #define CMD_TYPE_LEN 3 // длина типа команды
 
 // ОТВЕТЫ ЗА ЗАПРОСЫ
+#define OK_ANSWER F("OK") // ответ - всё ок
+#define ERR_ANSWER F("ER") // ответ - ошибка
 #define UNKNOWN_MODULE F("UNKNOWN_MODULE")
 #define PARAMS_MISSED F("PARAMS_MISSED")
 #define UNKNOWN_COMMAND F("UNKNOWN_COMMAND")
@@ -148,22 +148,20 @@
 // разделитель команды и ответа
 #define COMMAND_DELIMITER F("=")
 
-#define MAX_ARGS_IN_LIST 30 // максимальное кол-во аргументов в списке команды
 
-
-// команды модуля PIN
+// настройки модуля PIN
 #define PIN_TOGGLE F("T") // CTGET=PIN|13, CTSET=PIN|13|1, CTSET=PIN|13|ON, CTSET=PIN|13|OFF, CTSET=PIN|13|0, CTSET=PIN|13|T
 #define PIN_DETACH F("DETACH") // не устанавливать состояние пина
 
-// Команды модуля статистикм
+// настройки модуля статистикм
 #define FREERAM_COMMAND F("FREERAM") // показать кол-во свободной памяти CTGET=STAT|FREERAM
 #define UPTIME_COMMAND F("UPTIME") // показать время работы (в секундах) CTGET=STAT|UPTIME
 #ifdef USE_DS3231_REALTIME_CLOCK
 #define CURDATETIME_COMMAND F("DATETIME") // вывести текущую дату и время CTGET=STAT|DATETIME
 #endif
 
-// Команды и настройки модуля управления по SMS (модуль NEOWAY M590)
-//#define NEOWAY_DEBUG_MODE // закомментировать, если не нужен режим отладки (плюётся в Serial отладочными сообщениями)
+// настройки модуля управления по SMS (модуль NEOWAY M590)
+//#define NEOWAY_DEBUG_MODE // закомментировать, если не нужен режим отладки (плюётся в Serial отладочными сообщениями, не работает с конфигуратором!)
 #define STAT_COMMAND F("STAT") // получить текущую статистику по SMS, CTGET=SMS|STAT
 #define T_INDOOR F("Твн: ") // температура внутри
 #define T_OUTDOOR F("Тнар: ") // температура снаружи
@@ -250,5 +248,6 @@
  */
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
+#define MAX_PUBLISHERS 2 // максимальное количество паблишеров для модуля
 
 #endif

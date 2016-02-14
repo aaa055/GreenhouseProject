@@ -3,12 +3,23 @@
 #include "InteropStream.h"
 
 static uint8_t TEMP_SENSORS[] = { TEMP_SENSORS_PINS };
+static uint8_t WINDOWS_RELAYS[] = { WINDOWS_RELAYS_PINS };
 
-void WindowState::Setup(ModuleState* state, uint8_t relay1, uint8_t relay2)
+void WindowState::Setup(ModuleState* state,  uint8_t relayChannel1, uint8_t relayChannel2, uint8_t relayPin1, uint8_t relayPin2)
 {
   RelayStateHolder = state;
-  RelayChannel1 = relay1;
-  RelayChannel2 = relay2;
+
+  // запоминаем, какие каналы модуля реле мы используем
+  RelayChannel1 = relayChannel1;
+  RelayChannel2 = relayChannel2;
+
+  // запоминаем, на каких пинах висит управление этой форточкой
+  RelayPin1 = relayPin1;
+  RelayPin2 = relayPin2;
+
+  // настраиваем пины, через которые мы будем рулить реле
+  pinMode(RelayPin1,OUTPUT);
+  pinMode(RelayPin2, OUTPUT);
 }
 
 bool WindowState::ChangePosition(DIRECTION dir, unsigned int newPos)
@@ -64,16 +75,12 @@ bool WindowState::ChangePosition(DIRECTION dir, unsigned int newPos)
 }
 void WindowState::SwitchRelays(uint16_t rel1State, uint16_t rel2State)
 {
-  //TODO: Здесь включаем реле, устанавливая на нужный пин переданное состояние!!
+  //Здесь включаем реле, устанавливая на нужный пин переданное состояние
+  digitalWrite(RelayPin1,rel1State);
+  digitalWrite(RelayPin2,rel2State);
   
   if(RelayStateHolder) // сообщаем, что реле мы выключили или включили
   {
-   // RelayStateHolder->SetRelayState(RelayChannel1,rel1State == HIGH);
-  //  RelayStateHolder->SetRelayState(RelayChannel2,rel2State == HIGH);
-
-  // сначала вычисляем индекс, по которому находятся наши каналы реле.
-  // у нас 8 реле на одно свойство StateRelay, значит, в первом свойстве
-  // находятся каналы с 0 по 7, во втором - с 8 по 15 и т.п.
    uint8_t idx = RelayChannel1/8; // выясняем, какой индекс
 
  // теперь мы должны выяснить, в какой бит писать
@@ -92,12 +99,9 @@ void WindowState::SwitchRelays(uint16_t rel1State, uint16_t rel2State)
      
      // записываем новую маску состояния реле
      RelayStateHolder->UpdateState(StateRelay,idx,(void*)&curRelayStates);
-   }
-
-   
-  
-    
-   
+     
+   } // if(os)
+      
   } // if
   
 }
@@ -105,7 +109,10 @@ void WindowState::UpdateState(uint16_t dt)
 {
   
     if(!OnMyWay) // ничего не делаем
+    {
+      SwitchRelays(); // держим реле выключенными
       return;
+    }
 
    uint16_t bRelay1State, bRelay2State; // состояние выходов реле
    
@@ -160,8 +167,11 @@ void TempSensors::SetupWindows()
   // настраиваем фрамуги
   for(uint8_t i=0, j=0;i<SUPPORTED_WINDOWS;i++, j+=2)
   {
-      //Serial.println("first relay=" + String(j) + "; second relay=" + String(j+1));
-      Windows[i].Setup(&State,j,j+1); // раздаём каналы реле: первому окну - 0,1, второму - 2,3 и т.д.
+      // раздаём каналы реле: первому окну - 0,1, второму - 2,3 и т.д.
+      // также назначаем пины для реле из массива WINDOWS_RELAYS:
+      // первому окну - первый и второй пин из массива,
+      // второму окну - третий и четвёртый пин и т.д.
+      Windows[i].Setup(&State,j,j+1,WINDOWS_RELAYS[j],WINDOWS_RELAYS[j+1]); 
   } // for
 }
 
@@ -251,18 +261,19 @@ void TempSensors::BlinkWorkMode(uint16_t blinkInterval) // мигаем диод
   return;
 
   lastBlinkInterval = blinkInterval;
+  String s;
   
-  //String s = F("CTSET=LOOP|SM|SET|");
-  String s = F("LOOP|SM|SET|");
+#ifdef USE_LOOP_MODULE 
+  s = F("LOOP|SM|SET|");
   s += blinkInterval;
   s+= F("|0|PIN|");
   s += String(DIODE_MANUAL_MODE_PIN);
   s += F("|T");
 
-    if(ModuleInterop.QueryCommand(ctSET,s,true))
-      {
-      } // if  
+  ModuleInterop.QueryCommand(ctSET,s,true);
+#endif
 
+#ifdef USE_PIN_MODULE 
       if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
       {
         s = F("PIN|");
@@ -272,7 +283,7 @@ void TempSensors::BlinkWorkMode(uint16_t blinkInterval) // мигаем диод
 
         ModuleInterop.QueryCommand(ctSET,s,true);
       } // if
-  
+ #endif 
 }
 bool  TempSensors::ExecCommand(const Command& command)
 {
@@ -427,7 +438,7 @@ bool  TempSensors::ExecCommand(const Command& command)
           answerStatus = true;
           answer = String(WORK_MODE) + PARAM_DELIMITER + s;
           workMode = wmAutomatic;
-          BlinkWorkMode(0);
+          BlinkWorkMode();
         }
         else if(s == WM_MANUAL)
         {

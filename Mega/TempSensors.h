@@ -34,6 +34,8 @@ class WindowState
 
   uint8_t RelayChannel1;
   uint8_t RelayChannel2;
+  uint8_t RelayPin1;
+  uint8_t RelayPin2;
   ModuleState* RelayStateHolder;
 
 public:
@@ -48,7 +50,7 @@ public:
 
   void UpdateState(uint16_t dt); // обновляет состояние фрамуги
   
-  void Setup(ModuleState* state, uint8_t relay1, uint8_t relay2); // настраиваем перед пуском
+  void Setup(ModuleState* state, uint8_t relayChannel1, uint8_t relayChannel2, uint8_t relayPin1, uint8_t relayPin2); // настраиваем перед пуском
 
 
   WindowState() 

@@ -310,42 +310,30 @@ void WateringModule::BlinkWorkMode(uint16_t blinkInterval) // мигаем ди�
     return; // не дёргаем несколько раз с одним и тем же интервалом - незачем.
 
   lastBlinkInterval = blinkInterval;
+
+  String s;
   
- // String s = F("CTSET=LOOP|WM|SET|");
-  String s = F("LOOP|WM|SET|");
+#ifdef USE_LOOP_MODULE 
+  s = F("LOOP|WM|SET|");
   s += blinkInterval;
   s+= F("|0|PIN|");
   s += String(DIODE_WATERING_MANUAL_MODE_PIN);
   s += F("|T");
 
-   // ModuleController* c = GetController();
-  //  CommandParser* cParser = c->GetCommandParser();
-   //   Command cmd;
-      //if(cParser->ParseCommand(s, c->GetControllerID(), cmd))
-      if(ModuleInterop.QueryCommand(ctSET,s,true))
-      {
-       //  cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
+      ModuleInterop.QueryCommand(ctSET,s,true);
+#endif    
 
-        // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
-        //cmd.SetIncomingStream(pStream);
-     //   c->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой    
-      } // if  
-
+#ifdef USE_PIN_MODULE 
       if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
       {
-       // s = CMD_PREFIX;
-      //  s += CMD_SET;
-      //  s += F("=PIN|");
         s = F("PIN|");
         s += String(DIODE_WATERING_MANUAL_MODE_PIN);
         s += PARAM_DELIMITER;
         s += F("0");
 
         ModuleInterop.QueryCommand(ctSET,s,true);
-        //cParser->ParseCommand(s, c->GetControllerID(), cmd);
-        //cmd.SetInternal(true); 
-       // c->ProcessModuleCommand(cmd,false);
-      } // if
+       } // if
+#endif
   
 }
 
@@ -464,7 +452,7 @@ bool  WateringModule::ExecCommand(const Command& command)
            if(param == WM_AUTOMATIC)
            {
              workMode = wwmAutomatic; // переходим в автоматический режим работы
-             BlinkWorkMode(0); // гасим диод
+             BlinkWorkMode(); // гасим диод
            }
            else
            {

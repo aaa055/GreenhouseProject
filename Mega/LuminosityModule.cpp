@@ -120,16 +120,21 @@ void LuminosityModule::BlinkWorkMode(uint16_t blinkInterval) // мигаем д�
 
   lastBlinkInterval = blinkInterval;
   
-  String s = F("LOOP|LUX|SET|");
+  String s;
+
+#ifdef USE_LOOP_MODULE  
+  s = F("LOOP|LUX|SET|");
   s += blinkInterval;
   s+= F("|0|PIN|");
   s += String(DIODE_LIGHT_MANUAL_MODE_PIN);
   s += F("|T");
 
-      if(ModuleInterop.QueryCommand(ctSET,s,true))
-      {
-      } // if  
+      ModuleInterop.QueryCommand(ctSET,s,true);
+      
+       
+#endif
 
+#ifdef USE_PIN_MODULE 
       if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
       {
         s = F("PIN|");
@@ -139,6 +144,7 @@ void LuminosityModule::BlinkWorkMode(uint16_t blinkInterval) // мигаем д�
 
         ModuleInterop.QueryCommand(ctSET,s,true);
       } // if
+#endif
   
 }
 
