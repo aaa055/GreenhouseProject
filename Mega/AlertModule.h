@@ -85,11 +85,14 @@ typedef Vector<AlertRule*> RulesVector;
 class AlertModule : public AbstractModule
 {
   private:
+  
+  #if MAX_STORED_ALERTS > 0
     uint8_t curAlertIdx;
     uint8_t cntAlerts;
     String strAlerts[MAX_STORED_ALERTS];
     String& GetAlert(uint8_t idx);
     void AddAlert(const String& strAlert);
+#endif
 
     uint8_t rulesCnt;
     AlertRule* alertRules[MAX_ALERT_RULES];
@@ -104,7 +107,13 @@ class AlertModule : public AbstractModule
     void SaveRules();
     
   public:
-    AlertModule() : AbstractModule(F("ALERT")) {cntAlerts = 0; curAlertIdx = 0; InitRules();}
+    AlertModule() : AbstractModule(F("ALERT")) 
+    {
+      #if MAX_STORED_ALERTS > 0
+        cntAlerts = 0; curAlertIdx = 0;
+      #endif 
+      InitRules();
+    }
 
     bool ExecCommand(const Command& command);
     void Setup();

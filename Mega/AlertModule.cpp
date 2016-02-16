@@ -618,13 +618,16 @@ bool AlertModule::AddRule(AbstractModule* m, const Command& c)
 void AlertModule::Setup()
 {
   // настройка модуля алертов тут
+  #if MAX_STORED_ALERTS > 0
   curAlertIdx = 0; // нет событий пока
-  cntAlerts = 0; 
+  cntAlerts = 0;
+
   
   for(uint8_t i = 0;i<MAX_STORED_ALERTS;i++)
   {
     strAlerts[i] = F(""); // резервируем события
   } // for
+#endif
 
   // загружаем правила
   LoadRules();
@@ -709,7 +712,9 @@ void AlertModule::Update(uint16_t dt)
 
       
     } // if(tc.length())
-   AddAlert(r->GetAlertRule());   
+   #if MAX_STORED_ALERTS > 0 
+   AddAlert(r->GetAlertRule());
+   #endif   
   } // for
   
 }
@@ -782,6 +787,7 @@ void AlertModule::SolveConflicts(RulesVector& raisedAlerts,RulesVector& workRule
           
     } // for
 }
+#if MAX_STORED_ALERTS > 0
 String& AlertModule::GetAlert(uint8_t idx)
 {
   if(idx >= MAX_STORED_ALERTS) 
@@ -803,6 +809,7 @@ void AlertModule::AddAlert(const String& strAlert)
     if(cntAlerts > MAX_STORED_ALERTS)
       cntAlerts = MAX_STORED_ALERTS;
 }
+#endif
 
 bool  AlertModule::ExecCommand(const Command& command)
 {
@@ -967,12 +974,14 @@ bool  AlertModule::ExecCommand(const Command& command)
       answerStatus = false;
       answer = PARAMS_MISSED;
     }
+    #if MAX_STORED_ALERTS > 0
     else
     if(t == CNT_COMMAND) // запросили данные о  кол-ве алертов
     {
       answerStatus = true;
       answer = CNT_COMMAND; answer += PARAM_DELIMITER; answer += String(cntAlerts);
     }
+    #endif
     else
     if(t == RULE_CNT) // запросили данные о количестве правил
     {
@@ -986,7 +995,8 @@ bool  AlertModule::ExecCommand(const Command& command)
         {
           t = command.GetArg(0);
           t.toUpperCase();
-          
+
+              #if MAX_STORED_ALERTS > 0
               if(t == VIEW_ALERT_COMMAND) // запросили данные об алерте
               {
                     
@@ -1003,7 +1013,10 @@ bool  AlertModule::ExecCommand(const Command& command)
                         answer = VIEW_ALERT_COMMAND; answer += PARAM_DELIMITER; answer +=  command.GetArg(1) + PARAM_DELIMITER + GetAlert(idx);
                     }
               }
-              else if(t == RULE_VIEW) // просмотр правила
+              else
+              #endif
+               
+              if(t == RULE_VIEW) // просмотр правила
               {
                     if(cnt < 2)
                     {

@@ -30,7 +30,7 @@ class WindowState
   unsigned long TimerTicks; // сколько проработали уже?
   DIRECTION Direction;
 
-  void SwitchRelays(uint16_t rel1State = SHORT_CIRQUIT_STATE, uint16_t rel2State = SHORT_CIRQUIT_STATE);
+  void SwitchRelays(uint8_t rel1State = SHORT_CIRQUIT_STATE, uint8_t rel2State = SHORT_CIRQUIT_STATE);
 
   uint8_t RelayChannel1;
   uint8_t RelayChannel2;

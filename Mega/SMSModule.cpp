@@ -219,7 +219,7 @@ void SMSModule::ParseIncomingSMS(const String& sms)
       Serial.println("Automatic mode command found, execute it...");
     #endif
 
-    // переводим контроллер в автоматический режим работы
+      // переводим управление окнами в автоматический режим работы
       if(ModuleInterop.QueryCommand(ctSET, F("STATE|MODE|AUTO"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
@@ -228,10 +228,20 @@ void SMSModule::ParseIncomingSMS(const String& sms)
     
       }
 
+      // переводим управление поливом в автоматический режим работы
       if(ModuleInterop.QueryCommand(ctSET, F("WATER|MODE|AUTO"),false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println("CTSET=WATER|MODE|AUTO command parsed, process it...");
+        #endif
+    
+      }
+     
+      // переводим управление досветкой в актоматический режим работы    
+      if(ModuleInterop.QueryCommand(ctSET, F("LIGHT|MODE|AUTO"),false))
+      {
+        #ifdef NEOWAY_DEBUG_MODE
+          Serial.println("CTSET=LIGHT|MODE|AUTO command parsed, process it...");
         #endif
     
       }    

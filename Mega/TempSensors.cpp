@@ -73,7 +73,7 @@ bool WindowState::ChangePosition(DIRECTION dir, unsigned int newPos)
   }
     return bRet;
 }
-void WindowState::SwitchRelays(uint16_t rel1State, uint16_t rel2State)
+void WindowState::SwitchRelays(uint8_t rel1State, uint8_t rel2State)
 {
   //Здесь включаем реле, устанавливая на нужный пин переданное состояние
   digitalWrite(RelayPin1,rel1State);
@@ -114,7 +114,7 @@ void WindowState::UpdateState(uint16_t dt)
       return;
     }
 
-   uint16_t bRelay1State, bRelay2State; // состояние выходов реле
+   uint8_t bRelay1State, bRelay2State; // состояние выходов реле
    
    switch(Direction)
    {
@@ -151,8 +151,6 @@ void WindowState::UpdateState(uint16_t dt)
         SwitchRelays();
         
         OnMyWay = false;
-
-       // Serial.println("POSITION " + String(CurrentPosition) + " REACHED!");
 
         return;
         
