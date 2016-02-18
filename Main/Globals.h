@@ -11,6 +11,7 @@
 #define USE_SMS_MODULE // закомментировать, если не нужна поддержка управления по SMS
 #define USE_WATERING_MODULE // закомментировать, если не нужно управление поливом
 #define USE_LUMINOSITY_MODULE // закомментировать, если не нужен модуль контроля освещенности
+#define USE_HUMIDITY_MODULE // закомментировать, если не нужен модуль работы с датчиками влажности DHT
 
 
 // ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ, СДЕЛАННОГО В ЖЕЛЕЗЕ!
@@ -39,7 +40,6 @@
 
 // настройки максимумов
 #define MAX_STORED_ALERTS 0 // максимальное кол-во сохраняемых последних текстовых алертов (0 - нет поддержки сохраняемых событий)
-#define MAX_TEMP_SENSORS 4 // максимальное кол-во поддерживаемых датчиков температуры
 #define MAX_ALERT_RULES 20 // максимальное кол-во поддерживаемых правил
 #define MAX_RECEIVE_BUFFER_LENGTH 256 // максимальная длина (в байтах) пакета в сети, дла защиты от спама
 #define MAX_ARGS_IN_LIST 30 // максимальное кол-во аргументов у команды
@@ -72,6 +72,15 @@
 #define LAMP_RELAYS_COUNT 1 // кол-во реле для управления досветкой
 #define LAMP_RELAYS_PINS 34 // пины, на которых сидят реле управления досветкой (через запятую, кол-во равно LAMP_RELAYS_COUNT!)
 #define LIGHT_STATE_COMMAND F("STATE") // CTGET=LIGHT|STATE
+
+// настройки модуля влажности
+// GTGET=HUMIDITY|CNT - получить кол-во датчиков влажности
+// GTGET=HUMIDITY|0 - получить показания первого датчика, возвращается OK=HUMIDITY|0|RH|RT, где RH - влажность, RT - температура
+// CTGET=HUMIDITY|ALL - получить показания всех датчиков, возвращается OK=HUMIDITY|CNT|RH0|RT0|RH1|RT1|RHn|RTn, где CNT - кол-во записей
+#define SUPPORTED_DHT_SENSORS 1 // кол-во поддерживаемых датчиков DHT
+#define DHT_SENSORS_PINS 12 // пины, на которых сидят датчики влажности, через запятую, кол-вом SUPPORTED_DHT_SENSORS.
+#define DHT_TYPE DHT2x // тип датчика - DHT21 и старше
+// #define DHT_TYPE DHT11 // тип датчика - DHT11, раскомментировать эту строчку, если используются датчики DHT11.
 
 
 // состояния вкл/выкл, для команд
@@ -219,6 +228,7 @@
  // 
 #define PROP_TEMP_CNT F("TEMP_CNT") // кол-во датчиков температуры CTGET=0|PROP|TEMP|TEMP_CNT, CTSET=0|PROP|TEMP|TEMP_CNT|2
 #define PROP_RELAY_CNT F("RELAY_CNT") // кол-во каналов реле CTGET=0|PROP|MODULE_NAME|RELAY_CNT, CTSET=0|PROP|MODULE_NAME|RELAY_CNT|2
+#define PROP_CNT F("CNT") // свойство - кол-во любых датчиков
 #define PROP_TEMP F("TEMP") // нам передали/запросили температуру CTGET=0|PROP|MODULE_NAME|TEMP|0, CTSET=0|PROP|MODULE_NAME|TEMP|0|36,6
 #define PROP_RELAY F("RELAY") // нам передали/запросили состояние канала реле CTGET=0|PROP|MODULE_NAME|RELAY|0, CTSET=0|PROP|MODULE_NAME|RELAY|0|ON
 #define PROP_LIGHT F("LIGHT") // свойство "освещенность"

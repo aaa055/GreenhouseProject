@@ -19,6 +19,7 @@ void ModuleState::AddState(ModuleStates state, uint8_t idx)
     switch(state)
     {
       case StateTemperature:
+      case StateHumidity: // и для влажности используем структуру температуры
       {
       
         Temperature* t1 = new Temperature;
@@ -86,6 +87,7 @@ bool ModuleState::IsStateChanged(OneState* s)
       switch(s->Type)
       {
         case StateTemperature:
+        case StateHumidity: // и для влажности используем структуру температуры
         {
           Temperature* t1 = (Temperature*) s->Data;
           Temperature* t2 = (Temperature*) s->PreviousData;
@@ -146,6 +148,7 @@ void ModuleState::UpdateState(ModuleStates state, uint8_t idx, void* newData)
                 {
                   
                   case StateTemperature:
+                  case StateHumidity: // и для влажности используем структуру температуры
                   {
                     Temperature* t1 = (Temperature*) s->Data;
                     Temperature* t2 = (Temperature*) s->PreviousData;

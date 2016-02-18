@@ -1,0 +1,132 @@
+#include "DHTSupport.h"
+
+DHTSupport::DHTSupport()
+{
+  
+}
+const DHTAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
+{
+  answer.IsOK = false;
+
+  uint8_t wakeup_delay = DHT2x_WAKEUP;
+  
+  if(sensorType == DHT11)
+    wakeup_delay = DHT11_WAKEUP;
+
+  const uint32_t mstcc = ( F_CPU / 40000L ); // сторож таймаута - 100us
+
+  // начинаем читать с датчика
+  pinMode(pin,OUTPUT);
+  digitalWrite(pin,LOW); // прижимаем к земле
+  delay(wakeup_delay); // и ждём, пока датчик прочухается
+  digitalWrite(pin,HIGH); // поднимаем линию
+  delayMicroseconds(40); // ждём 40us, как написано в даташите
+  pinMode(pin, INPUT_PULLUP); // переводим пин на чтение
+
+  // тут должны проверить последовательность, которую выдал датчик:
+  // если линия прижата на 80us, затем поднята на 80us - значит,
+  // датчик готов выдавать данные
+  
+  uint32_t tmout_guard = mstcc;
+  
+  while(digitalRead(pin) == LOW) // читаем, пока низкий уровень на пине
+  {
+    if(!--tmout_guard)
+     return answer; // таймаут поймали
+  }
+  tmout_guard = mstcc;
+  while(digitalRead(pin) == HIGH) // читаем, пока высокий уровень на пине
+  {
+    if(!--tmout_guard)
+     return answer; // таймаут поймали
+  }
+
+  // считаем, что теперь пойдут данные. нам надо получить 40 бит, т.е. 5 байт.
+  uint8_t bytes[5] = {0}; // байты, в которые мы будем принимать данные
+  
+  uint8_t idx = 0; // индекс текущего байта
+  uint8_t bitmask = 0x80; // старший бит байта установлен в единичку, его будем двигать вниз
+  
+  for(uint8_t i=0;i<40;i++)
+  {
+      // сначала ждём 50us, говорящие, что пойдёт следующий бит
+      tmout_guard = mstcc;
+      while(digitalRead(pin) == LOW)
+      {
+        if(!--tmout_guard)
+            return answer; // таймаут поймали
+      } // while
+
+      // теперь принимаем бит. Если время подтянутой вверх линии более 40us - это единица, иначе - ноль.
+
+      tmout_guard = mstcc;
+      uint32_t tMicros = micros();
+      while(digitalRead(pin) == HIGH)
+      {
+        if(!--tmout_guard)
+            return answer; // таймаут поймали
+      } // while
+
+      if(micros() - tMicros > 40) // единичка
+      {
+        bytes[idx] |= bitmask;
+      }
+
+      // сдвигаем маску вправо
+      bitmask >>= 1;
+      
+      if(!bitmask) // дошли до конца байта
+      {
+        bitmask = 0x80;
+        idx++; // читаем в следующий байт
+      }
+        
+  } // for
+
+  pinMode(pin, OUTPUT);
+  digitalWrite(pin, HIGH); // поднимаем линию, говоря датчику, что он свободен
+
+
+  // проверяем принятые данные
+  switch(sensorType)
+  {
+    case DHT11:
+    {
+      uint8_t crc = bytes[0] + bytes[2];
+      if(crc != bytes[4]) // чексумма не сошлась
+        return answer;
+
+     // сохраняем данные
+      answer.Humidity = bytes[0];
+      answer.Temperature = bytes[2];
+    }
+    break;
+
+    case DHT2x:
+    {
+      uint8_t crc = bytes[0] + bytes[1] + bytes[2] + bytes[3];
+      if(crc != bytes[4]) // чексумма не сошлась
+        return answer;
+
+     // сохраняем данные
+      uint16_t rh = (bytes[0] << 8) + bytes[1];
+      answer.Humidity = rh/10;
+      answer.HumidityDecimal = rh%10;
+
+     int temp = ((bytes[2] & 0x7F) << 8) + bytes[3];
+      
+      answer.Temperature =  temp/10;
+      answer.TemperatureDecimal = temp%10;
+      
+      if(bytes[2] & 0x80) // температура ниже нуля
+        answer.Temperature = -answer.Temperature;
+     
+    }
+    break;
+  } // switch
+ 
+  
+  answer.IsOK = true;
+  return answer;
+}
+

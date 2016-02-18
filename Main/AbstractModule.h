@@ -33,12 +33,17 @@ struct Temperature // структура показаний с датчика т
   }
 };
 
+// влажность у нас может храниться так же, как и температура, поэтому
+// незачем плодить вторую структуру - просто делаем typedef.
+typedef struct Temperature Humidity; 
+
 
 typedef enum
 {
 StateTemperature = 1, // есть температурные датчики
 StateRelay = 2, // есть реле
-StateLuminosity = 4 // есть датчики освещенности
+StateLuminosity = 4, // есть датчики освещенности
+StateHumidity = 8 // есть датчики влажности
 
 } ModuleStates; // вид состояния
 

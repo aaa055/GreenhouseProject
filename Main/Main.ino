@@ -39,6 +39,9 @@
 #include "LuminosityModule.h"
 #endif
 
+#ifdef USE_HUMIDITY_MODULE
+#include "HumidityModule.h"
+#endif
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
@@ -117,6 +120,11 @@ WateringModule wateringModule;
 #ifdef USE_LUMINOSITY_MODULE
 // модуль управления досветкой и получения значений освещённости
 LuminosityModule luminosityModule;
+#endif
+
+#ifdef USE_HUMIDITY_MODULE
+// модуль работы с датчиками влажности DHT
+HumidityModule humidityModule;
 #endif
 
 #ifdef AS_CONTROLLER
@@ -233,6 +241,10 @@ void setup()
   controller.RegisterModule(&luminosityModule);
   #endif
 
+  #ifdef USE_HUMIDITY_MODULE
+  controller.RegisterModule(&humidityModule);
+  #endif
+
  // модуль алертов регистрируем последним, т.к. он должен вычитать зависимости с уже зарегистрированными модулями
   #ifdef AS_CONTROLLER
     controller.RegisterModule(&remoteRegistrator);
@@ -269,6 +281,12 @@ void setup()
 
 void loop() 
 {
+BEGIN: // не трогать, сделано для убыстрения работы
+
+// отсюда можно добавлять любой сторонний код
+
+// до сюда можно добавлять любой сторонний код
+  
     // вычисляем время, прошедшее с момента последнего вызова
     unsigned long curMillis = millis();
     uint16_t dt = curMillis - lastMillis;
@@ -304,6 +322,10 @@ void loop()
     // обновляем состояние всех зарегистрированных модулей
    controller.UpdateModules(dt);
    
-  // put your main code here, to run repeatedly:
+// отсюда можно добавлять любой сторонний код
 
+
+// до сюда можно добавлять любой сторонний код
+
+goto BEGIN; // не трогать, сделано для убыстрения работы
 }
