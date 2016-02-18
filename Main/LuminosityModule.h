@@ -2,6 +2,8 @@
 #define _LUMINOSITY_MODULE_H
 
 #include "AbstractModule.h"
+#include "InteropStream.h"
+
 #include <Wire.h>
 
 typedef enum
@@ -58,8 +60,7 @@ class LuminosityModule : public AbstractModule // модуль управлен�
   ModuleController* controller; // контроллер
   GlobalSettings* settings; // настройки
 
-  uint16_t lastBlinkInterval;
-  void BlinkWorkMode(uint16_t blinkInterval = 0);
+  BlinkModeInterop blinker;
 
 
   #if LIGHT_SENSORS_COUNT > 0
@@ -75,7 +76,9 @@ class LuminosityModule : public AbstractModule // модуль управлен�
   uint16_t lastUpdateCall;
     
   public:
-    LuminosityModule() : AbstractModule(F("LIGHT")), lastUpdateCall(0) {}
+    LuminosityModule() : AbstractModule(F("LIGHT"))
+    , lastUpdateCall(678) // разнесём опросы датчиков по времени
+    {}
 
     bool ExecCommand(const Command& command);
     void Setup();

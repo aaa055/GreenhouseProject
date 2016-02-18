@@ -1,6 +1,5 @@
 #include "LuminosityModule.h"
 #include "ModuleController.h"
-#include "InteropStream.h"
 
 static uint8_t LAMP_RELAYS[] = { LAMP_RELAYS_PINS }; // объявляем массив пинов реле
 
@@ -79,9 +78,8 @@ void LuminosityModule::Setup()
   workMode = lightAutomatic; // автоматический режим работы
   bRelaysIsOn = false; // все реле выключены
 
-  lastBlinkInterval = 0xFFFF;// последний интервал, с которым мы вызывали команду мигания диодом.
-  // нужно для того, чтобы дёргать функцию мигания только при смене интервала.
-
+  blinker.begin(DIODE_LIGHT_MANUAL_MODE_PIN,F("LX")); // настраиваем блинкер на нужный пин
+  
    uint8_t relayCnt = LAMP_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
    if(LAMP_RELAYS_COUNT > 8 && LAMP_RELAYS_COUNT % 8)
     relayCnt++;
@@ -112,42 +110,6 @@ void LuminosityModule::Setup()
     
        
  }
-void LuminosityModule::BlinkWorkMode(uint16_t blinkInterval) // мигаем диодом индикации ручного режима работы
-{
-
-  if(lastBlinkInterval == blinkInterval)
-    return; // не дёргаем несколько раз с одним и тем же интервалом - незачем.
-
-  lastBlinkInterval = blinkInterval;
-  
-  String s;
-
-#ifdef USE_LOOP_MODULE  
-  s = F("LOOP|LUX|SET|");
-  s += blinkInterval;
-  s+= F("|0|PIN|");
-  s += String(DIODE_LIGHT_MANUAL_MODE_PIN);
-  s += F("|T");
-
-      ModuleInterop.QueryCommand(ctSET,s,true);
-      
-       
-#endif
-
-#ifdef USE_PIN_MODULE 
-      if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
-      {
-        s = F("PIN|");
-        s += String(DIODE_LIGHT_MANUAL_MODE_PIN);
-        s += PARAM_DELIMITER;
-        s += F("0");
-
-        ModuleInterop.QueryCommand(ctSET,s,true);
-      } // if
-#endif
-  
-}
-
 void LuminosityModule::Update(uint16_t dt)
 { 
   // обновление модуля тут  
@@ -222,7 +184,7 @@ bool  LuminosityModule::ExecCommand(const Command& command)
               {
                 workMode = lightManual; // переходим на ручной режим работы
                 // мигаем светодиодом на 8 пине
-                BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+                blinker.blink(WORK_MODE_BLINK_INTERVAL);
               }
 
             bRelaysIsOn = true; // включаем реле досветки
@@ -249,7 +211,7 @@ bool  LuminosityModule::ExecCommand(const Command& command)
               {
                 workMode = lightManual; // переходим на ручной режим работы
                 // мигаем светодиодом на 8 пине
-                BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+                blinker.blink(WORK_MODE_BLINK_INTERVAL);
               }
 
             bRelaysIsOn = false; // выключаем реле досветки
@@ -271,7 +233,7 @@ bool  LuminosityModule::ExecCommand(const Command& command)
                 // попросили перейти в ручной режим работы
                 workMode = lightManual; // переходим на ручной режим работы
                  // мигаем светодиодом на 8 пине
-                BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+               blinker.blink(WORK_MODE_BLINK_INTERVAL);
               }
               else
               if(s == WM_AUTOMATIC)
@@ -279,7 +241,7 @@ bool  LuminosityModule::ExecCommand(const Command& command)
                 // попросили перейти в автоматический режим работы
                 workMode = lightAutomatic; // переходим на автоматический режим работы
                  // гасим диод на 8 пине
-                BlinkWorkMode();
+                blinker.blink();
               }
 
               answerStatus = true;

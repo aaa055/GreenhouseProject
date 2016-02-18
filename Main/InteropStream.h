@@ -6,6 +6,7 @@
 #include "ModuleController.h"
 #include "CommandParser.h"
 
+// класс поддержки коммуникации между модулями
 class InteropStream : public Stream
 {
 private:
@@ -36,6 +37,22 @@ public:
 };
 
 extern InteropStream ModuleInterop;
+
+// класс-хелпер мигания информационным диодом
+class BlinkModeInterop
+{
+  private:
+    uint16_t lastBlinkInterval; // последний интервал, с которым мигаем
+    uint8_t pin; // пин, на котором диод
+    String loopName; // имя периодически выполняемой операции
+    String pinCommand;
+  
+  public:
+    BlinkModeInterop();
+
+    void begin(uint8_t pin, const String& loopName); // запоминаем настройки
+    void blink(uint16_t interval=0); // мигаем диодом
+};
 
 #endif
 

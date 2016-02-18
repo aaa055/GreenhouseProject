@@ -1,6 +1,5 @@
 #include "WateringModule.h"
 #include "ModuleController.h"
-#include "InteropStream.h"
 
 static uint8_t WATER_RELAYS[] = { WATER_RELAYS_PINS }; // объявляем массив пинов реле
 
@@ -11,8 +10,7 @@ void WateringModule::Setup()
   controller = GetController();
   settings = controller->GetSettings();
 
-  lastBlinkInterval = 0xFFFF;// последний интервал, с которым мы вызывали команду мигания диодом.
-  // нужно для того, чтобы дёргать функцию мигания только при смене интервала.
+  blinker.begin(DIODE_WATERING_MANUAL_MODE_PIN, F("WM"));  // настраиваем блинкер на нужный пин
 
   workMode = wwmAutomatic; // автоматический режим работы
   dummyAllChannels.WateringTimer = 0; // обнуляем таймер полива для всех каналов
@@ -70,12 +68,12 @@ void WateringModule::Setup()
     if(currentWateringOption == wateringOFF) // если выключено автоуправление поливом
     {
       workMode = wwmManual; // переходим в ручной режим работы
-      BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
+      blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
     }
     else
     {
       workMode = wwmAutomatic; // иначе переходим в автоматический режим работы
-      BlinkWorkMode(); // гасим диод
+      blinker.blink(); // гасим диод
     }
       
 
@@ -250,7 +248,7 @@ void WateringModule::Update(uint16_t dt)
     // модуль часов реального времени не включен в компиляцию, деградируем до ручного режима работы
     settings->SetWateringOption(wateringOFF); // отключим автоматический контроль полива
     workMode = wwmManual; // переходим на ручное управление
-    BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
+    blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
  
   #endif
   
@@ -263,7 +261,7 @@ void WateringModule::Update(uint16_t dt)
     {
       case wateringOFF: // автоматическое управление поливом выключено, значит, мы должны перейти в ручной режим работы
           workMode = wwmManual; // переходим в ручной режим работы
-          BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
+          blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
       break;
 
       case wateringWeekDays: // // управление поливом по дням недели (все каналы одновременно)
@@ -302,41 +300,6 @@ void WateringModule::Update(uint16_t dt)
   // через день недели.
   
 }
-
-void WateringModule::BlinkWorkMode(uint16_t blinkInterval) // мигаем диодом индикации ручного режима работы
-{
-
-  if(lastBlinkInterval == blinkInterval)
-    return; // не дёргаем несколько раз с одним и тем же интервалом - незачем.
-
-  lastBlinkInterval = blinkInterval;
-
-  String s;
-  
-#ifdef USE_LOOP_MODULE 
-  s = F("LOOP|WM|SET|");
-  s += blinkInterval;
-  s+= F("|0|PIN|");
-  s += String(DIODE_WATERING_MANUAL_MODE_PIN);
-  s += F("|T");
-
-      ModuleInterop.QueryCommand(ctSET,s,true);
-#endif    
-
-#ifdef USE_PIN_MODULE 
-      if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
-      {
-        s = F("PIN|");
-        s += String(DIODE_WATERING_MANUAL_MODE_PIN);
-        s += PARAM_DELIMITER;
-        s += F("0");
-
-        ModuleInterop.QueryCommand(ctSET,s,true);
-       } // if
-#endif
-  
-}
-
 bool  WateringModule::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
@@ -385,12 +348,12 @@ bool  WateringModule::ExecCommand(const Command& command)
               {
                 workMode = wwmManual; // переходим в ручной режим работы
                 dummyAllChannels.IsChannelRelayOn = false; // принудительно гасим полив на всех каналах
-                BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
+                blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
               }
               else
               {
                 workMode = wwmAutomatic; // иначе переходим в автоматический режим работы
-                BlinkWorkMode(); // гасим диод
+                blinker.blink(); // гасим диод
               }
       
               
@@ -452,12 +415,12 @@ bool  WateringModule::ExecCommand(const Command& command)
            if(param == WM_AUTOMATIC)
            {
              workMode = wwmAutomatic; // переходим в автоматический режим работы
-             BlinkWorkMode(); // гасим диод
+             blinker.blink(); // гасим диод
            }
            else
            {
             workMode = wwmManual; // переходим на ручной режим работы
-            BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
+            blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
            }
 
               answerStatus = true;
@@ -471,7 +434,7 @@ bool  WateringModule::ExecCommand(const Command& command)
           if(!command.IsInternal()) // если команда от юзера, то
           {
             workMode = wwmManual; // переходим в ручной режим работы
-            BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
+            blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
           }
 
           dummyAllChannels.IsChannelRelayOn = true; // включаем реле на всех каналах
@@ -485,7 +448,7 @@ bool  WateringModule::ExecCommand(const Command& command)
           if(!command.IsInternal()) // если команда от юзера, то
           {
             workMode = wwmManual; // переходим в ручной режим работы
-            BlinkWorkMode(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
+            blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
           }
 
           dummyAllChannels.IsChannelRelayOn = false; // выключаем реле на всех каналах

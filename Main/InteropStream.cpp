@@ -51,3 +51,53 @@ size_t InteropStream::write(uint8_t toWr)
   data += (char) toWr;
   return 1;
 }
+
+BlinkModeInterop::BlinkModeInterop()
+{
+  lastBlinkInterval = 0xFFFF;
+}
+void BlinkModeInterop::begin(uint8_t p, const String& lName)
+{
+  pin = p;
+  loopName = F("LOOP|");
+  loopName += lName;
+  loopName += F("|SET|");
+  
+  pinCommand = F("|0|PIN|");
+  pinCommand += String(pin);
+  pinCommand += F("|T");
+
+  lastBlinkInterval = 0xFFFF;
+}
+void BlinkModeInterop::blink(uint16_t blinkInterval)
+{
+
+ if(lastBlinkInterval == blinkInterval)
+  // незачем выполнять команду с тем же интервалом
+  return;
+
+  lastBlinkInterval = blinkInterval;
+  String s;
+  
+#ifdef USE_LOOP_MODULE 
+
+  s  = loopName;
+  s += blinkInterval;
+  s += pinCommand;
+
+  ModuleInterop.QueryCommand(ctSET,s,true);
+#endif
+
+#ifdef USE_PIN_MODULE 
+      if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
+      {
+        s = F("PIN|");
+        s += String(pin);
+        s += PARAM_DELIMITER;
+        s += F("0");
+
+        ModuleInterop.QueryCommand(ctSET,s,true);
+      } // if
+ #endif   
+}
+

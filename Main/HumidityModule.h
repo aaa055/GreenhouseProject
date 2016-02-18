@@ -14,7 +14,9 @@ class HumidityModule : public AbstractModule // модуль управлени�
     uint16_t lastUpdateCall;
     
   public:
-    HumidityModule() : AbstractModule(F("HUMIDITY")), lastUpdateCall(0) {}
+    HumidityModule() : AbstractModule(F("HUMIDITY"))
+    , lastUpdateCall(256) // разнесём опросы датчиков по времени
+    {}
 
     bool ExecCommand(const Command& command);
     void Setup();

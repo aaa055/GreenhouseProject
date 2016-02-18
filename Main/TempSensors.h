@@ -3,6 +3,7 @@
 
 #include "AbstractModule.h"
 #include "DS18B20Query.h"
+#include "InteropStream.h"
 
 typedef enum
 {
@@ -80,9 +81,7 @@ class TempSensors : public AbstractModule // модуль опроса темп�
 
     WindowWorkMode workMode; // текущий режим работы (автоматический или ручной)
 
-    void BlinkWorkMode(uint16_t blinkInterval = 0);
-
-    uint16_t lastBlinkInterval;
+    BlinkModeInterop blinker;
 
     DS18B20Support tempSensor;
     DS18B20Temperature tempData;

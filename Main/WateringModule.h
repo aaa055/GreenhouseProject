@@ -3,6 +3,8 @@
 
 #include "AbstractModule.h"
 #include "Globals.h"
+#include "InteropStream.h"
+
 
 typedef enum
 {
@@ -35,8 +37,7 @@ class WateringModule : public AbstractModule // модуль управлени�
   int8_t currentHour; // текущий час
   bool bIsRTClockPresent; // флаг наличия модуля часов реального времени
 
-   uint16_t lastBlinkInterval;
-   void BlinkWorkMode(uint16_t blinkInterval = 0);
+   BlinkModeInterop blinker;
 
    void UpdateChannel(int8_t channelIdx, WateringChannel* channel, uint16_t dt); // обновляем состояние канала
 

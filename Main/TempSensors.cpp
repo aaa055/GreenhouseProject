@@ -1,6 +1,5 @@
 #include "TempSensors.h"
 #include "ModuleController.h"
-#include "InteropStream.h"
 
 static uint8_t TEMP_SENSORS[] = { TEMP_SENSORS_PINS };
 static uint8_t WINDOWS_RELAYS[] = { WINDOWS_RELAYS_PINS };
@@ -178,17 +177,12 @@ void TempSensors::Setup()
   // настройка модуля тут
    workMode = wmAutomatic; // автоматический режим работы по умолчанию
 
-    lastBlinkInterval = 0xFFFF;// последний интервал, с которым мы вызывали команду мигания диодом.
-  // нужно для того, чтобы дёргать функцию мигания только при смене интервала.
-
-   lastUpdateCall = 0;
+  blinker.begin(DIODE_MANUAL_MODE_PIN,F("SM"));  // настраиваем блинкер на нужный пин
+  lastUpdateCall = 0;
   
-  /*
-   * Пишем в State настройки - кол-во поддерживаемых датчиков температуры
-   * 
-   */
-   // добавляем датчики температуры
 
+   // добавляем датчики температуры
+   
    tempData.Whole = 0;
    tempData.Fract = 0;
    for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
@@ -251,38 +245,6 @@ void TempSensors::Update(uint16_t dt)
 
 
 }
-void TempSensors::BlinkWorkMode(uint16_t blinkInterval) // мигаем диодом индикации ручного режима работы
-{
-
- if(lastBlinkInterval == blinkInterval)
-  // незачем выполнять команду с тем же интервалом
-  return;
-
-  lastBlinkInterval = blinkInterval;
-  String s;
-  
-#ifdef USE_LOOP_MODULE 
-  s = F("LOOP|SM|SET|");
-  s += blinkInterval;
-  s+= F("|0|PIN|");
-  s += String(DIODE_MANUAL_MODE_PIN);
-  s += F("|T");
-
-  ModuleInterop.QueryCommand(ctSET,s,true);
-#endif
-
-#ifdef USE_PIN_MODULE 
-      if(!blinkInterval) // не надо зажигать диод, принудительно гасим его
-      {
-        s = F("PIN|");
-        s += String(DIODE_MANUAL_MODE_PIN);
-        s += PARAM_DELIMITER;
-        s += F("0");
-
-        ModuleInterop.QueryCommand(ctSET,s,true);
-      } // if
- #endif 
-}
 bool  TempSensors::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
@@ -313,7 +275,7 @@ bool  TempSensors::ExecCommand(const Command& command)
           {
             workMode = wmManual; // переходим на ручной режим работы
             // мигаем светодиодом на 6 пине
-            BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+             blinker.blink(WORK_MODE_BLINK_INTERVAL);
           }
 
           String token = command.GetArg(1);
@@ -436,14 +398,14 @@ bool  TempSensors::ExecCommand(const Command& command)
           answerStatus = true;
           answer = String(WORK_MODE) + PARAM_DELIMITER + s;
           workMode = wmAutomatic;
-          BlinkWorkMode();
+           blinker.blink();
         }
         else if(s == WM_MANUAL)
         {
           answerStatus = true;
           answer = String(WORK_MODE) + PARAM_DELIMITER + s;
           workMode = wmManual;
-          BlinkWorkMode(WORK_MODE_BLINK_INTERVAL);
+          blinker.blink(WORK_MODE_BLINK_INTERVAL);
         }
         
       } // WORK_MODE
