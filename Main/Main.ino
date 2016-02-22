@@ -43,6 +43,10 @@
 #include "HumidityModule.h"
 #endif
 
+#ifdef USE_WIFI_MODULE
+#include "WiFiModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 const char init_1[] PROGMEM = "CTSET=LOOP|SD|SET|100|11|PIN|6|T";// помигаем 5 раз диодом для проверки
@@ -110,6 +114,7 @@ TempSensors tempSensors;
 #ifdef USE_SMS_MODULE
 // модуль управления по SMS
  SMSModule smsModule;
+ String smsReceiveBuff;
 #endif
 
 #ifdef USE_WATERING_MODULE
@@ -125,6 +130,12 @@ LuminosityModule luminosityModule;
 #ifdef USE_HUMIDITY_MODULE
 // модуль работы с датчиками влажности DHT
 HumidityModule humidityModule;
+#endif
+
+#ifdef USE_WIFI_MODULE
+// модуль работы по Wi-Fi
+WiFiModule wifiModule;
+String wiFiReceiveBuff;
 #endif
 
 #ifdef AS_CONTROLLER
@@ -212,7 +223,11 @@ void setup()
  
   
   // регистрируем модули
-
+  #ifdef USE_WIFI_MODULE
+  wiFiReceiveBuff.reserve(100);
+  controller.RegisterModule(&wifiModule);
+  #endif
+  
   #ifdef USE_PIN_MODULE  
   controller.RegisterModule(&pinModule);
   #endif
@@ -230,6 +245,7 @@ void setup()
   #endif
 
   #ifdef USE_SMS_MODULE
+  smsReceiveBuff.reserve(100);
   controller.RegisterModule(&smsModule);
   #endif
 
@@ -281,8 +297,6 @@ void setup()
 
 void loop() 
 {
-BEGIN: // не трогать, сделано для убыстрения работы
-
 // отсюда можно добавлять любой сторонний код
 
 // до сюда можно добавлять любой сторонний код
@@ -327,5 +341,75 @@ BEGIN: // не трогать, сделано для убыстрения раб
 
 // до сюда можно добавлять любой сторонний код
 
-goto BEGIN; // не трогать, сделано для убыстрения работы
 }
+#ifdef USE_WIFI_MODULE
+void WIFI_EVENT_FUNC()
+{
+  char ch;
+  while(WIFI_SERIAL.available())
+  {
+    ch = WIFI_SERIAL.read();
+
+    if(ch == '\r')
+      continue;
+    
+    if(ch == '\n')
+    {
+      wifiModule.ProcessAnswerLine(wiFiReceiveBuff);
+      wiFiReceiveBuff = F("");
+    }
+    else
+    {
+         
+        if(wifiModule.WaitForDataWelcome && ch == '>') // ждут команду >
+        {
+          wifiModule.WaitForDataWelcome = false;
+          wifiModule.ProcessAnswerLine(F(">"));
+        }
+        else
+          wiFiReceiveBuff += ch;
+    }
+
+    
+  } // while
+
+
+    
+}
+#endif
+
+#ifdef USE_SMS_MODULE
+void NEOWAY_EVENT_FUNC()
+{
+  char ch;
+  while(NEOWAY_SERIAL.available())
+  {
+    ch = NEOWAY_SERIAL.read();
+
+    if(ch == '\r')
+      continue;
+    
+    if(ch == '\n')
+    {
+      smsModule.ProcessAnswerLine(smsReceiveBuff);
+      smsReceiveBuff = F("");
+    }
+    else
+    {
+        
+        if(smsModule.WaitForSMSWelcome && ch == '>') // ждут команду >
+        {
+          smsModule.WaitForSMSWelcome = false;
+          smsModule.ProcessAnswerLine(F(">"));
+        }
+        else
+          smsReceiveBuff += ch;
+    }
+
+    
+  } // while
+
+
+    
+}
+#endif

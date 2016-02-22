@@ -631,6 +631,12 @@ void AlertModule::Setup()
 
   // загружаем правила
   LoadRules();
+
+  lastUpdateCall = 0;
+
+  controller = GetController();
+  cParser = controller->GetCommandParser();
+  controllerID = controller->GetControllerID();  
 }
 void AlertModule::InitRules()
 {
@@ -644,12 +650,18 @@ void AlertModule::InitRules()
 void AlertModule::Update(uint16_t dt)
 { 
   // обновление модуля алертов тут
-  ModuleController* c = GetController();
-  CommandParser* cParser = c->GetCommandParser();
-  String controllerID = c->GetControllerID();
+
+  lastUpdateCall += dt;
+  
+  #define ALERT_UPD_INTERVAL 500
+  
+  if(lastUpdateCall < ALERT_UPD_INTERVAL) // раз в полсекунды обновляем
+    return;
+  
+
  
 #ifdef USE_DS3231_REALTIME_CLOCK
-  DS3231Clock rtc = c->GetClock();
+  DS3231Clock rtc = controller->GetClock();
   DS3231Time tm = rtc.getTime();
 #endif
 
@@ -663,7 +675,8 @@ void AlertModule::Update(uint16_t dt)
       break;
 
       // сначала обновляем состояние правила
-      r->Update(dt
+      r->Update(lastUpdateCall
+        //dt
 #ifdef USE_DS3231_REALTIME_CLOCK
 ,tm.hour, tm.minute
 #endif
@@ -707,7 +720,7 @@ void AlertModule::Update(uint16_t dt)
 
         // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
         //cmd.SetIncomingStream(pStream);
-        c->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой    
+        controller->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой    
       } // if  
 
       
@@ -716,6 +729,8 @@ void AlertModule::Update(uint16_t dt)
    AddAlert(r->GetAlertRule());
    #endif   
   } // for
+
+  lastUpdateCall = lastUpdateCall - ALERT_UPD_INTERVAL;
   
 }
 bool AlertModule::CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule, RulesVector& raisedAlerts)

@@ -12,6 +12,7 @@
 #define USE_WATERING_MODULE // закомментировать, если не нужно управление поливом
 #define USE_LUMINOSITY_MODULE // закомментировать, если не нужен модуль контроля освещенности
 #define USE_HUMIDITY_MODULE // закомментировать, если не нужен модуль работы с датчиками влажности DHT
+#define USE_WIFI_MODULE // закомментировать, если не нужна поддержка WI-FI
 
 
 // ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ, СДЕЛАННОГО В ЖЕЛЕЗЕ!
@@ -80,7 +81,7 @@
 #define SUPPORTED_DHT_SENSORS 1 // кол-во поддерживаемых датчиков DHT
 #define DHT_SENSORS_PINS 12 // пины, на которых сидят датчики влажности, через запятую, кол-вом SUPPORTED_DHT_SENSORS.
 #define DHT_TYPE DHT2x // тип датчика - DHT21 и старше
-// #define DHT_TYPE DHT11 // тип датчика - DHT11, раскомментировать эту строчку, если используются датчики DHT11.
+//#define DHT_TYPE DHT11 // тип датчика - DHT11, раскомментировать эту строчку, если используются датчики DHT11, и закомментировать предыдущую
 
 
 // состояния вкл/выкл, для команд
@@ -128,6 +129,7 @@
 #define WATER_CHANNEL_SETTINGS F("CH_SETT") // получить/установить настройки отдельного канала управления поливом: CTGET=WATER|CH_SETT|0, CTSET=WATER|CH_SETT|0|WateringDays|WateringTime|StartTime
 #define WATER_CHANNELS_COUNT_COMMAND F("CHANNELS") // получить кол-во поддерживаемых каналов полива: CTGET=WATER|CHANNELS
 #define PUMP_RELAY_PIN 22 // пин, на котором сидит реле управления насосом
+#define USE_PUMP_RELAY // закомментировать, если не нужен отдельный канал управления насосом при поливе
 #define WATER_RELAYS_COUNT 2 // сколько каналов управления поливом используется
 // объявляем пины для управления каналами реле - дописывать в этот массив, через запятую,
 // кол-во равно WATER_RELAYS_COUNT!
@@ -181,6 +183,7 @@
 #define WTR_OFF F("выкл") // полив выкл
 #define WTR_ON F("вкл") // полив вкл
 #define NEOWAY_SERIAL Serial1 // какой хардварный Serial будем использовать при работе с NEOWAY?
+#define NEOWAY_EVENT_FUNC serialEvent1 // функция для обработки событий фходящего трафика для модуля
 #define NEOWAY_BAUDRATE 9600 // скорость работы с GSM-модемом NEOWAY
 #define SMS_OPEN_COMMAND F("#1") // открыть окна
 #define SMS_CLOSE_COMMAND F("#0") // закрыть окна
@@ -189,9 +192,20 @@
 #define SMS_WATER_ON_COMMAND F("#4") // включить полив
 #define SMS_WATER_OFF_COMMAND F("#6") // выключить полив
 #define SMS_NO_DATA F("<нет данных>") // нет данных с датчика
-#define NEOWAY_WAIT_FOR_SMS_SEND_COMPLETE 6000 // интервал, в течение которого мы ждём откравку смс модулем (ждём асинхронно, без блокирования!)
 #define NEOWAY_VCCIO_CHECK_PIN 2 // пин, на котором будем проверять сигнал от VCCIO (6 пин) модуля NEOWAY
 
+// настройки модуля WI-FI
+//#define WIFI_DEBUG // закомментировать, если не нужен режим отладки (режим отладки не работаем совместно с конфигуратором!) 
+#define WIFI_SERIAL Serial2 // какой хардварный сериал использовать для WI-FI?
+#define WIFI_EVENT_FUNC serialEvent2 // функция для обработки событий входящего трафика от модуля
+#define WIFI_BAUDRATE 9600 // скорость работы с UART для WI-FI
+#define STATION_ID F("TEPLICA") // ID точки доступа, которую создаёт модуль WI-FI
+#define STATION_PASSWORD F("12345678") // пароль к точке доступа, которую создаёт вай-фай (МИНИМУМ 8 СИМВОЛОВ, ИНАЧЕН НЕ БУДЕТ РАБОТАТЬ!)
+#define ROUTER_ID F("")  // SSID домашнего роутера, к которому коннектится модуль WI-FI
+#define ROUTER_PASSWORD F("") // пароль к домашнему роутеру, к которому коннектится модуль WI-FI
+#define WIFI_SETTINGS_COMMAND F("T_SETT") // установить настройки модуля: CTSET=WIFI|T_SETT|SHOULD_CONNECT_TO_ROUTER(0 or 1)|ROUTER_ID|ROUTER_PASS|STATION_ID|STATION_PASS
+#define IP_COMMAND F("IP") // получить текущие IP-адреса, как самой точки доступа, так и назначенный роутером, CTGET=WIFI|IP
+#define BUSY F("BUSY") // если мы не можем ответить на запрос - тогда возвращаем ER=WIFI|BUSY
 
 // настройки модуля LOOP
 #define MIN_LOOP_PARAMS 5 // минимальное количество параметров, которые надо передать

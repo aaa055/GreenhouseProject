@@ -58,9 +58,11 @@ void WateringModule::Setup()
     wateringChannels[i].WateringTimer = 0;
   }
 
-  // выключаем реле насоса
+#ifdef USE_PUMP_RELAY
+  // выключаем реле насоса  
   pinMode(PUMP_RELAY_PIN,OUTPUT);
   digitalWrite(PUMP_RELAY_PIN,RELAY_OFF);
+#endif
 
     // настраиваем режим работы перед стартом
     WateringOption currentWateringOption = settings->GetWateringOption();
@@ -199,7 +201,7 @@ bool WateringModule::IsAnyChannelActive(WateringOption wateringOption)
 
     return false;
 }
-
+#ifdef USE_PUMP_RELAY
 void WateringModule::HoldPumpState(WateringOption wateringOption)
 {
   // поддерживаем состояние реле насоса
@@ -212,14 +214,16 @@ void WateringModule::HoldPumpState(WateringOption wateringOption)
     uint8_t state = bPumpIsOn ? RELAY_ON : RELAY_OFF;
     digitalWrite(PUMP_RELAY_PIN,state); 
 }
+#endif
 
 void WateringModule::Update(uint16_t dt)
 { 
    WateringOption wateringOption = settings->GetWateringOption(); // получаем опцию управления поливом
 
+#ifdef USE_PUMP_RELAY
   // держим состояние реле для насоса
   HoldPumpState(wateringOption);
-
+#endif
 
   #ifdef USE_DS3231_REALTIME_CLOCK
 

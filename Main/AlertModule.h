@@ -94,6 +94,11 @@ class AlertModule : public AbstractModule
     void AddAlert(const String& strAlert);
 #endif
 
+    unsigned long lastUpdateCall;
+    ModuleController* controller;
+    String controllerID;
+    CommandParser* cParser;
+
     uint8_t rulesCnt;
     AlertRule* alertRules[MAX_ALERT_RULES];
     void InitRules();

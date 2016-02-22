@@ -40,6 +40,13 @@ class GlobalSettings
   uint8_t turnOnPump; // включать ли определённый канал реле при включенном поливе на любом из каналов (может использоваться для насоса)?
 
   WateringChannelOptions wateringChannelsOptions[WATER_RELAYS_COUNT]; // настройки каналов полива
+
+  // настройки Wi-Fi
+  uint8_t wifiState; // первый бит установлен - коннектиться к домашнему роутеру
+  String routerID; // название точки доступа домашнего роутера
+  String routerPassword; // пароль к точке доступа домашнего роутера
+  String stationID; // название точки доступа у модуля ESP
+  String stationPassword; // пароль к точке доступа модуля ESP 
  
   public:
     GlobalSettings();
@@ -81,8 +88,21 @@ class GlobalSettings
     unsigned long GetOpenInterval() {return openInterval;}
     void SetOpenInterval(unsigned long val) {openInterval = val;}
 
-    String GetSmsPhoneNumber() {return smsPhoneNumber; }
+    String GetSmsPhoneNumber() const {return smsPhoneNumber; }
     void SetSmsPhoneNumber(const String& v) {smsPhoneNumber = v;}
+
+    uint8_t GetWiFiState() {return wifiState;}
+    void SetWiFiState(uint8_t st) {wifiState = st;}
+    
+    String GetRouterID() const {return routerID;}
+    void SetRouterID(const String& val) {routerID = val;}
+    String GetRouterPassword() const {return routerPassword;}
+    void SetRouterPassword(const String& val) {routerPassword = val;}
+    
+    String GetStationID() const {return stationID;}
+    void SetStationID(const String& val) {stationID = val;}
+    String GetStationPassword() const {return stationPassword;}
+    void SetStationPassword(const String& val) {stationPassword = val;}
 
 
     

@@ -3,47 +3,52 @@
 
 #include "AbstractModule.h"
 #include "Settings.h"
+#include "TinyVector.h"
 
-enum SMSOperation // какой ответ на какую операцию мы ждём?
+typedef enum
 {
-  opIdle, // свободны
-  opCheckReady, // ждём ответ на запрос AT+CPAS
-  opCheckRegistration, // ждём ответ на запрос AT+CREG?
-  opEchoOff, // ждём ответ на запрос ATE0
-  opAONEnable, // ждём ответ на включение АОН, AT+CLIP=1
-  opSetPDUEncoding, // ждём ответ на запрос установки кодировки PDU, AT+CMGF=0
-  opSetSMSOutput, // ждём ответ на запрос установки отображения входящих СМС сразу в порт, AT+CNMI=2,2
-  opWaitForIncomingData, // просто ждём входящих данных
-  opWaitForSMSSendComplete // ждём, когда отправится СМС
+  smaIdle, // ничего не делаем, просто ждём
+  smaCheckReady, // проверяем готовность (AT+CPAS)
+  smaEchoOff, // выключаем эхо (ATE0)
+  smaAON, // включаем АОН (AT+CLIP=1)
+  smaPDUEncoding, // включаем кодировку PDU (AT+CMGF=0)
+  smaSMSSettings, // включаем вывод входящих смс сразу в порт (AT+CNMI=2,2)
+  smaWaitReg, // ждём регистрации (AT+CREG?)
+  smaHangUp, // кладём трубку (ATH)
+  smaStartSendSMS, // начинаем отсылать SMS (AT+CMGS=)
+  smaSmsActualSend, // актуальный отсыл SMS
+  smaClearAllSMS // очистка всех SMS (AT+CMGD=0,4)
   
-};
+} SMSActions;
+
+typedef Vector<SMSActions> SMSActionsVector;
 
 class SMSModule : public AbstractModule // модуль поддержки управления по SMS
 {
   private:
     GlobalSettings* Settings;
 
-    SMSOperation currentOperation; // какую команду мы запросили?
-    String currentCommand; // какую команду надо отправить модулю NEOWAY?
-    String neowayAnswer; // текущий ответ от модуля NEOWAY
+    SMSActions currentAction; // текущая операция, завершения которой мы ждём
+    SMSActionsVector actionsQueue; // что надо сделать, шаг за шагом 
+    bool IsKnownAnswer(const String& line); // если ответ нам известный, то возвращает true
+    void SendCommand(const String& command, bool addNewLine=true); // посылает команды модулю GSM
+    void ProcessQueue(); // разбираем очередь команд
+    void InitQueue(); // инициализируем очередь
 
-    bool isModuleReady; // готов модуль к работе или нет?
-    bool isModuleRegistered; // зарегистрирован ли модуль у оператора?
-    int16_t needToWaitTimer; // таймер ожидания до запроса следующей команды
-
-    String incomingData; // входящие данные, которые модуль сыпет при приёме SMS, например
-
-    void SendToNeoway(const String& s, bool addNewLine=true);
-    bool IsNeowayAnswerCompleted(const String& s, bool& isOkAnswer); // проверяем, полный ответ или нет?
-    bool IsNeowayReady(); // проверяет, готов ли модуль к работе?
-    void FetchNeowayAnswer(bool& isOkAnswer); // получает данные до тех пор, пока не будет получена строка OK или ERROR
-
-    void ParseIncomingSMS(const String& sms);
+    String smsToSend; // какое SMS отправить
+    String commandToSend; // какую команду сперва отправить для отсыла SMS
+    bool waitForSMSInNextLine;
 
     String queuedWindowCommand; // команда на выполнение управления окнами, должна выполняться только когда окна не в движении
     uint16_t queuedTimer; // таймер, чтобы не дёргать часто проверку состояния окон - это незачем
     void ProcessQueuedWindowCommand(uint16_t dt); // обрабатываем команду управления окнами, помещенную в очередь
-    
+
+    long needToWaitTimer; // таймер ожидания до запроса следующей команды
+    bool isModuleRegistered; // зарегистрирован ли модуль у оператора?
+
+    void ProcessIncomingCall(const String& line); // обрабатываем входящий звонок
+    void ProcessIncomingSMS(const String& line); // обрабатываем входящее СМС
+        
   public:
     SMSModule() : AbstractModule(F("SMS")) {}
 
@@ -53,6 +58,9 @@ class SMSModule : public AbstractModule // модуль поддержки уп�
 
     void SendStatToCaller(const String& phoneNum);
     void SendSMS(const String& sms);
+
+    void ProcessAnswerLine(const String& line);
+    volatile bool WaitForSMSWelcome; // флаг, что мы ждём приглашения на отсыл SMS - > (плохое ООП, негодное :) )
 
         
 

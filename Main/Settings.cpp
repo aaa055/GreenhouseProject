@@ -16,6 +16,7 @@ void GlobalSettings::ResetToDefault()
   wateringWeekDays = 0;
   wateringTime = 0;
   startWateringTime = 12;
+  wifiState = 0x01; // первый бит устанавливаем, говорим, что мы коннектимся к роутеру
 }
 void GlobalSettings::Load()
 {  
@@ -128,6 +129,45 @@ void GlobalSettings::Load()
     // переходим на следующую настройку
      readPtr += addToAddr;
 
+   wifiState = EEPROM.read(readPtr++);
+   if(wifiState != 0xFF) // есть сохраненные настройки Wi-Fi
+   {
+        // читаем ID точки доступа
+        routerID = F("");
+         uint8_t str_len = EEPROM.read(readPtr++);
+          for(uint8_t i=0;i<str_len;i++)
+            routerID += (char) EEPROM.read(readPtr++);
+
+        // читаем пароль к точке доступа
+        routerPassword = F("");
+         str_len = EEPROM.read(readPtr++);
+          for(uint8_t i=0;i<str_len;i++)
+            routerPassword += (char) EEPROM.read(readPtr++);
+
+        // читаем название нашей точки доступа
+        stationID = F("");
+         str_len = EEPROM.read(readPtr++);
+          for(uint8_t i=0;i<str_len;i++)
+            stationID += (char) EEPROM.read(readPtr++);
+
+        // читаем пароль к нашей точке доступа
+        stationPassword = F("");
+         str_len = EEPROM.read(readPtr++);
+          for(uint8_t i=0;i<str_len;i++)
+            stationPassword += (char) EEPROM.read(readPtr++);
+  }
+   else
+   {
+      wifiState = 0x01;
+      // применяем настройки по умолчанию
+      routerID = ROUTER_ID;
+      routerPassword = ROUTER_PASSWORD;
+      stationID = STATION_ID;
+      stationPassword = STATION_PASSWORD;
+
+      if(!routerID.length()) // если нет названия точки доступа роутера - не коннектимся к нему
+        wifiState = 0; 
+   }
   // читаем другие настройки!
 
   
@@ -194,6 +234,41 @@ void GlobalSettings::Save()
       EEPROM.write(addr++,wateringChannelsOptions[i].startWateringTime);
    } // for
 
+ // сохраняем настройки Wi-Fi
+ EEPROM.write(addr++,wifiState);
+
+// сохраняем ID роутера
+  uint8_t str_len = routerID.length();
+  EEPROM.write(addr++,str_len);
+  
+  const char* str_p = routerID.c_str();
+  for(uint8_t i=0;i<str_len;i++)
+    EEPROM.write(addr++, *str_p++);
+
+
+ // сохраняем пароль к роутеру
+  str_len = routerPassword.length();
+  EEPROM.write(addr++,str_len);
+  
+  str_p = routerPassword.c_str();
+  for(uint8_t i=0;i<str_len;i++)
+    EEPROM.write(addr++, *str_p++);
+
+ // сохраняем название нашей точки доступа
+  str_len = stationID.length();
+  EEPROM.write(addr++,str_len);
+  
+  str_p = stationID.c_str();
+  for(uint8_t i=0;i<str_len;i++)
+    EEPROM.write(addr++, *str_p++);
+
+ // сохраняем пароль к нашей точке доступа
+  str_len = stationPassword.length();
+  EEPROM.write(addr++,str_len);
+  
+  str_p = stationPassword.c_str();
+  for(uint8_t i=0;i<str_len;i++)
+    EEPROM.write(addr++, *str_p++);
   
   // сохраняем другие настройки!
 
