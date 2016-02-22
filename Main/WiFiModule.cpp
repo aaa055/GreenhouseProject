@@ -274,12 +274,14 @@ void WiFiModule::ProcessURIRequest()
 
  if(cType != ctUNKNOWN) // надо получить данные с контроллера
  {
-    ModuleInterop.Clear();
+    InteropStream streamI;
+    streamI.SetController(GetController());
+  
     String command = requestedURI.substring(6);
-    if(ModuleInterop.QueryCommand(cType,command,true))
+    if(streamI.QueryCommand(cType,command,false))
     {
       TEMP_DATA_TO_SEND += F("ANSWER: ");
-      TEMP_DATA_TO_SEND += ModuleInterop.GetData();
+      TEMP_DATA_TO_SEND += streamI.GetData();
     } // if
  } // if
  

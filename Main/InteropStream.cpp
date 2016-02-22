@@ -11,8 +11,10 @@ InteropStream::InteropStream() : mainController(NULL)
 bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool isInternalCommand)
 {
   if(!mainController)
-    return false;
+    return false; 
  
+  Clear();
+
   String fullCommand = CMD_PREFIX;
   fullCommand += cType == ctGET ? CMD_GET : CMD_SET;
   fullCommand += COMMAND_DELIMITER;
@@ -23,7 +25,6 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
       if(cParser->ParseCommand(fullCommand, mainController->GetControllerID(), cmd))
       {
     
-        Clear();
         cmd.SetInternal(isInternalCommand); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
         cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
         mainController->ProcessModuleCommand(cmd,false);
@@ -78,6 +79,8 @@ void BlinkModeInterop::blink(uint16_t blinkInterval)
 
   lastBlinkInterval = blinkInterval;
   String s;
+  InteropStream streamI;
+  streamI.SetController(ModuleInterop.GetController());
   
 #ifdef USE_LOOP_MODULE 
 
@@ -85,7 +88,7 @@ void BlinkModeInterop::blink(uint16_t blinkInterval)
   s += blinkInterval;
   s += pinCommand;
 
-  ModuleInterop.QueryCommand(ctSET,s,true);
+  streamI.QueryCommand(ctSET,s,true);
 #endif
 
 #ifdef USE_PIN_MODULE 
@@ -96,7 +99,7 @@ void BlinkModeInterop::blink(uint16_t blinkInterval)
         s += PARAM_DELIMITER;
         s += F("0");
 
-        ModuleInterop.QueryCommand(ctSET,s,true);
+        streamI.QueryCommand(ctSET,s,true);
       } // if
  #endif   
 }

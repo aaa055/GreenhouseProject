@@ -1,15 +1,21 @@
 <?xml version="1.0"?>
 <AppSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <def_t_open>30</def_t_open>
-  <def_t_close>24</def_t_close>
+  <def_t_open>23</def_t_open>
+  <def_t_close>22</def_t_close>
   <sel_idx>0</sel_idx>
-  <w_interval>10000</w_interval>
+  <w_interval>12000</w_interval>
   <phone />
   <watering>0</watering>
   <watering_days>0</watering_days>
   <watering_time>60</watering_time>
   <start_watering_time>12</start_watering_time>
   <turn_on_pump>0</turn_on_pump>
+  <luminosity_manage>false</luminosity_manage>
+  <lux_from_hour>0</lux_from_hour>
+  <lux_to_hour>0</lux_to_hour>
+  <lux_gisteresis>0</lux_gisteresis>
+  <min_lux_value>0</min_lux_value>
+  <connect_to_router>false</connect_to_router>
   <temp>
     <t_setting display="Помидоры" t_open="25" t_close="24" />
     <t_setting display="Огурцы" t_open="28" t_close="26" />

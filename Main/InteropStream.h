@@ -19,6 +19,7 @@ public:
   InteropStream();
 
     void SetController(ModuleController* c) {mainController = c;}
+    ModuleController* GetController() {return mainController;};
 
     bool QueryCommand(COMMAND_TYPE cType, const String& command, bool isInternalCommand); // вызывает команду для зарегистрированного модуля
     
