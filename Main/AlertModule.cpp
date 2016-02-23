@@ -74,11 +74,9 @@ bool AlertRule::HasAlert()
   {
     case rtTemp: // проверяем температуру
     {
-     // if(!linkedModule->State.HasTemperature()) // не поддерживаем температуру
      if(!linkedModule->State.HasState(StateTemperature))  // не поддерживаем температуру
         return false;
 
-     // if(!linkedModule->State.IsTempChanged(tempSensorIdx)) // ничего не изменилось
      if(!linkedModule->State.IsStateChanged(StateTemperature,sensorIdx)) // ничего не изменилось
       {
         return false;
@@ -87,7 +85,7 @@ bool AlertRule::HasAlert()
        if(!os)
         return false;
         
-       Temperature* t = (Temperature*) os->Data;//linkedModule->State.GetTemp(tempSensorIdx);
+       Temperature* t = (Temperature*) os->Data;
        int8_t curTemp = t->Value;
 
        if(curTemp == NO_TEMPERATURE_DATA) // нет датчика на линии
@@ -145,6 +143,38 @@ bool AlertRule::HasAlert()
           case roLessOrEqual: return *lum <= mappedLum;
           case roGreaterThan: return *lum > mappedLum;
           case roGreaterOrEqual: return *lum >= mappedLum;
+          default: return false;
+       } // switch
+      
+    }
+    break;
+
+    case rtHumidity: // следим за влажностью
+    {
+     if(!linkedModule->State.HasState(StateHumidity))  // не поддерживаем влажность
+        return false;
+
+     if(!linkedModule->State.IsStateChanged(StateHumidity,sensorIdx)) // ничего не изменилось
+      {
+        return false;
+      }
+       OneState* os = linkedModule->State.GetState(StateHumidity,sensorIdx);
+       if(!os)
+        return false;
+        
+       Humidity* h = (Humidity*) os->Data;
+       int8_t curHumidity = h->Value;
+
+       if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
+        return false;
+
+
+       switch(operand)
+       {
+          case roLessThan: return curHumidity < dataAlert;
+          case roLessOrEqual: return curHumidity <= dataAlert;
+          case roGreaterThan: return curHumidity > dataAlert;
+          case roGreaterOrEqual: return curHumidity >= dataAlert;
           default: return false;
        } // switch
       
@@ -329,7 +359,6 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
    // теперь конструируем правило, это нужно для запроса просмотра правила
     alertRule = ruleName + PARAM_DELIMITER;
     alertRule += lmName + PARAM_DELIMITER;
-    //alertRule += (target == rtTemp ? PROP_TEMP : F(""));
     switch(target)
     {
       case rtTemp:
@@ -338,6 +367,10 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
       
       case rtLuminosity:
       alertRule += PROP_LIGHT;
+      break;
+
+      case rtHumidity:
+      alertRule += PROP_HUMIDITY;
       break;
 
       case rtUnknown:
@@ -433,6 +466,9 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   else
   if(ruleTargetStr == PROP_LIGHT) // следим за освещенностью
     target = rtLuminosity;
+  else
+  if(ruleTargetStr == PROP_HUMIDITY) // следим за влажностью
+    target = rtHumidity;
 
   alertRule += ruleTargetStr + PARAM_DELIMITER;
 

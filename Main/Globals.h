@@ -246,6 +246,7 @@
 #define PROP_TEMP F("TEMP") // нам передали/запросили температуру CTGET=0|PROP|MODULE_NAME|TEMP|0, CTSET=0|PROP|MODULE_NAME|TEMP|0|36,6
 #define PROP_RELAY F("RELAY") // нам передали/запросили состояние канала реле CTGET=0|PROP|MODULE_NAME|RELAY|0, CTSET=0|PROP|MODULE_NAME|RELAY|0|ON
 #define PROP_LIGHT F("LIGHT") // свойство "освещенность"
+#define PROP_HUMIDITY F("HUMIDITY") // свойство "влажность"
 
 // команды модуля "0"
 #define NEWLINE F("\r\n")
