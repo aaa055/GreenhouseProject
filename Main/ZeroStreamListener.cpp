@@ -397,11 +397,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           answer = SMS_NUMBER_COMMAND; answer += PARAM_DELIMITER; answer += REG_SUCC;
           
        }
+       #ifdef USE_DS3231_REALTIME_CLOCK
        else
        if(t == SETTIME_COMMAND)
        {
          // установка даты/времени
-         #ifdef USE_DS3231_REALTIME_CLOCK
          String rawDatetime = command.GetArg(1);
          int8_t idx = rawDatetime.indexOf(F(" "));
          String tm, dt;
@@ -461,12 +461,12 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
             
              DS3231Clock cl = c->GetClock();
              cl.setTime(sec.toInt(),minute.toInt(),hour.toInt(),dow,dayint,monthint,yearint);
-            #endif
 
              answerStatus = true;
              answer = REG_SUCC;
          } // if
        }
+       #endif
        
        else if(t == PROPERTIES_COMMAND)
        {
