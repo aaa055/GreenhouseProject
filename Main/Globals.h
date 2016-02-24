@@ -12,7 +12,7 @@
 #define USE_WATERING_MODULE // закомментировать, если не нужно управление поливом
 #define USE_LUMINOSITY_MODULE // закомментировать, если не нужен модуль контроля освещенности
 #define USE_HUMIDITY_MODULE // закомментировать, если не нужен модуль работы с датчиками влажности DHT
-#define USE_WIFI_MODULE // закомментировать, если не нужна поддержка WI-FI
+#define USE_WIFI_MODULE // закомментировать, если не нужна поддержка управления через Wi-Fi (ESP8266)
 
 
 // ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ, СДЕЛАННОГО В ЖЕЛЕЗЕ!
@@ -30,9 +30,9 @@
 // настройки информационных диодов
 #define DIODE_READY_PIN 6 // пин, на котором будет диод, мигающий при старте и горящий в режиме работы
 #define DIODE_MANUAL_MODE_PIN 7 // пин, на котором будет диод, мигающий, когда мы в ручном режиме управления окнами
-#define WORK_MODE_BLINK_INTERVAL 500 // с какой частотой мигать на пине индикации ручного режима работы, мс
 #define DIODE_WATERING_MANUAL_MODE_PIN 8 // пин, на котором висит диод индикации ручного режима управления поливом
 #define DIODE_LIGHT_MANUAL_MODE_PIN 9 // пин, на котором висит диод индикации ручного режима управления досветкой
+#define WORK_MODE_BLINK_INTERVAL 500 // с какой частотой мигать на пинах индикации ручного режима работы, мс
 
 // настройки железных модулей реле 
 #define RELAY_ON LOW // уровень для включения реле
@@ -43,7 +43,7 @@
 #define MAX_STORED_ALERTS 0 // максимальное кол-во сохраняемых последних текстовых алертов (0 - нет поддержки сохраняемых событий)
 #define MAX_ALERT_RULES 20 // максимальное кол-во поддерживаемых правил
 #define MAX_RECEIVE_BUFFER_LENGTH 256 // максимальная длина (в байтах) пакета в сети, дла защиты от спама
-#define MAX_ARGS_IN_LIST 30 // максимальное кол-во аргументов у команды
+#define MAX_ARGS_IN_LIST 30 // максимальное кол-во аргументов у команды, передаваемой контроллеру по UART
 
 
 // настройки модуля алертов (событий по срабатыванию каких-либо условий)
@@ -121,7 +121,7 @@
 
 // настройки модуля управления поливом
 #define WATER_SETTINGS_COMMAND F("T_SETT") // получить/установить настройки управления поливом: CTGET=WATER|T_SETT, CTSET=WATER|T_SETT|WateringOption|WateringDays|WateringTime|StartTime|TurnOnPump , где
-// WateringOption = 0 (выключено автоматическое управление поливом), 1 - автоматическое управление поливом включено
+// WateringOption = 0 (выключено автоматическое управление поливом), 1 - автоматическое управление поливом включено (все каналы), 2 - автоуправление отдельно по каналам
 // WateringDays - битовая маска дней недели (младший бит - понедельник и т.д.)
 // WateringTime - продолжительность полива в минутах, максимальное значение - 65535 (два байта)
 // StartTime - час начала полива (1 байт) - от 1 до 23
@@ -149,10 +149,10 @@
 // ОТВЕТЫ ЗА ЗАПРОСЫ
 #define OK_ANSWER F("OK") // ответ - всё ок
 #define ERR_ANSWER F("ER") // ответ - ошибка
-#define UNKNOWN_MODULE F("UNKNOWN_MODULE")
-#define PARAMS_MISSED F("PARAMS_MISSED")
-#define UNKNOWN_COMMAND F("UNKNOWN_COMMAND")
-#define NOT_SUPPORTED F("NOT_SUPPORTED")
+#define UNKNOWN_MODULE F("UNKNOWN_MODULE") // запрос к неизвестному модулю
+#define PARAMS_MISSED F("PARAMS_MISSED") // пропущены параметры команды
+#define UNKNOWN_COMMAND F("UNKNOWN_COMMAND") // неизвестная команда
+#define NOT_SUPPORTED F("NOT_SUPPORTED") // не поддерживается
 
 // РАЗДЕЛИТЕЛЬ ПАРАМЕТРОВ
 #define PARAM_DELIMITER F("|")
@@ -183,7 +183,7 @@
 #define WTR_OFF F("выкл") // полив выкл
 #define WTR_ON F("вкл") // полив вкл
 #define NEOWAY_SERIAL Serial1 // какой хардварный Serial будем использовать при работе с NEOWAY?
-#define NEOWAY_EVENT_FUNC serialEvent1 // функция для обработки событий фходящего трафика для модуля
+#define NEOWAY_EVENT_FUNC serialEvent1 // функция для обработки событий входящего трафика для модуля
 #define NEOWAY_BAUDRATE 9600 // скорость работы с GSM-модемом NEOWAY
 #define SMS_OPEN_COMMAND F("#1") // открыть окна
 #define SMS_CLOSE_COMMAND F("#0") // закрыть окна
@@ -238,7 +238,6 @@
  */
 
  // свойства модулей, которые мы можем проверять/устанавливать с помощью модуля 0.
- // 8 каналов реле и до 4-х датчиков температур у каждого модуля есть "из коробки".
  // 
 #define PROP_TEMP_CNT F("TEMP_CNT") // кол-во датчиков температуры CTGET=0|PROP|TEMP|TEMP_CNT, CTSET=0|PROP|TEMP|TEMP_CNT|2
 #define PROP_RELAY_CNT F("RELAY_CNT") // кол-во каналов реле CTGET=0|PROP|MODULE_NAME|RELAY_CNT, CTSET=0|PROP|MODULE_NAME|RELAY_CNT|2
@@ -257,7 +256,7 @@
 #define PROPERTIES_COMMAND F("PROP") // команда записи/получения настроек CTSET=0|PROP|MODULE_NAME|PROPERTY_NAME|IDX|VALUE, например CTSET=0|PROP|M|TEMP|0|123,45
 #define SMS_NUMBER_COMMAND F("PHONE") // сохранить/вернуть номер телефона для управления контроллером по СМС: CTSET=0|PHONE|+7918..., CTGET=0|PHONE
 #define PONG F("PONG") // ответ на запрос пинга
-#define REG_SUCC F("ADDED") // модуль зарегистрирован
+#define REG_SUCC F("ADDED") // модуль зарегистрирован, или команда обработана
 #define REG_DEL F("DELETED") // удалено
 #define REG_ERR F("EXIST") // модуль уже зарегистрирован
 #define UNKNOWN_PROPERTY F("UNKNOWN_PROPERTY") // неизвестное свойство

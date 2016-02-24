@@ -119,6 +119,12 @@ bool AlertRule::HasAlert()
 
     case rtLuminosity: // следим за освещенностью
     {
+      if(dataAlertLong == -2) 
+      {
+        // специальное значение, означающее "работать без датчика освещённости"
+        return true; // в этом случае считаем, что работать мы можем при любом раскладе
+      } // if
+      
      if(!linkedModule->State.HasState(StateLuminosity))  // не поддерживаем освещенность
         return false;
 

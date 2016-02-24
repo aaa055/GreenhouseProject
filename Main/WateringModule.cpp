@@ -106,8 +106,7 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
      else
      {
       // можем работать, смотрим, не вышли ли мы за пределы установленного интервала
-  
-  
+ 
       if(lastDOW != currentDOW)  // сначала проверяем, не другой ли день недели уже?
       {
         // начался другой день недели, в который мы можем работать. Для одного дня недели у нас установлена
@@ -147,8 +146,7 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
       for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
       {
         digitalWrite(WATER_RELAYS[i],state);
-//        State.SetRelayState(i,channel->IsChannelRelayOn);
-
+        
          uint8_t idx = i/8; // выясняем, какой индекс
          uint8_t bitNum1 = i % 8;
          OneState* os = State.GetState(StateRelay,idx);
@@ -440,6 +438,12 @@ bool  WateringModule::ExecCommand(const Command& command)
             workMode = wwmManual; // переходим в ручной режим работы
             blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
           }
+          // если команда не от юзера, а от модуля ALERT, например, то
+          // просто выставляя статус реле для всех каналов - мы ничего не добьёмся - 
+          // команда проигнорируется, т.к. мы сами обновляем статус каналов.
+          // в этом случае - надо переходить на ручное управление, мне кажется.
+          // Хотя это - неправильно, должна быть возможность в автоматическом
+          // режиме включать/выключать полив из модуля ALERT, без мигания диодом.
 
           dummyAllChannels.IsChannelRelayOn = true; // включаем реле на всех каналах
 
@@ -454,6 +458,12 @@ bool  WateringModule::ExecCommand(const Command& command)
             workMode = wwmManual; // переходим в ручной режим работы
             blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
           }
+          // если команда не от юзера, а от модуля ALERT, например, то
+          // просто выставляя статус реле для всех каналов - мы ничего не добьёмся - 
+          // команда проигнорируется, т.к. мы сами обновляем статус каналов.
+          // в этом случае - надо переходить на ручное управление, мне кажется.
+          // Хотя это - неправильно, должна быть возможность в автоматическом
+          // режиме включать/выключать полив из модуля ALERT, без мигания диодом.
 
           dummyAllChannels.IsChannelRelayOn = false; // выключаем реле на всех каналах
 
