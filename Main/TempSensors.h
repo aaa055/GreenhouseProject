@@ -24,8 +24,8 @@ class WindowState
 {
  private:
  
-  unsigned int CurrentPosition; // текущая позиция фрамуги
-  unsigned int RequestedPosition; // какую позицию запросили
+  unsigned long CurrentPosition; // текущая позиция фрамуги
+  unsigned long RequestedPosition; // какую позицию запросили
   bool OnMyWay; // флаг того, что фрамуга в процессе открытия/закрытия
   unsigned long TimerInterval; // сколько работать фрамуге?
   unsigned long TimerTicks; // сколько проработали уже?
@@ -43,10 +43,10 @@ public:
 
   bool IsBusy() {return OnMyWay;} // заняты или нет?
   
-  bool ChangePosition(DIRECTION dir, unsigned int newPos); // меняет позицию
+  bool ChangePosition(DIRECTION dir, unsigned long newPos); // меняет позицию
   
-  unsigned int GetCurrentPosition() {return CurrentPosition;}
-  unsigned int GetRequestedPosition() {return RequestedPosition;}
+  unsigned long GetCurrentPosition() {return CurrentPosition;}
+  unsigned long GetRequestedPosition() {return RequestedPosition;}
   DIRECTION GetDirection() {return Direction;}
 
   void UpdateState(uint16_t dt); // обновляет состояние фрамуги

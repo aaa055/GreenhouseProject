@@ -21,7 +21,7 @@ void WindowState::Setup(ModuleState* state,  uint8_t relayChannel1, uint8_t rela
   pinMode(RelayPin2, OUTPUT);
 }
 
-bool WindowState::ChangePosition(DIRECTION dir, unsigned int newPos)
+bool WindowState::ChangePosition(DIRECTION dir, unsigned long newPos)
 {
   bool bRet = false;
   
@@ -48,7 +48,7 @@ bool WindowState::ChangePosition(DIRECTION dir, unsigned int newPos)
        OnMyWay = true; // поогнали!
        bRet = true;
 
-      // Serial.println("OPEN FROM POSITION " + String(CurrentPosition) + " to " + String(newPos));
+       //Serial.println("OPEN FROM POSITION " + String(CurrentPosition) + " to " + String(newPos));
       }
   }
   else
@@ -291,7 +291,7 @@ bool  TempSensors::ExecCommand(const Command& command)
           unsigned long interval = sett->GetOpenInterval();
           
           if(command.GetArgsCount() > 3)
-            interval = command.GetArg(3).toInt(); // получили интервал для работы реле
+            interval = (unsigned long) command.GetArg(3).toInt(); // получили интервал для работы реле
 
  
           answerStatus = true;
@@ -411,7 +411,7 @@ bool  TempSensors::ExecCommand(const Command& command)
       } // WORK_MODE
       else if(s == WM_INTERVAL) // запросили установку интервала
       {
-              unsigned long newInt = command.GetArg(1).toInt();
+              unsigned long newInt = (unsigned long) command.GetArg(1).toInt();
               if(newInt > 0)
               {
                 //СОХРАНЕНИЕ ИНТЕРВАЛА В НАСТРОЙКАХ
