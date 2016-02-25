@@ -13,7 +13,11 @@ const HumidityAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
   if(sensorType == DHT_11)
     wakeup_delay = DHT11_WAKEUP;
 
-  const uint32_t mstcc = ( F_CPU / 40000L ); // сторож таймаута - 100us
+  const uint32_t mstcc = ( F_CPU / 40000 ); // сторож таймаута - 100us
+
+  uint8_t bit = digitalPinToBitMask(pin);
+  uint8_t port = digitalPinToPort(pin);
+  volatile uint8_t *PIR = portInputRegister(port);
 
   // начинаем читать с датчика
   pinMode(pin,OUTPUT);
@@ -29,13 +33,13 @@ const HumidityAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
   
   uint32_t tmout_guard = mstcc;
   
-  while(digitalRead(pin) == LOW) // читаем, пока низкий уровень на пине
+  while ((*PIR & bit) == LOW )//while(digitalRead(pin) == LOW) // читаем, пока низкий уровень на пине
   {
     if(!--tmout_guard)
      return answer; // таймаут поймали
   }
   tmout_guard = mstcc;
-  while(digitalRead(pin) == HIGH) // читаем, пока высокий уровень на пине
+  while ((*PIR & bit) != LOW )//while(digitalRead(pin) == HIGH) // читаем, пока высокий уровень на пине
   {
     if(!--tmout_guard)
      return answer; // таймаут поймали
@@ -43,6 +47,8 @@ const HumidityAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
 
   // считаем, что теперь пойдут данные. нам надо получить 40 бит, т.е. 5 байт.
   uint8_t bytes[5] = {0}; // байты, в которые мы будем принимать данные
+  for(uint8_t i=0;i<5;i++)
+    bytes[i] = 0;
   
   uint8_t idx = 0; // индекс текущего байта
   uint8_t bitmask = 0x80; // старший бит байта установлен в единичку, его будем двигать вниз
@@ -51,7 +57,7 @@ const HumidityAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
   {
       // сначала ждём 50us, говорящие, что пойдёт следующий бит
       tmout_guard = mstcc;
-      while(digitalRead(pin) == LOW)
+      while ((*PIR & bit) == LOW )//while(digitalRead(pin) == LOW)
       {
         if(!--tmout_guard)
             return answer; // таймаут поймали
@@ -61,7 +67,7 @@ const HumidityAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
 
       tmout_guard = mstcc;
       uint32_t tMicros = micros();
-      while(digitalRead(pin) == HIGH)
+      while ((*PIR & bit) != LOW )//while(digitalRead(pin) == HIGH)
       {
         if(!--tmout_guard)
             return answer; // таймаут поймали

@@ -694,9 +694,7 @@ void AlertModule::Update(uint16_t dt)
   // обновление модуля алертов тут
 
   lastUpdateCall += dt;
-  
-  #define ALERT_UPD_INTERVAL 500
-  
+    
   if(lastUpdateCall < ALERT_UPD_INTERVAL) // раз в полсекунды обновляем
     return;
   
