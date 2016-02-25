@@ -78,10 +78,18 @@
 // GTGET=HUMIDITY|CNT - получить кол-во датчиков влажности
 // GTGET=HUMIDITY|0 - получить показания первого датчика, возвращается OK=HUMIDITY|0|RH|RT, где RH - влажность, RT - температура
 // CTGET=HUMIDITY|ALL - получить показания всех датчиков, возвращается OK=HUMIDITY|CNT|RH0|RT0|RH1|RT1|RHn|RTn, где CNT - кол-во записей
-#define SUPPORTED_DHT_SENSORS 1 // кол-во поддерживаемых датчиков DHT
-#define DHT_SENSORS_PINS 12 // пины, на которых сидят датчики влажности, через запятую, кол-вом SUPPORTED_DHT_SENSORS.
-#define DHT_TYPE DHT2x // тип датчика - DHT21 и старше
-//#define DHT_TYPE DHT11 // тип датчика - DHT11, раскомментировать эту строчку, если используются датчики DHT11, и закомментировать предыдущую
+#define ADD_HUMIDITY_SENSOR(pin,type) { pin , type } // для удобства добавления сенсора в массив
+// типы поддерживаемых сенсоров: DHT11, DHT2x
+#define SUPPORTED_HUMIDITY_SENSORS 1 // кол-во поддерживаемых датчиков влажности
+// описание поддерживаемых датчиков влажности, через запятую, кол-вом SUPPORTED_DHT_SENSORS.
+// формат: ADD_HUMIDITY_SENSOR(пин, тип)
+// следующий после первого датчик добавляется через запятую.
+// Примеры:
+// для одного датчика:
+// #define HUMIDITY_SENSORS ADD_HUMIDITY_SENSOR(12,DHT2x)
+// для двух и более датчиков:
+// #define HUMIDITY_SENSORS ADD_HUMIDITY_SENSOR(12,DHT2x), ADD_HUMIDITY_SENSOR(14,DHT11), ADD_HUMIDITY_SENSOR(15,DHT2x)
+#define HUMIDITY_SENSORS ADD_HUMIDITY_SENSOR(12,DHT2x)
 
 
 // состояния вкл/выкл, для команд

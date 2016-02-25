@@ -1,22 +1,42 @@
 #include "HumidityModule.h"
 #include "ModuleController.h"
 
-static uint8_t HUMIDITY_SENSORS[] = { DHT_SENSORS_PINS };
+static HumiditySensorRecord HUMIDITY_SENSORS_ARRAY[] = { HUMIDITY_SENSORS };
 
 
 void HumidityModule::Setup()
 {
   // настройка модуля тут
 
-  for(uint8_t i=0;i<SUPPORTED_DHT_SENSORS;i++)
+  dummyAnswer.IsOK = false;
+
+  for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
    {
     State.AddState(StateHumidity,i); // поддерживаем и влажность,
     State.AddState(StateTemperature,i); // и температуру
     // запускаем конвертацию с датчиков при старте, через 2 секунды нам вернётся измеренная влажность и температура
-    dhtQuery.read(HUMIDITY_SENSORS[i],DHT_TYPE);
+    QuerySensor(HUMIDITY_SENSORS_ARRAY[i].pin,HUMIDITY_SENSORS_ARRAY[i].type);
    }  
  }
+const HumidityAnswer& HumidityModule::QuerySensor(uint8_t pin, HumiditySensorType type)
+{
+  switch(type)
+  {
+    case DHT11:
+    {
+      return dhtQuery.read(pin,DHT_11);
+    }
+    break;
+    
+    case DHT2x:
+    {
+      return dhtQuery.read(pin,DHT_2x);
+    }
+    break;
+  }
 
+  return dummyAnswer;
+}
 void HumidityModule::Update(uint16_t dt)
 { 
   // обновление модуля тут
@@ -32,7 +52,7 @@ void HumidityModule::Update(uint16_t dt)
   // получаем данные с датчиков влажности
   Humidity h;
   Temperature t;
-  for(uint8_t i=0;i<SUPPORTED_DHT_SENSORS;i++)
+  for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
    {
       h.Value = NO_TEMPERATURE_DATA;
       h.Fract = 0;
@@ -40,7 +60,8 @@ void HumidityModule::Update(uint16_t dt)
       t.Value = NO_TEMPERATURE_DATA;
       t.Fract = 0;
 
-      DHTAnswer answer = dhtQuery.read(HUMIDITY_SENSORS[i],DHT_TYPE);
+      HumidityAnswer answer = QuerySensor(HUMIDITY_SENSORS_ARRAY[i].pin,HUMIDITY_SENSORS_ARRAY[i].type);
+
       if(answer.IsOK)
       {
         h.Value = answer.Humidity;
@@ -84,15 +105,15 @@ bool  HumidityModule::ExecCommand(const Command& command)
         if(param == PROP_CNT) // запросили данные о кол-ве датчиков: GTGET=HUMIDITY|CNT
         {
           answerStatus = true;
-          answer = PROP_CNT; answer += PARAM_DELIMITER; answer += String(SUPPORTED_DHT_SENSORS);
+          answer = PROP_CNT; answer += PARAM_DELIMITER; answer += String(SUPPORTED_HUMIDITY_SENSORS);
         } // PROP_CNT
         else
         if(param == ALL) // запросили показания со всех датчиков
         {
           answerStatus = true;
-          answer = String(SUPPORTED_DHT_SENSORS);
+          answer = String(SUPPORTED_HUMIDITY_SENSORS);
           
-          for(uint8_t i=0;i<SUPPORTED_DHT_SENSORS;i++)
+          for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
           {
 
              OneState* stateTemp = State.GetState(StateTemperature,i);
@@ -114,7 +135,7 @@ bool  HumidityModule::ExecCommand(const Command& command)
         {
           // запросили показания с датчика по индексу
           uint8_t idx = param.toInt();
-          if(idx >= SUPPORTED_DHT_SENSORS)
+          if(idx >= SUPPORTED_HUMIDITY_SENSORS)
           {
             // плохой индекс
             answer = NOT_SUPPORTED;

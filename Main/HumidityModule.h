@@ -3,8 +3,14 @@
 
 #include "AbstractModule.h"
 #include "DHTSupport.h"
+#include "HumidityGlobals.h"
 
-
+typedef struct
+{
+  uint8_t pin;
+  HumiditySensorType type;
+  
+} HumiditySensorRecord;
 
 class HumidityModule : public AbstractModule // модуль управления влажностью
 {
@@ -12,6 +18,10 @@ class HumidityModule : public AbstractModule // модуль управлени�
 
     DHTSupport dhtQuery; // класс опроса датчиков DHT
     uint16_t lastUpdateCall;
+
+    HumidityAnswer dummyAnswer;
+
+    const HumidityAnswer& QuerySensor(uint8_t pin, HumiditySensorType type); // опрашивает сенсор
     
   public:
     HumidityModule() : AbstractModule(F("HUMIDITY"))

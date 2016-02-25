@@ -4,13 +4,13 @@ DHTSupport::DHTSupport()
 {
   
 }
-const DHTAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
+const HumidityAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
 {
   answer.IsOK = false;
 
   uint8_t wakeup_delay = DHT2x_WAKEUP;
   
-  if(sensorType == DHT11)
+  if(sensorType == DHT_11)
     wakeup_delay = DHT11_WAKEUP;
 
   const uint32_t mstcc = ( F_CPU / 40000L ); // сторож таймаута - 100us
@@ -90,7 +90,7 @@ const DHTAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
   // проверяем принятые данные
   switch(sensorType)
   {
-    case DHT11:
+    case DHT_11:
     {
       uint8_t crc = bytes[0] + bytes[2];
       if(crc != bytes[4]) // чексумма не сошлась
@@ -102,7 +102,7 @@ const DHTAnswer& DHTSupport::read(uint8_t pin, DHTType sensorType)
     }
     break;
 
-    case DHT2x:
+    case DHT_2x:
     {
       uint8_t crc = bytes[0] + bytes[1] + bytes[2] + bytes[3];
       if(crc != bytes[4]) // чексумма не сошлась
