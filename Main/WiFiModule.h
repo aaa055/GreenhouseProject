@@ -106,6 +106,7 @@ class WiFiModule : public AbstractModule // модуль поддержки WI-F
     void ProcessQueue(); // разбираем очередь команд
     void ProcessQuery(); // обрабатываем запрос
     void ProcessURIRequest(int clientID, const String& requesterURI);
+    String UrlDecode(const String& uri);
 
     void UpdateClients();
     

@@ -90,11 +90,24 @@ bool WIFIClient::PrepareFile(const String& fileName,unsigned long& fileSize)
     return false;
   }
 
+
   workFile = SD.open(fileName);
   if(workFile)
   {
+      isFileOpen = true;
+
+      if(workFile.isDirectory())
+      {
+      #ifdef WIFI_DEBUG
+      WIFI_DEBUG_WRITE(F("Directory access FORBIDDEN: ")); WIFI_DEBUG_WRITE(fileName); WIFI_DEBUG_WRITE(NEWLINE);
+      #endif
+
+        EnsureCloseFile();
+        return false;
+      }
+
+    
     // файл открыли, подготовили, получили размер
-    isFileOpen = true;
     fileSize = workFile.size();
     return true;
   }
@@ -168,16 +181,21 @@ bool WIFIClient::Prepare(const String& uriRequested)
   }
 
   httpHeaders += NEWLINE;
-/*
+
   httpHeaders += H_CONNECTION;
   httpHeaders += NEWLINE;
-*/
+
   // подставляем тип данных
   httpHeaders += H_CONTENT_TYPE;
   if(ajaxQueryFound)
     httpHeaders += F("text/javascript");
   else
-    httpHeaders += GetContentType(uriRequested);
+  {
+    if(dataFound)
+      httpHeaders += GetContentType(uriRequested);
+    else
+      httpHeaders += F("text/html"); // 404 as HTML
+  }
     
   httpHeaders += NEWLINE;
 
@@ -610,7 +628,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(currentClientIDX == clientID && WaitForDataWelcome) // если мы ждём приглашения на отсыл данных этому клиенту,
         WaitForDataWelcome = false; // то снимаем его
         
-      currentAction = wfaIdle;
+      //currentAction = wfaIdle;
     }
   } // if
   
@@ -649,10 +667,59 @@ void WiFiModule::ProcessQuery()
        String requestedURI = str.substring(0,idx);
        if(!requestedURI.length()) // запросили страницу по умолчанию
           requestedURI = DEF_PAGE;
-       ProcessURIRequest(connectedClientID.toInt(), requestedURI); // обрабатываем запрос от клиента
+       ProcessURIRequest(connectedClientID.toInt(), UrlDecode(requestedURI)); // обрабатываем запрос от клиента
     } // if 
   } // if 
    
+}
+String WiFiModule::UrlDecode(const String& uri)
+{
+  String result;
+  int len = uri.length();
+  result.reserve(len);
+  int s = 0;
+
+ while (s < len) 
+ {
+    char c = uri[s++];
+
+    if (c == '%' && s + 2 < len) 
+    {
+        char c2 = uri[s++];
+        char c3 = uri[s++];
+        if (isxdigit(c2) && isxdigit(c3)) 
+        {
+            c2 = tolower(c2);
+            c3 = tolower(c3);
+
+            if (c2 <= '9')
+                c2 = c2 - '0';
+            else
+                c2 = c2 - 'a' + 10;
+
+            if (c3 <= '9')
+                c3 = c3 - '0';
+            else
+                c3 = c3 - 'a' + 10;
+
+            result  += char(16 * c2 + c3);
+
+        } 
+        else 
+        { 
+            result += c;
+            result += c2;
+            result += c3;
+        }
+    } 
+    else 
+    if (c == '+') 
+        result += ' ';
+    else 
+        result += c;
+ } // while 
+
+  return result;
 }
 void WiFiModule::ProcessURIRequest(int clientID, const String& requesterURI)
 {
