@@ -218,7 +218,7 @@ void TempSensors::Update(uint16_t dt)
 
 
   lastUpdateCall += dt;
-  if(lastUpdateCall < TEMP_UPDATE_INTERVAL) // нечего обновлять раньше, чем раз в две секунды
+  if(lastUpdateCall < TEMP_UPDATE_INTERVAL) // обновляем согласно настроенному интервалу
     return;
 
   lastUpdateCall = 0;
@@ -403,12 +403,19 @@ bool  TempSensors::ExecCommand(const Command& command)
           // говорим, что температура изменилась, чтобы форсировать обработку 
           // через модуль ALERT, иначе он проигнорирует смену состояния.
           // достаточно изменить буквально на чуть-чуть.
-          OneState* os = State.GetState(StateTemperature,0);
-          if(os)
+          // Так как мы не знаем, к какому датчику привязаны правила - 
+          // меняем на чуть-чуть показания всех датчиков
+          uint8_t stCnt = State.GetStateCount(StateTemperature);
+          for(uint8_t st=0;st<stCnt;st++)
           {
-            Temperature* t = (Temperature*) os->Data;
-            if(t) t->Fract = t->Fract + 1;
-          }
+            OneState* os = State.GetState(StateTemperature,st);
+            if(os)
+            {
+              Temperature* t = (Temperature*) os->Data;
+              if(t && t->Value != NO_TEMPERATURE_DATA) // если есть показания с датчика 
+                t->Fract = t->Fract + 1;
+            }
+            } // for
           
           blinker.blink();
         }

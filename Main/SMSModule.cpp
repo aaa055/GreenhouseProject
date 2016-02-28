@@ -621,7 +621,7 @@ void SMSModule::Update(uint16_t dt)
   if(digitalRead(NEOWAY_VCCIO_CHECK_PIN) != HIGH)
   {
      
-    needToWaitTimer = 10000; // проверим ещё раз через пять секунд
+    needToWaitTimer = 10000; // проверим ещё раз через десять секунд
 
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println(F("NEOWAY NOT FOUND!"));

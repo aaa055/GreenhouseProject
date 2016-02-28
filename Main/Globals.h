@@ -70,6 +70,7 @@
 
 // настройки модуля освещенности
 // команда, на которую модуль выдаёт текущую освещенность - CTGET=LIGHT
+#define LUMINOSITY_UPDATE_INETRVAL 3000 // через сколько мс обновлять показания с датчиков освещенности 
 #define LIGHT_SENSORS_COUNT 2 // кол-во датчиков освещенности, 0, 1 или 2, 2 - максимум
 #define LAMP_RELAYS_COUNT 1 // кол-во реле для управления досветкой
 #define LAMP_RELAYS_PINS 34 // пины, на которых сидят реле управления досветкой (через запятую, кол-во равно LAMP_RELAYS_COUNT!)
@@ -79,6 +80,7 @@
 // GTGET=HUMIDITY|CNT - получить кол-во датчиков влажности
 // GTGET=HUMIDITY|0 - получить показания первого датчика, возвращается OK=HUMIDITY|0|RH|RT, где RH - влажность, RT - температура
 // CTGET=HUMIDITY|ALL - получить показания всех датчиков, возвращается OK=HUMIDITY|CNT|RH0|RT0|RH1|RT1|RHn|RTn, где CNT - кол-во записей
+#define HUMIDITY_UPDATE_INTERVAL 5000 // через сколько мс обновлять показания с датчиков влажности
 #define ADD_HUMIDITY_SENSOR(pin,type) { pin , type } // для удобства добавления сенсора в массив
 // типы поддерживаемых сенсоров: DHT11, DHT2x
 #define SUPPORTED_HUMIDITY_SENSORS 1 // кол-во поддерживаемых датчиков влажности

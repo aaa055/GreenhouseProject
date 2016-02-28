@@ -43,7 +43,7 @@ void HumidityModule::Update(uint16_t dt)
 
   
   lastUpdateCall += dt;
-  if(lastUpdateCall < 2000) // не будем обновлять чаще, чем раз в две секунды
+  if(lastUpdateCall < HUMIDITY_UPDATE_INTERVAL) // обновляем согласно настроенному интервалу
   {
     return;
   }
