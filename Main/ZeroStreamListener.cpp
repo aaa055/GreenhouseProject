@@ -17,7 +17,8 @@ void ZeroStreamListener::Update(uint16_t dt)
 bool  ZeroStreamListener::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
-  String answer = UNKNOWN_COMMAND;
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = UNKNOWN_COMMAND;
   bool answerStatus = false;
   bool shouldAddModuleID = false; 
   

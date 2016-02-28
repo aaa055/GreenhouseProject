@@ -125,15 +125,14 @@ void ModuleController::ProcessModuleCommand(const Command& c, bool checkDestinat
 
 void ModuleController::UpdateModules(uint16_t dt)
 {
+  // обновляем модули по одному за один вызов loop
   size_t sz = modules.size();
   for(size_t i=0;i<sz;i++)
   { 
     AbstractModule* mod = modules[i];
-    if(mod)
-    {
       // ОБНОВЛЯЕМ СОСТОЯНИЕ МОДУЛЕЙ
       mod->Update(dt);
-    } // if
   } // for
+  
 }
 

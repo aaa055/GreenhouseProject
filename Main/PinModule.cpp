@@ -88,7 +88,8 @@ void PinModule::Update(uint16_t dt)
 bool  PinModule::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
-  String answer = PARAMS_MISSED;
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = PARAMS_MISSED;
   bool answerStatus = false;  
   if(command.GetType() == ctGET) //получить состояние пина
   {

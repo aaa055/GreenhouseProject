@@ -24,7 +24,7 @@
 #define EEPROM_RULES_START_ADDR 1025 // со второго килобайта в EEPROM идут правила
 
 // настройки Serial
-#define SERIAL_BAUD_RATE 9600 // скорость работы с портом, бод
+#define SERIAL_BAUD_RATE 57600 // скорость работы с портом, бод
 #define READY F("READY") // будет напечатано в Serial после загрузки
 
 // настройки информационных диодов
@@ -193,7 +193,7 @@
 #define WTR_ON F("вкл") // полив вкл
 #define NEOWAY_SERIAL Serial1 // какой хардварный Serial будем использовать при работе с NEOWAY?
 #define NEOWAY_EVENT_FUNC serialEvent1 // функция для обработки событий входящего трафика для модуля
-#define NEOWAY_BAUDRATE 9600 // скорость работы с GSM-модемом NEOWAY
+#define NEOWAY_BAUDRATE 57600 // скорость работы с GSM-модемом NEOWAY
 #define SMS_OPEN_COMMAND F("#1") // открыть окна
 #define SMS_CLOSE_COMMAND F("#0") // закрыть окна
 #define SMS_STAT_COMMAND F("#9") // получить статистику
@@ -205,9 +205,10 @@
 
 // настройки модуля WI-FI
 //#define WIFI_DEBUG // закомментировать, если не нужен режим отладки (режим отладки не работаем совместно с конфигуратором!) 
+#define SDCARD_CS_PIN 53 // номер пина Chip Select для SD-модуля 
 #define WIFI_SERIAL Serial2 // какой хардварный сериал использовать для WI-FI?
 #define WIFI_EVENT_FUNC serialEvent2 // функция для обработки событий входящего трафика от модуля
-#define WIFI_BAUDRATE 9600 // скорость работы с UART для WI-FI
+#define WIFI_BAUDRATE 57600 // скорость работы с UART для WI-FI
 #define STATION_ID F("TEPLICA") // ID точки доступа, которую создаёт модуль WI-FI
 #define STATION_PASSWORD F("12345678") // пароль к точке доступа, которую создаёт вай-фай (МИНИМУМ 8 СИМВОЛОВ, ИНАЧЕН НЕ БУДЕТ РАБОТАТЬ!)
 #define ROUTER_ID F("")  // SSID домашнего роутера, к которому коннектится модуль WI-FI
@@ -282,5 +283,6 @@
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 #define MAX_PUBLISHERS 2 // максимальное количество паблишеров для модуля
+#define RESERVE_STR_LENGTH 128 // сколько байт резервировать для строки ответа при выполнении ExecCommand
 
 #endif

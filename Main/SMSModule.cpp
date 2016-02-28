@@ -176,7 +176,7 @@ void SMSModule::ProcessAnswerLine(const String& line)
       {
         // ещё не зарегистрированы
           isModuleRegistered = false;
-          needToWaitTimer = 1500; // через некоторое время
+          needToWaitTimer = 4500; // через некоторое время
           currentAction = smaIdle;
       } // else
     }
@@ -495,6 +495,7 @@ void SMSModule::ProcessQueue()
         Serial.println(F("Check for NEOWAY READY..."));
       #endif
       SendCommand(F("AT+CPAS"));
+      //SendCommand(F("AT+IPR=57600"));
       }
       break;
 
@@ -620,7 +621,7 @@ void SMSModule::Update(uint16_t dt)
   if(digitalRead(NEOWAY_VCCIO_CHECK_PIN) != HIGH)
   {
      
-    needToWaitTimer = 5000; // проверим ещё раз через пять секунд
+    needToWaitTimer = 10000; // проверим ещё раз через пять секунд
 
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println(F("NEOWAY NOT FOUND!"));
@@ -848,7 +849,8 @@ void SMSModule::SendSMS(const String& sms)
 bool  SMSModule::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
-  String answer = UNKNOWN_COMMAND;
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = UNKNOWN_COMMAND;
   bool answerStatus = false; 
   
   if(command.GetType() == ctSET) 

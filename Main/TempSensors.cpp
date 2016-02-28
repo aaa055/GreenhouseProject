@@ -250,7 +250,8 @@ bool  TempSensors::ExecCommand(const Command& command)
   ModuleController* c = GetController();
   GlobalSettings* sett = c->GetSettings();
   
-  String answer = PARAMS_MISSED;  
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = PARAMS_MISSED;  
   bool answerStatus = false;
 
   if(command.GetType() == ctSET) // напрямую запись в датчики запрещена, пишем только в состояние каналов

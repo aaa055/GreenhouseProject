@@ -136,6 +136,41 @@ HumidityModule humidityModule;
 // модуль работы по Wi-Fi
 WiFiModule wifiModule;
 String wiFiReceiveBuff;
+
+void WIFI_EVENT_FUNC()
+{
+  char ch;
+  while(WIFI_SERIAL.available())
+  {
+    ch = WIFI_SERIAL.read();
+
+    if(ch == '\r')
+      continue;
+    
+    if(ch == '\n')
+    {
+      wifiModule.ProcessAnswerLine(wiFiReceiveBuff);
+      wiFiReceiveBuff = F("");
+    }
+    else
+    {
+         
+        if(wifiModule.WaitForDataWelcome && ch == '>') // ждут команду >
+        {
+          wifiModule.WaitForDataWelcome = false;
+          wifiModule.ProcessAnswerLine(F(">"));
+        }
+        else
+          wiFiReceiveBuff += ch;
+    }
+
+    
+  } // while
+
+
+    
+}
+
 #endif
 
 #ifdef AS_CONTROLLER
@@ -179,7 +214,9 @@ void ProcessInitCommands()
 }
 
 void setup() 
-{  
+{ 
+
+   
   // устанавливаем провайдера команд для контроллера
   controller.SetCommandParser(&commandParser);
 
@@ -333,8 +370,15 @@ void loop()
     commandsFromSerial.ClearCommand(); // очищаем полученную команду
    } // if
 
-    // обновляем состояние всех зарегистрированных модулей
+    #ifdef USE_WIFI_MODULE
+    // модуль Wi-Fi обновляем каждый раз при вызове loop
+    WIFI_EVENT_FUNC(); // вызываем функцию проверки данных в порту
+    #endif
+    
+    // обновляем состояние всех зарегистрированных модулей, по одному за каждый вызов loop
    controller.UpdateModules(dt);
+
+
    
 // отсюда можно добавлять любой сторонний код
 
@@ -342,41 +386,6 @@ void loop()
 // до сюда можно добавлять любой сторонний код
 
 }
-#ifdef USE_WIFI_MODULE
-void WIFI_EVENT_FUNC()
-{
-  char ch;
-  while(WIFI_SERIAL.available())
-  {
-    ch = WIFI_SERIAL.read();
-
-    if(ch == '\r')
-      continue;
-    
-    if(ch == '\n')
-    {
-      wifiModule.ProcessAnswerLine(wiFiReceiveBuff);
-      wiFiReceiveBuff = F("");
-    }
-    else
-    {
-         
-        if(wifiModule.WaitForDataWelcome && ch == '>') // ждут команду >
-        {
-          wifiModule.WaitForDataWelcome = false;
-          wifiModule.ProcessAnswerLine(F(">"));
-        }
-        else
-          wiFiReceiveBuff += ch;
-    }
-
-    
-  } // while
-
-
-    
-}
-#endif
 
 #ifdef USE_SMS_MODULE
 void NEOWAY_EVENT_FUNC()

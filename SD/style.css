@@ -1,0 +1,73 @@
+BODY, TD, DIV, SPAN, P, FONT 
+{
+	font-weight:normal;
+	font-family:Arial;
+	color:#000000;
+	font-size:12px;
+}
+LABEL
+{
+	cursor:pointer;
+}
+.hdn
+{
+	display:none;
+}
+h1,h2,h3,h4
+{
+	color:#90d70f;
+	margin-top:0px;
+	margin-bottom:12px;
+	padding-top:0px;
+}
+h1
+{
+	font-size:24px;
+}
+h2
+{
+	font-size:20px;
+}
+h3
+{
+	font-size:16px;
+}
+h4
+{
+	font-size:12px;
+}
+A 
+{
+color:#0d8ed8;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:underline;
+outline: none;
+}
+
+A:visited 
+{
+color:#119ae9;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:underline;
+outline: none;
+}
+
+A:hover 
+{
+color:#0d8ed8;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:none;
+outline: none;
+}
+
+.darkred
+{
+color:#800000;
+font-weight:bold;
+}

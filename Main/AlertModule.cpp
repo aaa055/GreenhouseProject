@@ -869,7 +869,8 @@ void AlertModule::AddAlert(const String& strAlert)
 bool  AlertModule::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
-  String answer = UNKNOWN_COMMAND;
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = UNKNOWN_COMMAND;
   bool answerStatus = false; 
   
   if(command.GetType() == ctSET) 

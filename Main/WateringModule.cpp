@@ -56,7 +56,7 @@ void WateringModule::Setup()
     // настраиваем все каналы
     wateringChannels[i].IsChannelRelayOn = dummyAllChannels.IsChannelRelayOn;
     wateringChannels[i].WateringTimer = 0;
-  }
+  } // for
 
 #ifdef USE_PUMP_RELAY
   // выключаем реле насоса  
@@ -307,7 +307,8 @@ bool  WateringModule::ExecCommand(const Command& command)
   ModuleController* c = GetController();
   GlobalSettings* settings = c->GetSettings();
   
-  String answer = UNKNOWN_COMMAND;
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = UNKNOWN_COMMAND;
   
   bool answerStatus = false; 
   

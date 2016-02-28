@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251"/>
+<link rel="stylesheet" href="style.css"  type="text/css"/>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript">
+function testMe()
+{
+  var e = getE("testspan");
+  if(!e)
+  {
+    alert("Не могу найти элемент!"); return;
+  }
+  alert(e.outerHTML);
+}
+</script>
+<title>Контроллер теплицы на базе Arduino Mega</title>
+
+</head>
+<body leftmargin='40' topmargin='20' rightmargin='40' bottommargin='20' marginwidth='40' marginheight='20' bgcolor='#FFFFFF'>
+
+<h1>Главная страница</h1>
+
+Если вы видите эту страницу - значит, соединение с контроллером по Wi-Fi прошло успешно. Как понять, всё ли загрузилось правильно? Во-первых, цвет текста заголовка должен быть зелёным, точнее, цветом #90d70f.
+<p>
+Во-вторых, если вы щёлкнете на эту <a href="" onclick='testMe();return false;'>ссылку</a>, то должны увидеть сообщение c HTML-кодом <span class='darkred' id='testspan'>этого элемента</span>. 
+
+<p>
+Далее тут будет появляться актуальный функционал.
+
+</body>
+</html>

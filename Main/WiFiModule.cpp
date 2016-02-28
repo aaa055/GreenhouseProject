@@ -2,17 +2,366 @@
 #include "ModuleController.h"
 #include "InteropStream.h"
 
+#define WIFI_DEBUG_WRITE(s) Serial.print(s)
+
+WIFIClient::WIFIClient()
+{
+  isConnected = false;
+  isFileOpen = false;
+  httpHeaders.reserve(100); // зарезервируем 100 байт под заголовки
+  Clear();
+}
+void WIFIClient::SetConnected(bool c) 
+{
+  isConnected = c;
+  
+  if(!c) // ничего не будем отсылать, т.к. клиент отсоединился
+    Clear(); // очищаем все статусы
+}
+String WIFIClient::GetContentType(const String& uri)
+{
+  String s = uri;
+  s.toLowerCase();
+  
+  if(s.endsWith(F(".html")) || s.endsWith(F(".htm")))
+    return F("text/html");
+  else
+  if(s.endsWith(F(".js")))
+    return F("text/javascript");
+  else
+  if(s.endsWith(F(".png")))
+    return F("image/png");
+  else
+  if(s.endsWith(F(".gif")))
+    return F("image/gif");
+  else
+  if(s.endsWith(F(".jpg")) || s.endsWith(F(".jpeg")))
+    return F("image/jpeg");
+  else
+  if(s.endsWith(F(".css")))
+    return F("text/css");
+
+  return F("text/plain");  
+}
+void WIFIClient::EnsureCloseFile()
+{
+  if(isFileOpen)
+    workFile.close(); // закрываем файл, с которым работали
+    
+  isFileOpen = false;  
+}
+void WIFIClient::Clear()
+{
+  nextPacketLength = 0;
+  packetsCount = 0;
+  contentLength = 0;
+  packetsLeft = 0;
+  packetsSent = 0;
+  sentContentLength = 0;
+  httpHeaders = F("");
+  ajaxQueryFound = false;
+  dataToSend = F("");
+
+  
+
+  //TODO: Тут закрываем файлы и пр.!
+  EnsureCloseFile();
+  
+}
+bool WIFIClient::PrepareFile(const String& fileName,unsigned long& fileSize)
+{
+  EnsureCloseFile(); // сперва закрываем файл
+  
+  fileSize = 0;
+
+  if(!parent->CanWorkWithSD()) // не можем работать с SD-модулем, поэтому мимо кассы
+  {
+  #ifdef WIFI_DEBUG
+    WIFI_DEBUG_WRITE(F("No SD module!")); WIFI_DEBUG_WRITE(NEWLINE);
+  #endif
+    return false; 
+  }
+
+  if(!SD.exists(fileName)) // файл не найден
+  {
+  #ifdef WIFI_DEBUG
+  WIFI_DEBUG_WRITE(F("File not found on SD: ")); WIFI_DEBUG_WRITE(fileName); WIFI_DEBUG_WRITE(NEWLINE);
+  #endif
+    return false;
+  }
+
+  workFile = SD.open(fileName);
+  if(workFile)
+  {
+    // файл открыли, подготовили, получили размер
+    isFileOpen = true;
+    fileSize = workFile.size();
+    return true;
+  }
+
+  return false;
+}
+bool WIFIClient::Prepare(const String& uriRequested)
+{
+  Clear(); // закрываем файлы, очищаем переменные и т.п.
+  
+  #ifdef WIFI_DEBUG
+  WIFI_DEBUG_WRITE(F("Prepare URI request: ")); WIFI_DEBUG_WRITE(uriRequested); WIFI_DEBUG_WRITE(NEWLINE);
+  #endif
+
+
+
+ COMMAND_TYPE cType = ctUNKNOWN;
+ if(uriRequested.startsWith(F("CTGET=")))
+  cType = ctGET;
+ else
+   if(uriRequested.startsWith(F("CTSET=")))
+  cType = ctSET;
+
+ if(cType != ctUNKNOWN) // надо получить данные с контроллера
+ {
+    ajaxQueryFound = true;
+    InteropStream streamI;
+    streamI.SetController(controller);
+  
+    String command = uriRequested.substring(6);
+    if(streamI.QueryCommand(cType,command,false))
+    {
+      // можем формировать AJAX-ответ
+      dataToSend = F("{");
+      dataToSend += F("\"query\": \"");
+      dataToSend += uriRequested;
+      dataToSend += F("\",\"answer\": \"");
+      String dt = streamI.GetData();
+      dt.trim(); // убираем перевод строки в конце
+      dataToSend += dt;
+      dataToSend += F("\"}");      
+    } // if
+ } // if
+
+  // проверяем, есть ли файл на диске, например
+  bool dataFound = true;
+  
+ if(!ajaxQueryFound)
+  {
+   // подготавливаем файл для отправки
+   dataFound = PrepareFile(uriRequested,contentLength);
+  }
+  else
+  {
+    // ответ на запрос AJAX
+    // выставляем длину данных, которые надо передать
+    contentLength = dataToSend.length();
+  }
+
+ 
+  // формируем заголовки
+  httpHeaders = H_HTTP_STATUS;
+  if(dataFound)
+    httpHeaders += STATUS_200; // данные нашли
+  else
+  {
+    // данные не нашли
+    httpHeaders += STATUS_404;
+    dataToSend = STATUS_404_TEXT;
+    contentLength = dataToSend.length();
+  }
+
+  httpHeaders += NEWLINE;
+/*
+  httpHeaders += H_CONNECTION;
+  httpHeaders += NEWLINE;
+*/
+  // подставляем тип данных
+  httpHeaders += H_CONTENT_TYPE;
+  if(ajaxQueryFound)
+    httpHeaders += F("text/javascript");
+  else
+    httpHeaders += GetContentType(uriRequested);
+    
+  httpHeaders += NEWLINE;
+
+// говорим, сколько данных будет идти
+  httpHeaders += H_CONTENT_LENGTH;
+  httpHeaders += String(contentLength);
+  httpHeaders += NEWLINE;
+
+  // добавляем вторую пустую строку
+  httpHeaders += NEWLINE;
+
+  // теперь надо вычислить общую длину пересылаемых данных.
+  // просто складываем длину заголовков с длиной данных,
+  // и в результате получим кол-во байт, которые надо
+  // скормить модулю ESP
+  contentLength +=  httpHeaders.length();
+ 
+ // вычисляем кол-во пакетов, которые нам надо послать
+ if(contentLength < WIFI_PACKET_LENGTH)
+  packetsCount = 1;
+ else
+ {
+  packetsCount = contentLength/WIFI_PACKET_LENGTH;
+  if((contentLength > WIFI_PACKET_LENGTH) && (contentLength % WIFI_PACKET_LENGTH))
+    packetsCount++;
+ }
+
+ // говорим, что мы не отослали ещё ни одного пакета
+ packetsLeft = packetsCount;
+
+ // вычисляем длину пакета для пересылки
+ nextPacketLength = WIFI_PACKET_LENGTH;
+ if(contentLength < WIFI_PACKET_LENGTH)
+  nextPacketLength = contentLength;
+
+  return HasPacket();
+}
+bool WIFIClient::SendPacket(Stream* s)
+{
+
+ if(!HasPacket()) // нечего больше отсылать
+  return false;
+  
+  #ifdef WIFI_DEBUG
+  WIFI_DEBUG_WRITE(F("Send packet # ")); WIFI_DEBUG_WRITE(packetsSent);WIFI_DEBUG_WRITE(NEWLINE);
+  #endif  
+  //тут отсылаем пакет по Wi-Fi
+  // возвращаем false, если больше нечего посылать
+
+  // формируем пакет. для начала смотрим, есть ли у нас ещё неотосланные заголовки
+  String str;
+
+  uint16_t headersLen =  httpHeaders.length(); 
+  if(headersLen > 0)
+  {
+    // ещё есть непосланные заголовки, надо их дослать.
+    if(headersLen >= nextPacketLength)
+    {
+       // длина оставшихся к отсылу заголовков больше, чем размер одного пакета.
+       // поэтому можем отсылать целиком
+       str = httpHeaders.substring(0,nextPacketLength);
+       httpHeaders = httpHeaders.substring(nextPacketLength);
+
+       s->write(str.c_str(),nextPacketLength); // пишем данные в поток
+       
+    }
+    else
+    {
+      // длина оставшихся заголовков меньше, чем длина следующего пакета, поэтому нам надо дочитать
+      // необходимое кол-во байт из данных.
+      str = httpHeaders;
+      httpHeaders = F("");
+      uint16_t dataLeft = nextPacketLength - str.length();
+
+      s->write(str.c_str(),str.length()); // пишем данные в поток
+
+      if(dataToSend.length())//ajaxQueryFound)
+      {
+        // тут вычитываем недостающие байты из данных, сформированных в ответ на AJAX-запрос, или данные страницы. сформированной в памяти
+        str = dataToSend.substring(0,dataLeft);
+        dataToSend = dataToSend.substring(dataLeft);
+
+        s->write(str.c_str(),str.length()); // пишем данные в поток
+
+      }
+      else
+      {
+        // тут вычитываем данные из файла, длиной dataLeft
+        if(isFileOpen) // если файл открыт
+        {
+          for(uint16_t i=0;i<dataLeft;i++)
+            s->write(workFile.read()); // пишем данные в поток
+            //str += (char) workFile.read();
+        }
+      }
+    } // else
+   
+  } // if
+  else
+  {
+    // у нас идёт работа с данными уже
+    if(dataToSend.length())//ajaxQueryFound)
+    {
+        // тут дочитываем недостающие байты из данных, сформированных в ответ на AJAX-запрос, или данные страницы. сформированной в памяти
+      str = dataToSend.substring(0,nextPacketLength);
+      dataToSend = dataToSend.substring(nextPacketLength);
+
+      s->write(str.c_str(),str.length()); // пишем данные в поток
+    }
+    else
+    {
+      // тут вычитываем данные из файла, длиной nextPacketLength
+      if(isFileOpen) // если файл открыт
+      {
+        for(uint16_t i=0;i<nextPacketLength;i++)
+          s->write(workFile.read()); // пишем данные в поток
+          //str += (char) workFile.read();
+      }
+    }
+  }
+ // вычисляем, сколько осталось пакетов
+ packetsLeft--;
+ packetsSent++;
+ sentContentLength += nextPacketLength;
+
+ // вычисляем длину следующего пакета
+ if((contentLength - sentContentLength) >= WIFI_PACKET_LENGTH)
+   nextPacketLength = WIFI_PACKET_LENGTH;
+ else
+  nextPacketLength = (contentLength - sentContentLength);
+  
+  return HasPacket(); // если ещё есть пакеты - продолжаем отсылать
+}
+uint16_t WIFIClient::GetPacketLength()
+{
+  return nextPacketLength;
+}
+
+
+
+
+
+
+
+
 bool WiFiModule::IsKnownAnswer(const String& line)
 {
-  return ( line == F("OK") || line == F("ERROR") || line == F("FAIL") || line == F("SEND OK"));
+  return ( line == F("OK") || line == F("ERROR") || line == F("FAIL") || line == F("SEND OK") || line == F("SEND FAIL"));
 }
+
 void WiFiModule::ProcessAnswerLine(const String& line)
 {
   // получаем ответ на команду, посланную модулю
   #ifdef WIFI_DEBUG
-    Serial.print(F("<== Receive \"")); Serial.print(line); Serial.println(F("\" answer from ESP-01..."));
+     WIFI_DEBUG_WRITE(line);WIFI_DEBUG_WRITE(NEWLINE);
+    //Serial.print(F("<== Receive \"")); Serial.print(line); Serial.println(F("\" answer from ESP-01..."));
+    WIFI_DEBUG_WRITE("[CA] " + String(currentAction));WIFI_DEBUG_WRITE(NEWLINE);
   #endif
 
+  // здесь может придти запрос от сервера
+  if(line.startsWith(F("+IPD")))
+  {
+     // пришёл запрос от сервера, сохраняем его
+     waitForQueryCompleted = true; // ждём конца запроса
+     httpQuery = F(""); // сбрасываем запрос
+  } // if
+
+  if(waitForQueryCompleted) // ждём всего запроса, он нам может быть и не нужен
+  {
+      httpQuery += line;
+      httpQuery += NEWLINE;
+
+      if( /*line.endsWith(F(",CLOSED")) ||*/ !line.length() 
+     // || line.lastIndexOf(F("HTTP/1.")) != -1 // нашли полную строку 
+      )
+      {
+        waitForQueryCompleted = false; // уже не ждём запроса
+        ProcessQuery(); // обрабатываем запрос
+      }
+  } // if waitForQueryCompleted
+
+
+
+  
   switch(currentAction)
   {
     case wfaWantReady:
@@ -21,7 +370,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(line == F("ready")) // получили
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => ESP-01 restarted."));
+          WIFI_DEBUG_WRITE(F("[OK] => ESP-01 restarted."));WIFI_DEBUG_WRITE(NEWLINE);
        #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду
        currentAction = wfaIdle;
@@ -34,7 +383,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => ECHO OFF processed."));
+          WIFI_DEBUG_WRITE(F("[OK] => ECHO OFF processed."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -47,7 +396,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => SoftAP mode is ON."));
+          WIFI_DEBUG_WRITE(F("[OK] => SoftAP mode is ON."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -61,7 +410,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => access point created."));
+          WIFI_DEBUG_WRITE(F("[OK] => access point created."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -75,7 +424,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => TCP-server mode now set to 0."));
+          WIFI_DEBUG_WRITE(F("[OK] => TCP-server mode now set to 0."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -89,7 +438,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => Multiple connections allowed."));
+          WIFI_DEBUG_WRITE(F("[OK] => Multiple connections allowed."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -103,7 +452,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
        if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => TCP-server started."));
+          WIFI_DEBUG_WRITE(F("[OK] => TCP-server started."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -117,7 +466,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
        if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => connected to the router."));
+          WIFI_DEBUG_WRITE(F("[OK] => connected to the router."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -131,7 +480,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("[OK] => disconnected from router."));
+          WIFI_DEBUG_WRITE(F("[OK] => disconnected from router."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -143,14 +492,29 @@ void WiFiModule::ProcessAnswerLine(const String& line)
 
     case wfaCIPSEND: // надо отослать данные клиенту
     {
+        #ifdef WIFI_DEBUG
+          WIFI_DEBUG_WRITE(F("Waiting for wfaCIPSEND >"));WIFI_DEBUG_WRITE(NEWLINE);
+        #endif        
             
-      if(line == F(">")) //IsKnownAnswer(line)) // дождались приглашения
+      if(line == F(">")) // дождались приглашения
       {
         #ifdef WIFI_DEBUG
-          Serial.println(F("SENDING THE DATA!"));
-        #endif
-        
-        actionsQueue.pop(); // убираем последнюю обработанную команду     
+          WIFI_DEBUG_WRITE(F("SENDING THE DATA!"));WIFI_DEBUG_WRITE(NEWLINE);
+        #endif        
+        actionsQueue.pop(); // убираем последнюю обработанную команду (wfaCIPSEND)
+        actionsQueue.push_back(wfaACTUALSEND); // добавляем команду на актуальный отсыл данных в очередь     
+        currentAction = wfaIdle;
+      }
+      else
+      if(line.indexOf(F("FAIL")) != -1 || line.indexOf(F("ERROR")) != -1)
+      {
+        // передача данных клиенту неудачна, отсоединяем его принудительно
+         #ifdef WIFI_DEBUG
+          WIFI_DEBUG_WRITE(F("Closing client connection unexpectedly!"));WIFI_DEBUG_WRITE(NEWLINE);
+        #endif 
+                
+        clients[currentClientIDX].SetConnected(false);
+        actionsQueue.pop(); // убираем последнюю обработанную команду
         currentAction = wfaIdle;
       }
     }
@@ -161,12 +525,36 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line)) // дождались приглашения
       {
         #ifdef WIFI_DEBUG
-        Serial.println(F("DATA SENT!"));
+        WIFI_DEBUG_WRITE(F("DATA SENT!"));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
         actionsQueue.pop(); // убираем последнюю обработанную команду     
         currentAction = wfaIdle;
-      }
+        if(!clients[currentClientIDX].HasPacket())
+        {
+           // данные у клиента закончились
+        #ifdef WIFI_DEBUG
+        WIFI_DEBUG_WRITE(F("No packets in client, closing connection..."));WIFI_DEBUG_WRITE(NEWLINE);
+        #endif
+
+          if(clients[currentClientIDX].IsConnected())
+          {
+            actionsQueue.push_back(wfaCIPCLOSE); // добавляем команду на закрытие соединения
+          } // if
+        
+        } // if
       
+        if(line.indexOf(F("FAIL")) != -1 || line.indexOf(F("ERROR")) != -1)
+        {
+          // передача данных клиенту неудачна, отсоединяем его принудительно
+           #ifdef WIFI_DEBUG
+            WIFI_DEBUG_WRITE(F("Closing client connection unexpectedly!"));WIFI_DEBUG_WRITE(NEWLINE);
+          #endif 
+                  
+          clients[currentClientIDX].SetConnected(false);
+        }      
+
+      } // if known answer
+
     }
     break;
 
@@ -175,43 +563,56 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line)) // дождались приглашения
       {
         #ifdef WIFI_DEBUG
-        Serial.println(F("Client connection closed."));
+        WIFI_DEBUG_WRITE(F("Client connection closed."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
+        clients[currentClientIDX].SetConnected(false);
         actionsQueue.pop(); // убираем последнюю обработанную команду     
         currentAction = wfaIdle;
       }
-      
-      
     }
     break;
 
     case wfaIdle:
     {
-      // здесь может придти запрос от сервера
-      if(line.startsWith(F("+IPD")))
-      {
-         // пришёл запрос от сервера, сохраняем его
-         waitForQueryCompleted = true; // ждём конца запроса
-         httpQuery = F("");
-      } // if
-
-      if(waitForQueryCompleted) // ждём всего запроса, он нам может быть и не нужен
-      {
-          httpQuery += line;
-          httpQuery += NEWLINE;
-
-          if( /*line.endsWith(F(",CLOSED")) ||*/ !line.length() 
-         // || line.lastIndexOf(F("HTTP/1.")) != -1 // нашли полную строку 
-          )
-          {
-            waitForQueryCompleted = false; // уже не ждём запроса
-            ProcessQuery(); // обрабатываем запрос
-          }
-      } // if
     }
     break;
   } // switch
 
+  // смотрим, может - есть статус клиента
+  int idx = line.indexOf(F(",CONNECT"));
+  if(idx != -1)
+  {
+    // клиент подсоединился
+    String s = line.substring(0,idx);
+    int clientID = s.toInt();
+    if(clientID >= 0 && clientID < MAX_WIFI_CLIENTS)
+    {
+   #ifdef WIFI_DEBUG
+    WIFI_DEBUG_WRITE(F("[CLIENT CONNECTED] - ")); WIFI_DEBUG_WRITE(s); WIFI_DEBUG_WRITE(NEWLINE);
+   #endif     
+      clients[clientID].SetConnected(true);
+    }
+  } // if
+  idx = line.indexOf(F(",CLOSED"));
+ if(idx != -1)
+  {
+    // клиент отсоединился
+    String s = line.substring(0,idx);
+    int clientID = s.toInt();
+    if(clientID >= 0 && clientID < MAX_WIFI_CLIENTS)
+    {
+   #ifdef WIFI_DEBUG
+   WIFI_DEBUG_WRITE(F("[CLIENT DISCONNECTED] - ")); WIFI_DEBUG_WRITE(s);WIFI_DEBUG_WRITE(NEWLINE);
+   #endif     
+      clients[clientID].SetConnected(false);
+      waitForQueryCompleted = false;
+      
+      if(currentClientIDX == clientID && WaitForDataWelcome) // если мы ждём приглашения на отсыл данных этому клиенту,
+        WaitForDataWelcome = false; // то снимаем его
+        
+      currentAction = wfaIdle;
+    }
+  } // if
   
   
 }
@@ -222,7 +623,7 @@ void WiFiModule::ProcessQuery()
   const char* ptr = httpQuery.c_str();
   ptr += idx+1;
   // перешли за запятую, парсим ID клиента
-  connectedClientID = F("");
+  String connectedClientID = F("");
   while(*ptr != ',')
   {
     connectedClientID += (char) *ptr;
@@ -245,59 +646,50 @@ void WiFiModule::ProcessQuery()
     if(idx != -1)
     {
       // выщемляем URI
-      requestedURI = str.substring(0,idx);
+       String requestedURI = str.substring(0,idx);
+       if(!requestedURI.length()) // запросили страницу по умолчанию
+          requestedURI = DEF_PAGE;
+       ProcessURIRequest(connectedClientID.toInt(), requestedURI); // обрабатываем запрос от клиента
     } // if 
-     ProcessURIRequest(); // обрабатываем запрос от клиента
   } // if 
    
 }
-void WiFiModule::ProcessURIRequest()
+void WiFiModule::ProcessURIRequest(int clientID, const String& requesterURI)
 {
  #ifdef WIFI_DEBUG
- Serial.print(F("Client ID = "));
- Serial.println(connectedClientID);
- Serial.println(F("Requested URI: "));
- Serial.println(requestedURI);
+ WIFI_DEBUG_WRITE(F("Client ID = "));
+ WIFI_DEBUG_WRITE(clientID);WIFI_DEBUG_WRITE(NEWLINE);
+ WIFI_DEBUG_WRITE(F("Requested URI: "));
+ WIFI_DEBUG_WRITE(requesterURI);WIFI_DEBUG_WRITE(NEWLINE);
 #endif
 
- // тут парсим, какой запрос, и отсылаем ответ клиенту
- TEMP_DATA_TO_SEND = F("<h1>Hello from Arduino MEGA!</h1>");
- TEMP_DATA_TO_SEND += F("REQUESTED: ");
- TEMP_DATA_TO_SEND += requestedURI + F("<br/>");
-
- COMMAND_TYPE cType = ctUNKNOWN;
- if(requestedURI.startsWith(F("CTGET=")))
-  cType = ctGET;
- else
-   if(requestedURI.startsWith(F("CTSET=")))
-  cType = ctSET;
-
- if(cType != ctUNKNOWN) // надо получить данные с контроллера
- {
-    InteropStream streamI;
-    streamI.SetController(GetController());
-  
-    String command = requestedURI.substring(6);
-    if(streamI.QueryCommand(cType,command,false))
+  // работаем с клиентом
+  if(clientID >=0 && clientID < MAX_WIFI_CLIENTS)
+  {
+    if(clients[clientID].Prepare(requesterURI)) // говорим клиенту, чтобы он подготовил данные к отправке
     {
-      TEMP_DATA_TO_SEND += F("ANSWER: ");
-      TEMP_DATA_TO_SEND += streamI.GetData();
-    } // if
- } // if
- 
- dataToSendLength = TEMP_DATA_TO_SEND.length();
+      // клиент подготовил данные к отправке, отсылаем их в следующем вызове Update
+      #ifdef WIFI_DEBUG
+        WIFI_DEBUG_WRITE(F("Client prepared the data..."));WIFI_DEBUG_WRITE(NEWLINE);
+      #endif
+    }
+  } // if
 
-
- // данные подготовлены, отсылаем их клиенту в следующем вызове Update
- actionsQueue.push_back(wfaCIPCLOSE);
- actionsQueue.push_back(wfaACTUALSEND);
- actionsQueue.push_back(wfaCIPSEND);
 }
 
 void WiFiModule::Setup()
 {
   // настройка модуля тут
-  Settings = GetController()->GetSettings();
+  ModuleController* c = GetController();
+  Settings = c->GetSettings();
+
+  sdCardInited = SD.begin(SDCARD_CS_PIN); // пробуем инициализировать SD-модуль
+
+  nextClientIDX = 0;
+  currentClientIDX = 0;
+  
+  for(uint8_t i=0;i<MAX_WIFI_CLIENTS;i++)
+    clients[i].Setup(c,this);
 
   waitForQueryCompleted = false;
   WaitForDataWelcome = false; // не ждём приглашения
@@ -326,7 +718,7 @@ void WiFiModule::Setup()
 void WiFiModule::SendCommand(const String& command, bool addNewLine)
 {
   #ifdef WIFI_DEBUG
-    Serial.print(F("==> Send the \"")); Serial.print(command); Serial.println(F("\" command to ESP-01..."));
+    WIFI_DEBUG_WRITE(F("==> Send the \"")); WIFI_DEBUG_WRITE(command); WIFI_DEBUG_WRITE(F("\" command to ESP-01..."));WIFI_DEBUG_WRITE(NEWLINE);
   #endif
 
   WIFI_SERIAL.write(command.c_str(),command.length());
@@ -355,7 +747,7 @@ void WiFiModule::ProcessQueue()
       {
         // надо рестартовать модуль
       #ifdef WIFI_DEBUG
-        Serial.println(F("Restart the ESP-01..."));
+        WIFI_DEBUG_WRITE(F("Restart the ESP-01..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("AT+RST"));
       }
@@ -365,9 +757,10 @@ void WiFiModule::ProcessQueue()
       {
         // выключаем эхо
       #ifdef WIFI_DEBUG
-        Serial.println(F("Disable echo..."));
+        WIFI_DEBUG_WRITE(F("Disable echo..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("ATE0"));
+      //SendCommand(F("AT+CIOBAUD=57600")); // переводим на другую скорость
       }
       break;
 
@@ -375,7 +768,7 @@ void WiFiModule::ProcessQueue()
       {
         // переходим в смешанный режим
       #ifdef WIFI_DEBUG
-        Serial.println(F("Go to SoftAP mode..."));
+       WIFI_DEBUG_WRITE(F("Go to SoftAP mode..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("AT+CWMODE=3"));
       }
@@ -385,7 +778,7 @@ void WiFiModule::ProcessQueue()
       {
 
       #ifdef WIFI_DEBUG
-        Serial.println(F("Creating the access point..."));
+        WIFI_DEBUG_WRITE(F("Creating the access point..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       
         String com = F("AT+CWSAP=\"");
@@ -402,7 +795,7 @@ void WiFiModule::ProcessQueue()
       case wfaCIPMODE: // устанавливаем режим работы сервера
       {
       #ifdef WIFI_DEBUG
-        Serial.println(F("Set the TCP server mode to 0..."));
+        WIFI_DEBUG_WRITE(F("Set the TCP server mode to 0..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("AT+CIPMODE=0"));
       
@@ -412,7 +805,7 @@ void WiFiModule::ProcessQueue()
       case wfaCIPMUX: // разрешаем множественные подключения
       {
       #ifdef WIFI_DEBUG
-        Serial.println(F("Allow the multiple connections..."));
+        WIFI_DEBUG_WRITE(F("Allow the multiple connections..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("AT+CIPMUX=1"));
         
@@ -422,7 +815,7 @@ void WiFiModule::ProcessQueue()
       case wfaCIPSERVER: // запускаем сервер
       {  
       #ifdef WIFI_DEBUG
-        Serial.println(F("Starting TCP-server..."));
+        WIFI_DEBUG_WRITE(F("Starting TCP-server..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("AT+CIPSERVER=1,80"));
       
@@ -432,7 +825,7 @@ void WiFiModule::ProcessQueue()
       case wfaCWQAP: // отсоединяемся от точки доступа
       {  
       #ifdef WIFI_DEBUG
-        Serial.println(F("Disconnect from router..."));
+        WIFI_DEBUG_WRITE(F("Disconnect from router..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("AT+CWQAP"));
       
@@ -442,71 +835,138 @@ void WiFiModule::ProcessQueue()
       case wfaCWJAP: // коннектимся к роутеру
       {
       #ifdef WIFI_DEBUG
-        Serial.println(F("Connecting to the router..."));
+        WIFI_DEBUG_WRITE(F("Connecting to the router..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
         String com = F("AT+CWJAP=\"");
         com += Settings->GetRouterID();
         com += F("\",\"");
         com += Settings->GetRouterPassword();
         com += F("\"");
-        SendCommand(com);    
+        SendCommand(com);
+
       }
       break;
 
       case wfaCIPSEND: // надо отослать данные клиенту
       {
-      #ifdef WIFI_DEBUG
-        Serial.println(F("Sending data command to the client..."));
-      #endif
-        String command = F("AT+CIPSEND=");
-        command += connectedClientID;
-        command += F(",");
-        command += String(dataToSendLength);
-        WaitForDataWelcome = true; // выставляем флаг, что мы ждём >
-        SendCommand(command);       
+        #ifdef WIFI_DEBUG
+       //  WIFI_DEBUG_WRITE(F("ASSERT: wfaCIPSEND in ProcessQueue!"));WIFI_DEBUG_WRITE(NEWLINE);
+        #endif
+        
       }
       break;
 
-      case wfaACTUALSEND: // отсылаем данные клиенту
+      case wfaACTUALSEND: // дождались приглашения, отсылаем данные клиенту
       {
-      #ifdef WIFI_DEBUG
-        Serial.println(F("Sending data to the client..."));
-      #endif
-        WIFI_SERIAL.write(TEMP_DATA_TO_SEND.c_str(),dataToSendLength);
-        TEMP_DATA_TO_SEND = F("");
+            #ifdef WIFI_DEBUG
+              WIFI_DEBUG_WRITE(F("Sending data to the client..."));WIFI_DEBUG_WRITE(NEWLINE);
+            #endif
+      
+            if(clients[currentClientIDX].IsConnected()) // не отвалился ли клиент?
+            {
+              // клиент по-прежнему законнекчен, посылаем данные
+              if(!clients[currentClientIDX].SendPacket(&(WIFI_SERIAL)))
+              {
+              #ifdef WIFI_DEBUG
+              WIFI_DEBUG_WRITE(F("All data to the client has sent!"));WIFI_DEBUG_WRITE(NEWLINE);
+            #endif
+ 
+              }
+              else
+              {
+                // ещё есть пакеты, продолжаем отправлять в следующих вызовах Update
+              } // else
+            } // is connected
+            else
+            {
+              // клиент отвалится, чистим...
+              actionsQueue.pop(); // убираем wfaACTUALSEND
+              clients[currentClientIDX].Clear();
+              currentAction = wfaIdle; // разрешаем обработку следующей команды
+            }
+
       }
       break;
 
       case wfaCIPCLOSE: // закрываем соединение с клиентом
       {
-       #ifdef WIFI_DEBUG
-        Serial.println(F("Closing client connection..."));
-      #endif
-        String command = F("AT+CIPCLOSE=");
-        command += connectedClientID;
-        SendCommand(command);
+        if(clients[currentClientIDX].IsConnected()) // только если клиент законнекчен 
+        {
+          #ifdef WIFI_DEBUG
+            WIFI_DEBUG_WRITE(F("Closing client connection..."));WIFI_DEBUG_WRITE(NEWLINE);
+          #endif
+          clients[currentClientIDX].SetConnected(false);
+          String command = F("AT+CIPCLOSE=");
+          command += currentClientIDX; // закрываем соединение
+          SendCommand(command);
+        }
+        else
+        {
+          // просто убираем команду из очереди
+           actionsQueue.pop();
+           currentAction = wfaIdle; // разрешаем обработку следующей команды
+        } // else
       }
       break;
 
       case wfaIdle:
       {
         // ничего не делаем
+
       }
       break;
       
     } // switch
+}
+void WiFiModule::UpdateClients()
+{
+  if(currentAction != wfaIdle) // чем-то заняты, не можем ничего делать
+    return;
+    
+  // тут ищем, какой клиент сейчас хочет отослать данные
+
+  for(uint8_t idx = nextClientIDX;idx < MAX_WIFI_CLIENTS; idx++,nextClientIDX++)
+  { 
+    if(clients[idx].IsConnected() && clients[idx].HasPacket())
+    {
+      currentAction = wfaCIPSEND; // говорим однозначно, что нам надо дождаться >
+      actionsQueue.push_back(wfaCIPSEND); // добавляем команду отсылки данных в очередь
+      
+    #ifdef WIFI_DEBUG
+      WIFI_DEBUG_WRITE(F("Sending data command to the ESP..."));WIFI_DEBUG_WRITE(NEWLINE);
+    #endif
+  
+      // клиент подсоединён и ждёт данных от нас - отсылаем ему следующий пакет
+      currentClientIDX = idx; // сохраняем номер клиента, которому будем посылать данные
+      String command = F("AT+CIPSEND=");
+      command += String(idx);
+      command += F(",");
+      command += String(clients[idx].GetPacketLength());
+      WaitForDataWelcome = true; // выставляем флаг, что мы ждём >
+
+      SendCommand(command);
+  
+      break; // выходим из цикла
+    } // if
+    
+  } // for
+  
+  if(nextClientIDX >= MAX_WIFI_CLIENTS)
+    nextClientIDX = 0;  
 }
 void WiFiModule::Update(uint16_t dt)
 { 
   UNUSED(dt);
   
   ProcessQueue();
+  UpdateClients();
 
 }
 bool  WiFiModule::ExecCommand(const Command& command)
 {
   ModuleController* c = GetController();
-  String answer = NOT_SUPPORTED;
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = NOT_SUPPORTED;
   bool answerStatus = false;
 
   if(command.GetType() == ctSET) // установка свойств
@@ -580,7 +1040,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
         else
         {
         #ifdef WIFI_DEBUG
-         Serial.println("Request for IP info...");
+         WIFI_DEBUG_WRITE("Request for IP info...");WIFI_DEBUG_WRITE(NEWLINE);
         #endif
         
         
@@ -615,7 +1075,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
                 if(line.startsWith(F("+CIFSR:APIP"))) // IP нашей точки доступа
                  {
                     #ifdef WIFI_DEBUG
-                      Serial.println(F("AP IP found, parse..."));
+                      WIFI_DEBUG_WRITE(F("AP IP found, parse..."));WIFI_DEBUG_WRITE(NEWLINE);
                     #endif
             
                    int idx = line.indexOf("\"");
@@ -636,7 +1096,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
                   if(line.startsWith(F("+CIFSR:STAIP"))) // IP нашей точки доступа, назначенный роутером
                  {
                     #ifdef WIFI_DEBUG
-                      Serial.println(F("STA IP found, parse..."));
+                      WIFI_DEBUG_WRITE(F("STA IP found, parse..."));WIFI_DEBUG_WRITE(NEWLINE);
                     #endif
             
                    int idx = line.indexOf("\"");
@@ -671,7 +1131,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
 
 
         #ifdef WIFI_DEBUG
-          Serial.println("IP info requested.");
+          WIFI_DEBUG_WRITE(F("IP info requested."));WIFI_DEBUG_WRITE(NEWLINE);
         #endif
 
         answerStatus = true;

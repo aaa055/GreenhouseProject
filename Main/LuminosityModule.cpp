@@ -155,7 +155,8 @@ void LuminosityModule::Update(uint16_t dt)
 bool  LuminosityModule::ExecCommand(const Command& command)
 {
   
-  String answer = UNKNOWN_COMMAND;
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = UNKNOWN_COMMAND;
   
   bool answerStatus = false; 
   

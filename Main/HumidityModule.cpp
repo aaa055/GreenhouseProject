@@ -82,7 +82,8 @@ bool  HumidityModule::ExecCommand(const Command& command)
 {
 
   ModuleController* c = GetController();
-  String answer = NOT_SUPPORTED;
+  String answer; answer.reserve(RESERVE_STR_LENGTH);
+  answer = NOT_SUPPORTED;
   bool answerStatus = false;
 
   if(command.GetType() == ctSET) // установка свойств
