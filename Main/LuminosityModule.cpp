@@ -132,7 +132,7 @@ void LuminosityModule::Update(uint16_t dt)
 
 
   lastUpdateCall += dt;
-  if(lastUpdateCall < LUMINOSITY_UPDATE_INETRVAL) // обновляем согласно настроенному интервалу
+  if(lastUpdateCall < LUMINOSITY_UPDATE_INTERVAL) // обновляем согласно настроенному интервалу
   {
     return;
   }
