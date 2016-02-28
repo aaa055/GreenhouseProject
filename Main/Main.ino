@@ -83,12 +83,13 @@ ModuleController controller(
     
   ,OUR_ID);
 
-
+#ifdef USE_PUBLISHERS
 // паблишер для вывода ответов в сериал
 //SerialPublisher serialPublisher;
 
 // паблишер вывода на экран
 //DisplayPublisher displayPublisher;
+#endif
 
 #ifdef USE_PIN_MODULE
 //  Модуль управления цифровыми пинами
@@ -235,20 +236,28 @@ void setup()
    * ТО ЕСТЬ - ОДИН И ТОТ ЖЕ ОТВЕТ НЕ ПОПАДЁТ НЕСКОЛЬКО РАЗ В ПОТОК ДЛЯ ВЫВОДА ОТВЕТА.
    */
 #ifdef USE_PIN_MODULE   
-  // подписываем ответы от модуля на сериал
+  #ifdef USE_PUBLISHERS
+// подписываем ответы от модуля на сериал
   //pinModule.AddPublisher(&serialPublisher);
   // для модуля управления диодом дублируем надпись на дисплей 
   //pinModule.AddPublisher(&displayPublisher);
+  #endif
 #endif
 
 #ifdef USE_STAT_MODULE
-// подписываем ответы от модуля статистики на дисплей
-  //statModule.AddPublisher(&serialPublisher);
+  #ifdef USE_PUBLISHERS
+  // подписываем ответы от модуля статистики на дисплей
+  // statModule.AddPublisher(&serialPublisher);
+ #endif
 #endif
 
  // подписываем ответы от регистратора сторонних модулей на сериал
  #ifdef AS_CONTROLLER
- //remoteRegistrator.AddPublisher(&serialPublisher);
+ 
+  #ifdef USE_PUBLISHERS
+    //remoteRegistrator.AddPublisher(&serialPublisher);
+  #endif
+  
  #endif
  /*
   * Как видно - строчка выше закомментирована. Это значит, что при отсутствии
@@ -256,7 +265,6 @@ void setup()
   * информация публикуется в текущий поток контроллера, т.е. в поток, от которого
   * и пришёл запрос на выполнение команды. В нашем случае - это Serial.
   */
- 
   
   // регистрируем модули
   #ifdef USE_WIFI_MODULE

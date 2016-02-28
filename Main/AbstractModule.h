@@ -5,10 +5,23 @@
 
 #include "Globals.h"
 #include "CommandParser.h"
+#ifdef USE_PUBLISHERS
 #include "Publishers.h"
+#endif
 #include "ModuleController.h"
 #include "TinyVector.h"
 
+// структура для публикации
+class AbstractModule; // forward declaration
+struct PublishStruct
+{
+  const Command* SourceCommand; // исходная команда, ответ на которую надо публиковать
+  AbstractModule* Module; // модуль, который опубликовал ответ или событие
+  bool Status; // Статус ответа на запрос: false - ошибка, true - нет ошибки
+  String Text; // текстовое сообщение о публикации
+  bool AddModuleIDToAnswer; // добавлять ли имя модуля в ответ?
+  void* Data; // любая информация, в зависимости от типа модуля
+};
 
 class ModuleController;
 
@@ -84,6 +97,8 @@ class AbstractModule
   private:
     String moduleID;    
     ModuleController* controller;
+    
+    #ifdef USE_PUBLISHERS
     AbstractPublisher* publishers[MAX_PUBLISHERS];
     
     void InitPublishers()
@@ -91,6 +106,7 @@ class AbstractModule
       for(uint8_t i=0;i<MAX_PUBLISHERS;i++)
         publishers[i] = NULL;
     }
+    #endif
 
 protected:
 
@@ -107,11 +123,17 @@ protected:
     
 public:
 
-  AbstractModule(const String& id) : moduleID(id), controller(NULL){ InitPublishers(); }
+  AbstractModule(const String& id) : moduleID(id), controller(NULL)
+  { 
+    #ifdef USE_PUBLISHERS
+    InitPublishers();
+    #endif 
+  }
 
   ModuleState State; // текущее состояние модуля
-
+#ifdef USE_PUBLISHERS
   bool AddPublisher(AbstractPublisher* p);
+#endif
 
   // публикуем изменения на всех подписчиков
   void Publish();

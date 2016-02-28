@@ -7,13 +7,13 @@
 #define USE_PIN_MODULE // закомментировать, если не нужен модуль управления пинами
 #define USE_TEMP_SENSORS // закомментировать, если не нужно управление окнами по температуре
 #define USE_LOOP_MODULE // закомментировать, если не нужна поддержка модуля LOOP
-#define USE_STAT_MODULE // закомментировать, если не нужна поддержка модуля статистики
+#define USE_STAT_MODULE // закомментировать, если не нужна поддержка модуля статистики (FREERAM, UPTIME, DATETIME)
 #define USE_SMS_MODULE // закомментировать, если не нужна поддержка управления по SMS
 #define USE_WATERING_MODULE // закомментировать, если не нужно управление поливом
 #define USE_LUMINOSITY_MODULE // закомментировать, если не нужен модуль контроля освещенности
 #define USE_HUMIDITY_MODULE // закомментировать, если не нужен модуль работы с датчиками влажности DHT
 #define USE_WIFI_MODULE // закомментировать, если не нужна поддержка управления через Wi-Fi (ESP8266)
-
+//#define USE_PUBLISHERS // раскомментировать, если используется парадигма паблишеров (пока я не понял, нужна ли она в реале)
 
 // ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ, СДЕЛАННОГО В ЖЕЛЕЗЕ!
 #define OUR_ID  "CHILD" // имя модуля (при CONTROLLER_MODE == cdCHILDMODULE), для разрешения конфликтов, кому адресована команда
@@ -24,7 +24,7 @@
 #define EEPROM_RULES_START_ADDR 1025 // со второго килобайта в EEPROM идут правила
 
 // настройки Serial
-#define SERIAL_BAUD_RATE 57600 // скорость работы с портом, бод
+#define SERIAL_BAUD_RATE 9600 // скорость работы с портом, бод
 #define READY F("READY") // будет напечатано в Serial после загрузки
 
 // настройки информационных диодов
@@ -261,6 +261,7 @@
 #define PROP_HUMIDITY F("HUMIDITY") // свойство "влажность"
 
 // команды модуля "0"
+//#define USE_REMOTE_MODULES // раскомментировать, если нужна регистрация модулей на лету (при использовании сторонних железок, общающихся с контроллером)
 #define NEWLINE F("\r\n")
 #define SETTIME_COMMAND F("DATETIME") // установка даты/времени CTSET=0|DATETIME|DD.MM.YYYY hh:mm:ss
 #define ADD_COMMAND F("ADD") // команда регистрации модуля CTSET=0|ADD|MODULE_NAME
@@ -286,6 +287,6 @@
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 #define MAX_PUBLISHERS 2 // максимальное количество паблишеров для модуля
-#define RESERVE_STR_LENGTH 128 // сколько байт резервировать для строки ответа при выполнении ExecCommand
+#define RESERVE_STR_LENGTH 32 // сколько байт резервировать для строки ответа при выполнении ExecCommand
 
 #endif

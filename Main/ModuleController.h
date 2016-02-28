@@ -12,6 +12,7 @@
 #include "DS3231Support.h"
 #endif
 
+class AbstractModule; // forward declaration
 typedef Vector<AbstractModule*> ModulesVec;
 
 typedef void (*CallbackUpdateFunc)(AbstractModule* mod);

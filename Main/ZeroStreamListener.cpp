@@ -1,6 +1,8 @@
 #include "ZeroStreamListener.h"
 #include "ModuleController.h"
+#ifdef USE_REMOTE_MODULES
 #include "RemoteModule.h"
+#endif
 
 void ZeroStreamListener::Setup()
 {
@@ -137,46 +139,6 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                     } // if
                       
                  } // for
-                 /*
-                 for(uint8_t i=0;i<relayCnt;i++) // нам вернули кол-во каналов реле, по 8 в каждом
-                 {
-                    if( m->State.IsStateChanged(StateRelay,i))//IsRelayStateChanged(i)) // состояние реле изменилось
-                    {
-                      // в канале есть изменения, надо их искать
-                      //Serial.println("RELAY STATE CHANGED!");
-                      
-                      String prevState, curState;
-                      OneState* os =  m->State.GetState(StateRelay,i);
-                      if(os)
-                      {
-                          uint8_t prevRelayStates = *((uint8_t*) os->PreviousData);
-                          uint8_t curRelayStates = *((uint8_t*) os->Data);
-    
-                          for(uint8_t j = 0; j<8;j++)
-                          {
-                            bool bPrevOn = bitRead(prevRelayStates,j);
-                            bool bCurOn = bitRead(curRelayStates,j);
-                            if(bPrevOn != bCurOn)
-                            {
-                               // состояние конкретного реле изменилось, пишем его
-                               prevState = bPrevOn ? STATE_ON : STATE_OFF;
-                               curState =  bCurOn ? STATE_ON : STATE_OFF;
-                               answer += mName + PARAM_DELIMITER + PROP_RELAY + PARAM_DELIMITER + String(i*8 + j) +
-                               PARAM_DELIMITER + prevState + PARAM_DELIMITER + curState + NEWLINE;
-                            }
-                          } // for
-                          
-                      } // if(os)
-                      //prevState = m->State.GetPrevRelayState(i) ? STATE_ON : STATE_OFF;
-                      //curState = m->State.GetRelayState(i) ? STATE_ON : STATE_OFF;
-                      
-                      //answer += mName + PARAM_DELIMITER + PROP_RELAY + PARAM_DELIMITER + String(i) + 
-                      //PARAM_DELIMITER + prevState + PARAM_DELIMITER + curState + NEWLINE;
-                    } // if
-                      
-                 } // for 
-                 */
-                                 
                  
                 } // if
             } // for
@@ -367,6 +329,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
         t = command.GetArg(0); // получили команду
         t.toUpperCase();
         
+      #ifdef USE_REMOTE_MODULES 
       if(t == ADD_COMMAND) // запросили регистрацию нового модуля
        {
           // ищем уже зарегистрированный
@@ -389,7 +352,9 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           } // else
        }
        
-       else if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по SMS
+       else 
+       #endif
+       if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по SMS
        {
           GlobalSettings* sett = c->GetSettings();
           sett->SetSmsPhoneNumber(command.GetArg(1));

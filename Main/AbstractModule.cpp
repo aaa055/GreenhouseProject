@@ -223,6 +223,7 @@ void AbstractModule::Publish()
     Stream* streamDefOut = toPublish.SourceCommand->GetIncomingStream(); // в какой поток вывести по умолчанию
     uint8_t streamFillCnt = 0; // был ли вывод в поток, в который мы собираемся вывести информацию?
     
+   #ifdef USE_PUBLISHERS 
     for(uint8_t i=0;i<MAX_PUBLISHERS;i++)
     {
       if(publishers[i])
@@ -231,6 +232,7 @@ void AbstractModule::Publish()
           streamFillCnt++; 
       }
     } // for
+    #endif
 
     if(!streamFillCnt) // в этот поток никто не совался, можно выводить туда
     {
@@ -245,7 +247,7 @@ void AbstractModule::Publish()
     } // if
     
 }
-
+#ifdef USE_PUBLISHERS
 bool AbstractModule::AddPublisher(AbstractPublisher* p)
 {
      for(uint8_t i=0;i<MAX_PUBLISHERS;i++)
@@ -258,4 +260,5 @@ bool AbstractModule::AddPublisher(AbstractPublisher* p)
     } // for
     return false;
 }
+#endif
 
