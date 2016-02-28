@@ -3,10 +3,11 @@
 #include "CommandBuffer.h"
 #include "CommandParser.h"
 #include "ModuleController.h"
-#include "Menu.h"
+//#include "Menu.h"
 
 #ifdef AS_CONTROLLER
 #include "AlertModule.h"
+#include "ZeroStreamListener.h"
 #endif
 
 #ifdef USE_PIN_MODULE
@@ -20,8 +21,6 @@
 #ifdef USE_STAT_MODULE
 #include "StatModule.h"
 #endif
-
-#include "ZeroStreamListener.h"
 
 #ifdef USE_TEMP_SENSORS
 #include "TempSensors.h"
@@ -328,10 +327,20 @@ void setup()
    
   #endif 
 
-   Serial.println(F(""));
-
+  Serial.println(F(""));
 }
+void ModuleUpdateProcessed(AbstractModule* module)
+{
+  UNUSED(module);
+  // эта функция вызывается после обновления состояния каждого модуля.
 
+  // используем её, чтобы проверить состояние порта UART для WI-FI-модуля - вдруг надо внеочередно обновить
+    #ifdef USE_WIFI_MODULE
+    // модуль Wi-Fi обновляем каждый раз после обновления очередного модуля
+    WIFI_EVENT_FUNC(); // вызываем функцию проверки данных в порту
+    #endif
+  
+}
 void loop() 
 {
 // отсюда можно добавлять любой сторонний код
@@ -369,14 +378,9 @@ void loop()
     
     commandsFromSerial.ClearCommand(); // очищаем полученную команду
    } // if
-
-    #ifdef USE_WIFI_MODULE
-    // модуль Wi-Fi обновляем каждый раз при вызове loop
-    WIFI_EVENT_FUNC(); // вызываем функцию проверки данных в порту
-    #endif
     
-    // обновляем состояние всех зарегистрированных модулей, по одному за каждый вызов loop
-   controller.UpdateModules(dt);
+    // обновляем состояние всех зарегистрированных модулей
+   controller.UpdateModules(dt,ModuleUpdateProcessed);
 
 
    

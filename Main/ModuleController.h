@@ -14,7 +14,7 @@
 
 typedef Vector<AbstractModule*> ModulesVec;
 
-
+typedef void (*CallbackUpdateFunc)(AbstractModule* mod);
 
 class ModuleController
 {
@@ -60,7 +60,7 @@ public:
   void RegisterModule(AbstractModule* mod);
   void ProcessModuleCommand(const Command& c, bool checkDestination=true);
   
-  void UpdateModules(uint16_t dt);
+  void UpdateModules(uint16_t dt, CallbackUpdateFunc func);
   
   COMMAND_DESTINATION GetWorkMode() {return workAs;}
   String GetControllerID() {return ourID;}
