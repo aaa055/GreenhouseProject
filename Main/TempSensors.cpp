@@ -218,7 +218,7 @@ void TempSensors::Update(uint16_t dt)
 
 
   lastUpdateCall += dt;
-  if(lastUpdateCall < 2000) // нечего обновлять раньше, чем раз в две секунды
+  if(lastUpdateCall < TEMP_UPDATE_INTERVAL) // нечего обновлять раньше, чем раз в две секунды
     return;
 
   lastUpdateCall = 0;
@@ -399,7 +399,18 @@ bool  TempSensors::ExecCommand(const Command& command)
           answerStatus = true;
           answer = String(WORK_MODE) + PARAM_DELIMITER + s;
           workMode = wmAutomatic;
-           blinker.blink();
+
+          // говорим, что температура изменилась, чтобы форсировать обработку 
+          // через модуль ALERT, иначе он проигнорирует смену состояния.
+          // достаточно изменить буквально на чуть-чуть.
+          OneState* os = State.GetState(StateTemperature,0);
+          if(os)
+          {
+            Temperature* t = (Temperature*) os->Data;
+            if(t) t->Fract = t->Fract + 1;
+          }
+          
+          blinker.blink();
         }
         else if(s == WM_MANUAL)
         {

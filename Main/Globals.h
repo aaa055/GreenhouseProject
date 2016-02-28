@@ -104,6 +104,7 @@
 #define DEF_OPEN_INTERVAL 30000 // по умолчанию 30 секунд на полное открытие/закрытие
 #define DEF_OPEN_TEMP 25 // температура открытия по умолчанию
 #define DEF_CLOSE_TEMP 24 // температура закрытия по умолчанию
+#define TEMP_UPDATE_INTERVAL 5000 // через сколько мс обновлять показания с датчиков температуры
 #define STATE_OPENING F("OPENING") // Открывается
 #define STATE_CLOSING F("CLOSING") // Закрывается
 #define STATE_CLOSED F("CLOSED") // Закрыто
