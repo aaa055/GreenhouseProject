@@ -2,9 +2,186 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251"/>
-<link rel="stylesheet" href="style.css"  type="text/css"/>
-<script type="text/javascript" src="js/common.js"></script>
+<style type="text/css">
+BODY, TD, DIV, SPAN, P, FONT {
+	font-weight:normal;
+	font-family:Arial;
+	color:#000000;
+	font-size:12px;
+}
+h1,h2,h3,h4 {
+	color:#90d70f;
+	margin-top:0px;
+	margin-bottom:0px;
+	padding-top:0px;
+}
+h1 {
+	font-size:24px;
+}
+h2 {
+	font-size:20px;
+}
+h3 {
+	font-size:16px;
+}
+h4 {
+	font-size:12px;
+}
+A {
+color:#0d8ed8;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:underline;
+outline: none;
+}
+A:visited {
+color:#119ae9;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:underline;
+outline: none;
+}
+A:hover {
+color:#0d8ed8;
+font-weight:normal;
+font-family:Arial;
+font-size:12px;
+text-decoration:none;
+outline: none;
+}
+A.sml {
+font-size:10px;
+}
+.menu {
+float:left;
+width:20%;
+padding-top:0px;
+}
+.content {
+float:left;
+width:75%;
+clear:right;
+padding:5px;
+}
+.mi {
+text-align:right;
+background-color:#B5CFCE;
+margin-bottom:2px;
+padding:5px;
+color:#000000;
+font-weight:bold;
+font-size:140%;
+cursor:pointer;
+}
+.mis {
+background-color:#F34448;
+color:#f0f0f0;
+}
+.cpy {
+font-size:10px;
+color:#B0B0B0;
+clear:left;
+text-align:right;
+margin-top:20px;
+}
+.hdn {
+display:none;
+}
+.cth TD {
+background-color:#F34448;
+color:#f0f0f0;
+font-size:140%;
+font-weight:bold;
+}
+.ctr TD {
+background-color:#B5CFCE;
+color:#000000;
+}
+</style>
 <script type="text/javascript">
+function prevent_default(e)
+{
+  if(!e)
+    return;
+
+
+  if(e.stopPropagation) e.stopPropagation();
+  else e.cancelBubble = true;
+  
+  if(e.preventDefault) e.preventDefault();
+  else e.returnValue = false;
+    
+    
+}
+function OnlyDigits(event,elem) 
+{
+
+if(!event)
+  event = window.event;
+
+
+	if(event)
+	{
+    var work = event.charCode || event.keyCode;
+    
+		if ((work < 45 || work> 57) ) 
+		{
+			if( !(work == 8 || work == 9 || work == 13) )
+				prevent_default(event);
+		}
+      
+	} // if(event)
+
+}
+String.prototype.trim = function() {
+	return this.replace(/^\s+|\s+$/g,"");
+}
+String.prototype.ltrim = function() {
+	return this.replace(/^\s+/,"");
+}
+String.prototype.rtrim = function() {
+	return this.replace(/\s+$/,"");
+}
+String.prototype.format = function() 
+{
+  var args = arguments;
+  return this.replace(/{(\d+)}/g, function(match, number) { 
+    return typeof args[number] != 'undefined'
+      ? args[number]
+      : match
+    ;
+  });
+}
+function getE(id)
+{
+	return document.getElementById(id);
+}
+function showElem(elemId, visible)
+{
+ var elem = getE(elemId);
+
+ if(elem != null)
+ {
+  var cs = elem.runtimeStyle;
+
+  if(cs == null)
+    cs = elem.style; // for Opera
+
+  if(cs == null)
+	 return;
+
+  if(visible)
+    cs.display = "block";
+  else
+    cs.display = "none";
+  
+
+ }
+
+}
+
 function getXmlHttp()
 {
   var xmlhttp;
@@ -184,7 +361,7 @@ function selectmenu(elem)
 
 </div>
 <div class='cpy'>
-&copy;20016, Контроллер теплицы. Автор: Порохня Дмитрий, <a href='mailto:spywarrior@gmail.com' class='sml'>spywarrior@gmail.com</a>.
+&copy;2016, Контроллер теплицы. Автор: Порохня Дмитрий, <a href='mailto:spywarrior@gmail.com' class='sml'>spywarrior@gmail.com</a>.
 </div>
 </body>
 </html>
