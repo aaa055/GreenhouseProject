@@ -41,6 +41,16 @@ String.prototype.ltrim = function() {
 String.prototype.rtrim = function() {
 	return this.replace(/\s+$/,"");
 }
+String.prototype.format = function() 
+{
+  var args = arguments;
+  return this.replace(/{(\d+)}/g, function(match, number) { 
+    return typeof args[number] != 'undefined'
+      ? args[number]
+      : match
+    ;
+  });
+}
 function getE(id)
 {
 	return document.getElementById(id);

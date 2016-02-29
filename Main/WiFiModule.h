@@ -14,6 +14,7 @@
 #define H_CONTENT_TYPE F("Content-Type: ") // тип данных
 #define H_CONNECTION F("Connection: close") // закрывать соединение
 #define H_CONTENT_LENGTH F("Content-Length: ") // длина данных
+#define H_CORS_HEADER F("Access-Control-Allow-Origin: *") // разрешаем кроссдоменные запросы
 
 #define STATUS_200 F("200 OK") // всё ок, дальше идут данные
 #define STATUS_404 F("404 Not Found") // не найдено
@@ -70,6 +71,7 @@ class WIFIClient // класс обработки клиента
     uint16_t GetTotalPacketsCount() {return packetsCount; } // возвращает кол-во пакетов, которые надо отослать
     uint16_t GetPacketLength(); // возвращает длину пакета, который надо переслать в следующей итерации
     unsigned long GetContentLength() {return contentLength;} // возвращает длину всех данных, которые надо отослать
+    uint16_t GetPacketsLeft() {return packetsLeft;} // возвращает кол-во пакетов, которые осталось отправить
 
     WIFIClient();
   
@@ -77,19 +79,19 @@ class WIFIClient // класс обработки клиента
 
 typedef enum
 {
-  wfaIdle, // пустое состояние
-  wfaWantReady, // надо получить ready от модуля
-  wfaEchoOff, // выключаем эхо
-  wfaCWMODE, // переводим в смешанный режим
-  wfaCWSAP, // создаём точку доступа
-  wfaCWJAP, // коннектимся к роутеру
-  wfaCWQAP, // отсоединяемся от роутера
-  wfaCIPMODE, // устанавливаем режим работы
-  wfaCIPMUX, // разрешаем множественные подключения
-  wfaCIPSERVER, // запускаем сервер
-  wfaCIPSEND, // отсылаем команду на передачу данных
-  wfaACTUALSEND, // отсылаем данные
-  wfaCIPCLOSE // закрываем соединение
+  /*0*/  wfaIdle, // пустое состояние
+  /*1*/  wfaWantReady, // надо получить ready от модуля
+  /*2*/  wfaEchoOff, // выключаем эхо
+  /*3*/  wfaCWMODE, // переводим в смешанный режим
+  /*4*/  wfaCWSAP, // создаём точку доступа
+  /*5*/  wfaCWJAP, // коннектимся к роутеру
+  /*6*/  wfaCWQAP, // отсоединяемся от роутера
+  /*7*/  wfaCIPMODE, // устанавливаем режим работы
+  /*8*/  wfaCIPMUX, // разрешаем множественные подключения
+  /*9*/  wfaCIPSERVER, // запускаем сервер
+  /*10*/ wfaCIPSEND, // отсылаем команду на передачу данных
+  /*11*/ wfaACTUALSEND, // отсылаем данные
+  /*12*/ wfaCIPCLOSE // закрываем соединение
   
 } WIFIActions;
 
@@ -100,6 +102,8 @@ class WiFiModule : public AbstractModule // модуль поддержки WI-F
   private:
 
     GlobalSettings* Settings;
+
+    volatile bool inSendData;
 
     bool IsKnownAnswer(const String& line); // если ответ нам известный, то возвращает true
     void SendCommand(const String& command, bool addNewLine=true); // посылает команды модулю вай-фай

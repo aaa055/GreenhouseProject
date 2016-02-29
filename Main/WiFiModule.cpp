@@ -2,7 +2,9 @@
 #include "ModuleController.h"
 #include "InteropStream.h"
 
-#define WIFI_DEBUG_WRITE(s) Serial.print(s)
+#define WIFI_DEBUG_WRITE(s,ca) { Serial.print(String(F("[CA] ")) + String((ca)) + String(F(": ")));  Serial.println((s)); }
+#define CHECK_QUEUE_TAIL(v) { if(!actionsQueue.size()) {Serial.println(F("[QUEUE IS EMPTY!]"));} else { if(actionsQueue[actionsQueue.size()-1]!=(v)){Serial.print(F("NOT RIGHT TAIL, WAITING: ")); Serial.print((v)); Serial.print(F(", ACTUAL: "));Serial.println(actionsQueue[actionsQueue.size()-1]); } } }
+#define CIPSEND_COMMAND F("AT+CIPSEND=") // F("AT+CIPSENDBUF=")
 
 WIFIClient::WIFIClient()
 {
@@ -80,7 +82,7 @@ bool WIFIClient::PrepareFile(const String& fileName,unsigned long& fileSize)
   if(!parent->CanWorkWithSD()) // не можем работать с SD-модулем, поэтому мимо кассы
   {
   #ifdef WIFI_DEBUG
-    WIFI_DEBUG_WRITE(F("No SD module!")); WIFI_DEBUG_WRITE(NEWLINE);
+    WIFI_DEBUG_WRITE(F("No SD module!"),"");
   #endif
     return false; 
   }
@@ -88,7 +90,7 @@ bool WIFIClient::PrepareFile(const String& fileName,unsigned long& fileSize)
   if(!SD.exists(fileName)) // файл не найден
   {
   #ifdef WIFI_DEBUG
-  WIFI_DEBUG_WRITE(F("File not found on SD: ")); WIFI_DEBUG_WRITE(fileName); WIFI_DEBUG_WRITE(NEWLINE);
+  WIFI_DEBUG_WRITE(String(F("File not found on SD: ")) + fileName, "");
   #endif
     return false;
   }
@@ -102,7 +104,7 @@ bool WIFIClient::PrepareFile(const String& fileName,unsigned long& fileSize)
       if(workFile.isDirectory())
       {
       #ifdef WIFI_DEBUG
-      WIFI_DEBUG_WRITE(F("Directory access FORBIDDEN: ")); WIFI_DEBUG_WRITE(fileName); WIFI_DEBUG_WRITE(NEWLINE);
+      WIFI_DEBUG_WRITE(String(F("Directory access FORBIDDEN: ")) + fileName, "");
       #endif
 
         EnsureCloseFile();
@@ -122,7 +124,7 @@ bool WIFIClient::Prepare(const String& uriRequested)
   Clear(); // закрываем файлы, очищаем переменные и т.п.
   
   #ifdef WIFI_DEBUG
-  WIFI_DEBUG_WRITE(F("Prepare URI request: ")); WIFI_DEBUG_WRITE(uriRequested); WIFI_DEBUG_WRITE(NEWLINE);
+  WIFI_DEBUG_WRITE(String(F("Prepare URI request: ")) + uriRequested, "");
   #endif
 
 
@@ -151,7 +153,7 @@ bool WIFIClient::Prepare(const String& uriRequested)
       String dt = streamI.GetData();
       dt.trim(); // убираем перевод строки в конце
       dataToSend += dt;
-      dataToSend += F("\"}");      
+      dataToSend += F("\"};");      
     } // if
  } // if
 
@@ -186,6 +188,10 @@ bool WIFIClient::Prepare(const String& uriRequested)
   httpHeaders += NEWLINE;
 
   httpHeaders += H_CONNECTION;
+  httpHeaders += NEWLINE;
+
+  // разрешаем кроссдоменные запросы
+  httpHeaders += H_CORS_HEADER;
   httpHeaders += NEWLINE;
 
   // подставляем тип данных
@@ -243,7 +249,7 @@ bool WIFIClient::SendPacket(Stream* s)
   return false;
   
   #ifdef WIFI_DEBUG
-  WIFI_DEBUG_WRITE(F("Send packet # ")); WIFI_DEBUG_WRITE(packetsSent);WIFI_DEBUG_WRITE(NEWLINE);
+  WIFI_DEBUG_WRITE(String(F("Send packet #")) + String(packetsSent), "");
   #endif  
   //тут отсылаем пакет по Wi-Fi
   // возвращаем false, если больше нечего посылать
@@ -351,9 +357,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
 {
   // получаем ответ на команду, посланную модулю
   #ifdef WIFI_DEBUG
-     WIFI_DEBUG_WRITE(line);WIFI_DEBUG_WRITE(NEWLINE);
+     WIFI_DEBUG_WRITE(line,currentAction);
     //Serial.print(F("<== Receive \"")); Serial.print(line); Serial.println(F("\" answer from ESP-01..."));
-    //WIFI_DEBUG_WRITE("[CA] " + String(currentAction));WIFI_DEBUG_WRITE(NEWLINE);
   #endif
 
   // здесь может придти запрос от сервера
@@ -389,7 +394,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(line == F("ready")) // получили
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => ESP-01 restarted."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => ESP-01 restarted."),currentAction);
+          CHECK_QUEUE_TAIL(wfaWantReady);
        #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду
        currentAction = wfaIdle;
@@ -402,7 +408,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => ECHO OFF processed."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => ECHO OFF processed."),currentAction);
+          CHECK_QUEUE_TAIL(wfaEchoOff);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -415,7 +422,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => SoftAP mode is ON."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => SoftAP mode is ON."),currentAction);
+          CHECK_QUEUE_TAIL(wfaCWMODE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -429,7 +437,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => access point created."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => access point created."),currentAction);
+          CHECK_QUEUE_TAIL(wfaCWSAP);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -443,7 +452,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => TCP-server mode now set to 0."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => TCP-server mode now set to 0."),currentAction);
+          CHECK_QUEUE_TAIL(wfaCIPMODE);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -457,7 +467,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => Multiple connections allowed."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => Multiple connections allowed."),currentAction);
+          CHECK_QUEUE_TAIL(wfaCIPMUX);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -471,7 +482,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
        if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => TCP-server started."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => TCP-server started."),currentAction);
+          CHECK_QUEUE_TAIL(wfaCIPSERVER);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -485,7 +497,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
        if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => connected to the router."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => connected to the router."),currentAction);
+          CHECK_QUEUE_TAIL(wfaCWJAP);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -499,7 +512,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line))
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => disconnected from router."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("[OK] => disconnected from router."),currentAction);
+          CHECK_QUEUE_TAIL(wfaCWQAP);
         #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = wfaIdle;
@@ -511,53 +525,69 @@ void WiFiModule::ProcessAnswerLine(const String& line)
 
     case wfaCIPSEND: // надо отослать данные клиенту
     {
+      // wfaCIPSEND плюёт в очередь функция UpdateClients, перед отсылкой команды модулю.
+      // значит, мы сами должны разрулить ситуацию, как быть с обработкой этой команды. 
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("Waiting for wfaCIPSEND >"));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("Waiting for \">\"..."),currentAction);
         #endif        
             
       if(line == F(">")) // дождались приглашения
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("SENDING THE DATA!"));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("\">\" FOUND, sending the data..."),currentAction);
+          CHECK_QUEUE_TAIL(wfaCIPSEND);
         #endif        
-        actionsQueue.pop(); // убираем последнюю обработанную команду (wfaCIPSEND)
+        actionsQueue.pop(); // убираем последнюю обработанную команду (wfaCIPSEND, которую плюнула в очередь функция UpdateClients)
         actionsQueue.push_back(wfaACTUALSEND); // добавляем команду на актуальный отсыл данных в очередь     
         currentAction = wfaIdle;
+        inSendData = true; // выставляем флаг, что мы отсылаем данные, и тогда очередь обработки клиентов не будет чухаться
       }
       else
       if(line.indexOf(F("FAIL")) != -1 || line.indexOf(F("ERROR")) != -1)
       {
         // передача данных клиенту неудачна, отсоединяем его принудительно
          #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("Closing client connection unexpectedly!"));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("Closing client connection unexpectedly!"),currentAction);
+          CHECK_QUEUE_TAIL(wfaCIPSEND);
         #endif 
                 
-        clients[currentClientIDX].SetConnected(false);
-        actionsQueue.pop(); // убираем последнюю обработанную команду
-        currentAction = wfaIdle;
+        clients[currentClientIDX].SetConnected(false); // выставляем текущему клиенту статус "отсоединён"
+        actionsQueue.pop(); // убираем последнюю обработанную команду (wfaCIPSEND, которую плюнула в очередь функция UpdateClients)
+        currentAction = wfaIdle; // переходим в ждущий режим
+        inSendData = false;
       }
     }
     break;
 
     case wfaACTUALSEND: // отослали ли данные?
     {
-      if(IsKnownAnswer(line)) // дождались приглашения
+      // может ли произойти ситуация, когда в очереди есть wfaACTUALSEND, помещенная туда обработчиком wfaCIPSEND,
+      // но до Update дело ещё не дошло? Считаем, что нет. Мы попали сюда после функции Update, которая в обработчике wfaACTUALSEND
+      // отослала нам пакет данных. Надо проверить результат отсылки.
+      if(IsKnownAnswer(line)) // получен результат отсылки пакета
       {
         #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("DATA SENT!"));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("DATA SENT, go to IDLE mode..."),currentAction);
+        // проверяем валидность того, что в очереди
+        CHECK_QUEUE_TAIL(wfaACTUALSEND);
         #endif
-        actionsQueue.pop(); // убираем последнюю обработанную команду     
-        currentAction = wfaIdle;
+        actionsQueue.pop(); // убираем последнюю обработанную команду (wfaACTUALSEND, которая в очереди)    
+        currentAction = wfaIdle; // разрешаем обработку следующего клиента
+        inSendData = false; // выставляем флаг, что мы отправили пакет, и можем обрабатывать следующего клиента
         if(!clients[currentClientIDX].HasPacket())
         {
            // данные у клиента закончились
         #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("No packets in client, closing connection..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(String(F("No packets in client #")) + String(currentClientIDX),currentAction);
         #endif
-
+           
           if(clients[currentClientIDX].IsConnected())
           {
+            #ifdef WIFI_DEBUG
+            WIFI_DEBUG_WRITE(String(F("Client #")) + String(currentClientIDX) + String(F(" has no packets, closing connection...")),currentAction);
+            #endif
             actionsQueue.push_back(wfaCIPCLOSE); // добавляем команду на закрытие соединения
+            inSendData = true; // пока не обработаем отсоединение клиента - не разрешаем посылать пакеты другим клиентам
           } // if
         
         } // if
@@ -566,7 +596,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
         {
           // передача данных клиенту неудачна, отсоединяем его принудительно
            #ifdef WIFI_DEBUG
-            WIFI_DEBUG_WRITE(F("Closing client connection unexpectedly!"));WIFI_DEBUG_WRITE(NEWLINE);
+            WIFI_DEBUG_WRITE(F("Closing client connection unexpectedly!"),currentAction);
           #endif 
                   
           clients[currentClientIDX].SetConnected(false);
@@ -582,11 +612,13 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(IsKnownAnswer(line)) // дождались приглашения
       {
         #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Client connection closed."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Client connection closed."),currentAction);
+        CHECK_QUEUE_TAIL(wfaCIPCLOSE);
         #endif
         clients[currentClientIDX].SetConnected(false);
         actionsQueue.pop(); // убираем последнюю обработанную команду     
         currentAction = wfaIdle;
+        inSendData = false; // разрешаем обработку других клиентов
       }
     }
     break;
@@ -607,7 +639,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
     if(clientID >= 0 && clientID < MAX_WIFI_CLIENTS)
     {
    #ifdef WIFI_DEBUG
-    WIFI_DEBUG_WRITE(F("[CLIENT CONNECTED] - ")); WIFI_DEBUG_WRITE(s); WIFI_DEBUG_WRITE(NEWLINE);
+    WIFI_DEBUG_WRITE(String(F("[CLIENT CONNECTED] - ")) + s,currentAction);
    #endif     
       clients[clientID].SetConnected(true);
     }
@@ -621,13 +653,14 @@ void WiFiModule::ProcessAnswerLine(const String& line)
     if(clientID >= 0 && clientID < MAX_WIFI_CLIENTS)
     {
    #ifdef WIFI_DEBUG
-   WIFI_DEBUG_WRITE(F("[CLIENT DISCONNECTED] - ")); WIFI_DEBUG_WRITE(s);WIFI_DEBUG_WRITE(NEWLINE);
+   WIFI_DEBUG_WRITE(String(F("[CLIENT DISCONNECTED] - ")) + s,currentAction);
    #endif     
       clients[clientID].SetConnected(false);
-      waitForQueryCompleted = false;
       
-      if(currentClientIDX == clientID && WaitForDataWelcome) // если мы ждём приглашения на отсыл данных этому клиенту,
-        WaitForDataWelcome = false; // то снимаем его
+      //waitForQueryCompleted = false;
+      
+      //if(currentClientIDX == clientID && WaitForDataWelcome) // если мы ждём приглашения на отсыл данных этому клиенту,
+      //  WaitForDataWelcome = false; // то снимаем его
         
       //currentAction = wfaIdle;
     }
@@ -725,10 +758,8 @@ String WiFiModule::UrlDecode(const String& uri)
 void WiFiModule::ProcessURIRequest(int clientID, const String& requesterURI)
 {
  #ifdef WIFI_DEBUG
- WIFI_DEBUG_WRITE(F("Client ID = "));
- WIFI_DEBUG_WRITE(clientID);WIFI_DEBUG_WRITE(NEWLINE);
- WIFI_DEBUG_WRITE(F("Requested URI: "));
- WIFI_DEBUG_WRITE(requesterURI);WIFI_DEBUG_WRITE(NEWLINE);
+ WIFI_DEBUG_WRITE(String(F("Client ID = ")) + String(clientID),currentAction);
+  WIFI_DEBUG_WRITE(String(F("Requested URI: ")) + requesterURI,currentAction);
 #endif
 
   // работаем с клиентом
@@ -738,7 +769,7 @@ void WiFiModule::ProcessURIRequest(int clientID, const String& requesterURI)
     {
       // клиент подготовил данные к отправке, отсылаем их в следующем вызове Update
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Client prepared the data..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Client prepared the data..."),currentAction);
       #endif
     }
   } // if
@@ -755,6 +786,7 @@ void WiFiModule::Setup()
 
   nextClientIDX = 0;
   currentClientIDX = 0;
+  inSendData = false;
   
   for(uint8_t i=0;i<MAX_WIFI_CLIENTS;i++)
     clients[i].Setup(c,this);
@@ -786,7 +818,7 @@ void WiFiModule::Setup()
 void WiFiModule::SendCommand(const String& command, bool addNewLine)
 {
   #ifdef WIFI_DEBUG
-    WIFI_DEBUG_WRITE(F("==> Send the \"")); WIFI_DEBUG_WRITE(command); WIFI_DEBUG_WRITE(F("\" command to ESP-01..."));WIFI_DEBUG_WRITE(NEWLINE);
+    WIFI_DEBUG_WRITE(String(F("==> Send the \"")) + command + String(F("\" command to ESP-01...")),currentAction);
   #endif
 
   WIFI_SERIAL.write(command.c_str(),command.length());
@@ -815,7 +847,7 @@ void WiFiModule::ProcessQueue()
       {
         // надо рестартовать модуль
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Restart the ESP-01..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Restart the ESP-01..."),currentAction);
       #endif
       SendCommand(F("AT+RST"));
       //SendCommand(F("AT+GMR"));
@@ -826,7 +858,7 @@ void WiFiModule::ProcessQueue()
       {
         // выключаем эхо
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Disable echo..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Disable echo..."),currentAction);
       #endif
       SendCommand(F("ATE0"));
       //SendCommand(F("AT+GMR"));
@@ -838,7 +870,7 @@ void WiFiModule::ProcessQueue()
       {
         // переходим в смешанный режим
       #ifdef WIFI_DEBUG
-       WIFI_DEBUG_WRITE(F("Go to SoftAP mode..."));WIFI_DEBUG_WRITE(NEWLINE);
+       WIFI_DEBUG_WRITE(F("Go to SoftAP mode..."),currentAction);
       #endif
       SendCommand(F("AT+CWMODE_DEF=3"));
       }
@@ -848,7 +880,7 @@ void WiFiModule::ProcessQueue()
       {
 
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Creating the access point..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Creating the access point..."),currentAction);
       #endif
       
         String com = F("AT+CWSAP_DEF=\"");
@@ -865,7 +897,7 @@ void WiFiModule::ProcessQueue()
       case wfaCIPMODE: // устанавливаем режим работы сервера
       {
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Set the TCP server mode to 0..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Set the TCP server mode to 0..."),currentAction);
       #endif
       SendCommand(F("AT+CIPMODE=0"));
       
@@ -875,7 +907,7 @@ void WiFiModule::ProcessQueue()
       case wfaCIPMUX: // разрешаем множественные подключения
       {
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Allow the multiple connections..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Allow the multiple connections..."),currentAction);
       #endif
       SendCommand(F("AT+CIPMUX=1"));
         
@@ -885,7 +917,7 @@ void WiFiModule::ProcessQueue()
       case wfaCIPSERVER: // запускаем сервер
       {  
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Starting TCP-server..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Starting TCP-server..."),currentAction);
       #endif
       SendCommand(F("AT+CIPSERVER=1,80"));
       
@@ -895,7 +927,7 @@ void WiFiModule::ProcessQueue()
       case wfaCWQAP: // отсоединяемся от точки доступа
       {  
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Disconnect from router..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Disconnect from router..."),currentAction);
       #endif
       SendCommand(F("AT+CWQAP"));
       
@@ -905,7 +937,7 @@ void WiFiModule::ProcessQueue()
       case wfaCWJAP: // коннектимся к роутеру
       {
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Connecting to the router..."));WIFI_DEBUG_WRITE(NEWLINE);
+        WIFI_DEBUG_WRITE(F("Connecting to the router..."),currentAction);
       #endif
         String com = F("AT+CWJAP_DEF=\"");
         com += Settings->GetRouterID();
@@ -920,16 +952,16 @@ void WiFiModule::ProcessQueue()
       case wfaCIPSEND: // надо отослать данные клиенту
       {
         #ifdef WIFI_DEBUG
-       //  WIFI_DEBUG_WRITE(F("ASSERT: wfaCIPSEND in ProcessQueue!"));WIFI_DEBUG_WRITE(NEWLINE);
+       //  WIFI_DEBUG_WRITE(F("ASSERT: wfaCIPSEND in ProcessQueue!"),currentAction);
         #endif
         
       }
       break;
 
-      case wfaACTUALSEND: // дождались приглашения, отсылаем данные клиенту
+      case wfaACTUALSEND: // дождались приглашения в функции ProcessAnswerLine, она поместила команду wfaACTUALSEND в очередь - отсылаем данные клиенту
       {
             #ifdef WIFI_DEBUG
-              WIFI_DEBUG_WRITE(F("Sending data to the client..."));WIFI_DEBUG_WRITE(NEWLINE);
+              WIFI_DEBUG_WRITE(String(F("Sending data to the client #")) + String(currentClientIDX),currentAction);
             #endif
       
             if(clients[currentClientIDX].IsConnected()) // не отвалился ли клиент?
@@ -937,22 +969,28 @@ void WiFiModule::ProcessQueue()
               // клиент по-прежнему законнекчен, посылаем данные
               if(!clients[currentClientIDX].SendPacket(&(WIFI_SERIAL)))
               {
+                // если мы здесь - то пакетов у клиента больше не осталось. Надо дождаться подтверждения отсылки последнего пакета
+                // в функции ProcessAnswerLine (обработчик wfaACTUALSEND), и послать команду на закрытие соединения с клиентом.
               #ifdef WIFI_DEBUG
-              WIFI_DEBUG_WRITE(F("All data to the client has sent!"));WIFI_DEBUG_WRITE(NEWLINE);
-            #endif
+              WIFI_DEBUG_WRITE(String(F("All data to the client #")) + String(currentClientIDX) + String(F(" has sent, need to wait for last packet sent..")),currentAction);
+              #endif
  
               }
               else
               {
                 // ещё есть пакеты, продолжаем отправлять в следующих вызовах Update
+              #ifdef WIFI_DEBUG
+              WIFI_DEBUG_WRITE(String(F("Client #")) + String(currentClientIDX) + String(F(" has ")) + String(clients[currentClientIDX].GetPacketsLeft()) + String(F(" packets left...")),currentAction);
+              #endif
               } // else
             } // is connected
             else
             {
               // клиент отвалится, чистим...
-              actionsQueue.pop(); // убираем wfaACTUALSEND
-              clients[currentClientIDX].Clear();
-              currentAction = wfaIdle; // разрешаем обработку следующей команды
+            #ifdef WIFI_DEBUG
+              WIFI_DEBUG_WRITE(F("Client disconnected, clear the client data..."),currentAction);
+            #endif
+              clients[currentClientIDX].SetConnected(false);
             }
 
       }
@@ -963,19 +1001,26 @@ void WiFiModule::ProcessQueue()
         if(clients[currentClientIDX].IsConnected()) // только если клиент законнекчен 
         {
           #ifdef WIFI_DEBUG
-            WIFI_DEBUG_WRITE(F("Closing client connection..."));WIFI_DEBUG_WRITE(NEWLINE);
+            WIFI_DEBUG_WRITE(String(F("Closing client #")) + String(currentClientIDX) + String(F(" connection...")),currentAction);
           #endif
           clients[currentClientIDX].SetConnected(false);
           String command = F("AT+CIPCLOSE=");
           command += currentClientIDX; // закрываем соединение
           SendCommand(command);
         }
+        
         else
         {
+          #ifdef WIFI_DEBUG
+            WIFI_DEBUG_WRITE(String(F("Client #")) + String(currentClientIDX) + String(F(" already broken!")),currentAction);
+            CHECK_QUEUE_TAIL(wfaCIPCLOSE);
+          #endif
           // просто убираем команду из очереди
            actionsQueue.pop();
            currentAction = wfaIdle; // разрешаем обработку следующей команды
+           inSendData = false; // разрешаем обработку следующего клиента
         } // else
+        
       }
       break;
 
@@ -990,25 +1035,26 @@ void WiFiModule::ProcessQueue()
 }
 void WiFiModule::UpdateClients()
 {
-  if(currentAction != wfaIdle) // чем-то заняты, не можем ничего делать
+  if(currentAction != wfaIdle || inSendData) // чем-то заняты, не можем ничего делать
     return;
     
   // тут ищем, какой клиент сейчас хочет отослать данные
 
-  for(uint8_t idx = nextClientIDX;idx < MAX_WIFI_CLIENTS; idx++,nextClientIDX++)
+  for(uint8_t idx = nextClientIDX;idx < MAX_WIFI_CLIENTS; idx++)
   { 
+    ++nextClientIDX; // переходим на следующего клиента, как только текущему будет послан один пакет
     if(clients[idx].IsConnected() && clients[idx].HasPacket())
     {
       currentAction = wfaCIPSEND; // говорим однозначно, что нам надо дождаться >
       actionsQueue.push_back(wfaCIPSEND); // добавляем команду отсылки данных в очередь
       
     #ifdef WIFI_DEBUG
-      WIFI_DEBUG_WRITE(F("Sending data command to the ESP..."));WIFI_DEBUG_WRITE(NEWLINE);
+      WIFI_DEBUG_WRITE(F("Sending data command to the ESP..."),currentAction);
     #endif
   
       // клиент подсоединён и ждёт данных от нас - отсылаем ему следующий пакет
       currentClientIDX = idx; // сохраняем номер клиента, которому будем посылать данные
-      String command = F("AT+CIPSENDBUF=");
+      String command = CIPSEND_COMMAND;
       command += String(idx);
       command += F(",");
       command += String(clients[idx].GetPacketLength());
@@ -1021,15 +1067,15 @@ void WiFiModule::UpdateClients()
     
   } // for
   
-  if(nextClientIDX >= MAX_WIFI_CLIENTS)
+  if(nextClientIDX >= MAX_WIFI_CLIENTS) // начинаем обработку клиентов сначала
     nextClientIDX = 0;  
 }
 void WiFiModule::Update(uint16_t dt)
 { 
   UNUSED(dt);
   
-  ProcessQueue();
   UpdateClients();
+  ProcessQueue();
 
 }
 bool  WiFiModule::ExecCommand(const Command& command)
@@ -1110,7 +1156,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
         else
         {
         #ifdef WIFI_DEBUG
-         WIFI_DEBUG_WRITE("Request for IP info...");WIFI_DEBUG_WRITE(NEWLINE);
+         WIFI_DEBUG_WRITE(F("Request for IP info..."),currentAction);
         #endif
         
         
@@ -1145,7 +1191,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
                 if(line.startsWith(F("+CIFSR:APIP"))) // IP нашей точки доступа
                  {
                     #ifdef WIFI_DEBUG
-                      WIFI_DEBUG_WRITE(F("AP IP found, parse..."));WIFI_DEBUG_WRITE(NEWLINE);
+                      WIFI_DEBUG_WRITE(F("AP IP found, parse..."),currentAction);
                     #endif
             
                    int idx = line.indexOf("\"");
@@ -1166,7 +1212,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
                   if(line.startsWith(F("+CIFSR:STAIP"))) // IP нашей точки доступа, назначенный роутером
                  {
                     #ifdef WIFI_DEBUG
-                      WIFI_DEBUG_WRITE(F("STA IP found, parse..."));WIFI_DEBUG_WRITE(NEWLINE);
+                      WIFI_DEBUG_WRITE(F("STA IP found, parse..."),currentAction);
                     #endif
             
                    int idx = line.indexOf("\"");
@@ -1201,7 +1247,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
 
 
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("IP info requested."));WIFI_DEBUG_WRITE(NEWLINE);
+          WIFI_DEBUG_WRITE(F("IP info requested."),currentAction);
         #endif
 
         answerStatus = true;

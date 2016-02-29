@@ -5,29 +5,186 @@
 <link rel="stylesheet" href="style.css"  type="text/css"/>
 <script type="text/javascript" src="js/common.js"></script>
 <script type="text/javascript">
-function testMe()
+function getXmlHttp()
 {
-  var e = getE("testspan");
-  if(!e)
+  var xmlhttp;
+  try 
   {
-    alert("Не могу найти элемент!"); return;
+    xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+  } 
+  catch (e) 
+  {
+    try 
+    {
+      xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    } 
+    catch (E) 
+    {
+      xmlhttp = false;
+    }
   }
-  alert(e.outerHTML);
+  if (!xmlhttp && typeof XMLHttpRequest!='undefined') 
+  {
+    xmlhttp = new XMLHttpRequest();
+  }
+  return xmlhttp;
+}
+var done_func = null;
+var fail_func = null;
+var serverAddr = "/"; //"http://192.168.0.34/";
+var getPrefix = "CTGET=";
+var setPrefix = "CTSET=";
+var noData = "&lt;нет данных&gt;";
+var disabled_elem = null;
+
+function queryController(isGet, command, func_done,func_fail, elemToDisable)
+{
+  var xmlhttp = getXmlHttp();
+  if(!xmlhttp)
+  {
+    alert("No xmlhttp!");
+    return;
+  }
+  
+  disabled_elem = elemToDisable;
+  disabled_elem.setAttribute("disabled","disabled");
+  
+  done_func = func_done;
+  fail_func = func_fail;
+  var addr = serverAddr + (isGet ? getPrefix : setPrefix) + command;
+    
+  xmlhttp.open("GET", addr, true);
+  xmlhttp.onreadystatechange = function() 
+  {
+  
+    if (xmlhttp.readyState == 4) 
+    {
+       if(xmlhttp.status == 200) 
+       {
+         done_func(parse(eval("e = " + xmlhttp.responseText)));
+       }
+       else
+        fail_func();
+        
+      disabled_elem.removeAttribute("disabled");
+    }
+    
+  }
+  xmlhttp.send(null);   
+}
+function reportError(query)
+{
+  alert("Неудачное выполнение запроса:\n\n" + query);
+}
+function parse(obj)
+{
+  var ans = obj.answer;
+  var idx = ans.indexOf("=");
+  var which = ans.substring(0,idx);
+  if(which == "OK")
+    obj.IsOkAnswer = true;
+  else
+    obj.IsOkAnswer = false;
+    
+  ans = ans.substring(idx+1);
+  obj.Params = ans.split("|");
+  
+  return obj;
+}
+function reportTemperature(obj)
+{
+  if(obj.IsOkAnswer)
+  {
+    var result = "";
+    var template = getE("temp_template").innerHTML;
+    result += template.format("cth","","Показания");
+    // получили значение температур
+    var sensorsCnt = obj.Params.length - 2;
+    for(var i=0;i<sensorsCnt;i++)
+    {
+      var tempData = obj.Params[2 + i];
+      var dt = parseInt(tempData);
+      if(isNaN(dt) || dt < 0) // нет показаний с датчика
+        tempData = noData;
+      else
+        tempData += " &#0176;C";
+        
+      result += template.format("ctr",(i+1),tempData);
+    }
+    
+    getE("temp_sensors_data").innerHTML = result;
+  }
+  else
+    reportError(obj.query);
+}
+function dummyFail()
+{
+alert("Failed to get data!");
+}
+function getTemperature()
+{
+  queryController(1,"STATE|TEMP|ALL",reportTemperature,dummyFail, getE('temp_b'));
+}
+
+var lastselmenu = null;
+function init()
+{
+selectmenu(getE('temp'));
+}
+function unselectmenu(elem)
+{
+  elem.removeAttribute("class");
+  elem.setAttribute("class","mi");
+  showElem("c_" + elem.id, false);
+}
+function selectmenu(elem)
+{
+  if(lastselmenu != null)
+    unselectmenu(lastselmenu);
+    
+  lastselmenu = elem;
+
+  elem.removeAttribute("class");
+  elem.setAttribute("class","mi mis");
+  
+  getE('ttl').innerHTML = elem.innerHTML;
+  
+  showElem("c_" + elem.id, true);
+
 }
 </script>
 <title>Контроллер теплицы на базе Arduino Mega</title>
 
 </head>
-<body leftmargin='40' topmargin='20' rightmargin='40' bottommargin='20' marginwidth='40' marginheight='20' bgcolor='#FFFFFF'>
+<body leftmargin='40' topmargin='20' marginwidth='40' marginheight='20' bgcolor='#FFFFFF' onload='init();'>
+<div class='hdn' id='temp_template'><table border='0'width='100%'><tr class='{0}'><td width='50'>#{1}</td><td width='*'>{2}</td></tr></table></div>
+<div class='menu'>&nbsp;</div>
+<div class='content'>
+<h1 id='ttl'></h1>
+</div>
+<div class='menu'>
+<div class='mi mis' id='temp' onclick="selectmenu(this);">Температура</div>
+<div class='mi' id='windows' onclick="selectmenu(this);">Фрамуги</div>
+<div class='mi' id='water' onclick="selectmenu(this);">Полив</div>
+<div class='mi' id='light' onclick="selectmenu(this);">Досветка</div>
+<div class='mi' id='humidity' onclick="selectmenu(this);">Влажность</div>
+</div>
+<div class='content'>
 
-<h1>Главная страница</h1>
+<div id='c_temp' class='hdn'>
+<h2>Показания датчиков</h2>
+<div id='temp_sensors_data'><p>Для получения значения с датчиков температуры нажмите кнопку ниже.</div>
+<p><input type='button' onclick='getTemperature()' id='temp_b' value='Получить значения температуры'/></p>
+</div>
+<div id='c_windows' class='hdn'>Контент фрамуг</div>
+<div id='c_water' class='hdn'>Контент полива</div>
+<div id='c_light' class='hdn'>Контент досветки</div>
+<div id='c_humidity' class='hdn'>Контент влажности</div>
 
-Если вы видите эту страницу - значит, соединение с контроллером по Wi-Fi прошло успешно. Как понять, всё ли загрузилось правильно? Во-первых, цвет текста заголовка должен быть зелёным, точнее, цветом #90d70f.
-<p>
-Во-вторых, если вы щёлкнете на эту <a href="" onclick='testMe();return false;'>ссылку</a>, то должны увидеть сообщение c HTML-кодом <span class='darkred' id='testspan'>этого элемента</span>. 
 
-<p>
-Далее тут будет появляться актуальный функционал.
-
+</div>
+<div class='cpy'>
+&copy;20016, Контроллер теплицы. Автор: Порохня Дмитрий, <a href='mailto:spywarrior@gmail.com' class='sml'>spywarrior@gmail.com</a>.
+</div>
 </body>
 </html>
