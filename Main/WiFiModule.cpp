@@ -40,6 +40,9 @@ String WIFIClient::GetContentType(const String& uri)
   else
   if(s.endsWith(F(".css")))
     return F("text/css");
+  else
+  if(s.endsWith(F(".ico")))
+    return F("image/vnd.microsoft.icon");//F("image/x-icon");
 
   return F("text/plain");  
 }
