@@ -193,6 +193,85 @@ bool AlertRule::HasAlert()
 
   return false;
 }
+String AlertRule::GetAlertRule() // конструируем правило, когда запрашивают его просмотр
+{
+  String result;
+  
+    result = ruleName + PARAM_DELIMITER;
+    result += (linkedModule ? linkedModule->GetID() : F("") ) + PARAM_DELIMITER;
+      
+    switch(target)
+    {
+      case rtTemp:
+      result += PROP_TEMP;
+      break;
+      
+      case rtLuminosity:
+      result += PROP_LIGHT;
+      break;
+
+      case rtHumidity:
+      result += PROP_HUMIDITY;
+      break;
+
+      case rtUnknown:
+      break;
+      
+    }
+    result += String(PARAM_DELIMITER) + String(sensorIdx) + PARAM_DELIMITER;
+
+    switch(operand)
+    {
+      case roLessThan:
+        result += LESS_THAN;
+      break;
+      case roGreaterThan:
+        result += GREATER_THAN;
+      break;
+      case roLessOrEqual:
+        result += LESS_OR_EQUAL_THAN;
+      break;
+      case roGreaterOrEqual:
+        result += GREATER_OR_EQUAL_THAN;
+      break;
+    }
+    
+    result += PARAM_DELIMITER;
+
+    switch(dataSource)
+    {
+      case tsOpenTemperature:
+        result += T_OPEN_MACRO;
+      break;
+      case tsCloseTemperature:
+        result += T_CLOSE_MACRO;
+      break;
+      case tsPassed:
+        result += dataAlertLong;
+      break;
+    }
+    result += PARAM_DELIMITER;
+    
+  result += String(whichTime) + PARAM_DELIMITER;
+  result += String((uint16_t)workTime) + PARAM_DELIMITER;
+
+  String lRulesNames;
+  for(uint8_t i=0;i<linkedRulesCnt;i++)
+  {
+    if(lRulesNames.length())
+      lRulesNames += F(",");
+      
+    lRulesNames += linkedRuleNames[i];
+    
+  } // for
+
+  if(!lRulesNames.length())
+    lRulesNames = F("_");
+ 
+  result += lRulesNames;
+  
+  return result;
+}
 uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EEPROM, возвращаем кол-во записанных байт
 {
   uint16_t curWriteAddr = writeAddr;
@@ -361,7 +440,7 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
     dataAlertLong = dataAlert; // применяем короткую настройку
 
 
-
+/*
    // теперь конструируем правило, это нужно для запроса просмотра правила
     alertRule = ruleName + PARAM_DELIMITER;
     alertRule += lmName + PARAM_DELIMITER;
@@ -434,7 +513,7 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
     lRulesNames = F("_");
  
   alertRule += lRulesNames;
-
+*/
 
   
   return (readed+6); // оставляем в хвосте 6 свободных байт на будущее
@@ -460,10 +539,11 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   
   // ищем имя
   ruleName = command.GetArg(curArgIdx++);
-  alertRule = ruleName + PARAM_DELIMITER;
+//  alertRule = ruleName + PARAM_DELIMITER;
  
   // записываем имя связанного модуля
-  alertRule += command.GetArg(curArgIdx++) + PARAM_DELIMITER;
+  //alertRule += command.GetArg(curArgIdx++) + PARAM_DELIMITER;
+  curArgIdx++; // пропускаем имя связанного модуля, нам его уже дали в параметрах функции
   
   String ruleTargetStr = command.GetArg(curArgIdx++);
   
@@ -476,12 +556,12 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   if(ruleTargetStr == PROP_HUMIDITY) // следим за влажностью
     target = rtHumidity;
 
-  alertRule += ruleTargetStr + PARAM_DELIMITER;
+ // alertRule += ruleTargetStr + PARAM_DELIMITER;
 
-  alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
+ // alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
   sensorIdx = command.GetArg(curArgIdx++).toInt();
   String op = command.GetArg(curArgIdx++);
-  alertRule += op + PARAM_DELIMITER;
+ // alertRule += op + PARAM_DELIMITER;
   
   if(op == GREATER_THAN)
     operand = roGreaterThan;
@@ -492,7 +572,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   else if(op == GREATER_OR_EQUAL_THAN)
     operand = roGreaterOrEqual;
 
-  alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
+  //alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
 
   String strTempAlert = command.GetArg(curArgIdx++);
 
@@ -511,17 +591,17 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   // дошли до температуры, после неё - настройки срабатывания
 
   // следом идёт час начала работы
-  alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
+  //alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
   whichTime = command.GetArg(curArgIdx++).toInt();
 
   
   // дальше идёт продолжительность работы, в минутах
-  alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
+  //alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
   workTime = command.GetArg(curArgIdx++).toInt(); // переводим в миллисекунды
 
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
-  alertRule += command.GetArg(curArgIdx);
+  //alertRule += command.GetArg(curArgIdx);
   String linkedRules = command.GetArg(curArgIdx++);
 
 
@@ -660,7 +740,7 @@ bool AlertModule::AddRule(AbstractModule* m, const Command& c)
 void AlertModule::Setup()
 {
   // настройка модуля алертов тут
-  #if MAX_STORED_ALERTS > 0
+#if MAX_STORED_ALERTS > 0
   curAlertIdx = 0; // нет событий пока
   cntAlerts = 0;
 
@@ -760,7 +840,10 @@ void AlertModule::Update(uint16_t dt)
 
         // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
         //cmd.SetIncomingStream(pStream);
-        controller->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой    
+        controller->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой
+
+        // дёргаем функцию обновления других вещей - типа, кооперативная работа
+        yield();
       } // if  
 
       
@@ -775,6 +858,9 @@ void AlertModule::Update(uint16_t dt)
 }
 bool AlertModule::CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule, RulesVector& raisedAlerts)
 {
+
+  yield(); // дёргаем многозадачность за хвост
+  
   uint8_t cnt = rule->GetLinkedRulesCount();
   if(!cnt)
     return true; // нет связанных правил, при срабатывании которых мы должны игнорировать текущее

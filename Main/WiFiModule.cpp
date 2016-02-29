@@ -4,7 +4,7 @@
 
 #define WIFI_DEBUG_WRITE(s,ca) { Serial.print(String(F("[CA] ")) + String((ca)) + String(F(": ")));  Serial.println((s)); }
 #define CHECK_QUEUE_TAIL(v) { if(!actionsQueue.size()) {Serial.println(F("[QUEUE IS EMPTY!]"));} else { if(actionsQueue[actionsQueue.size()-1]!=(v)){Serial.print(F("NOT RIGHT TAIL, WAITING: ")); Serial.print((v)); Serial.print(F(", ACTUAL: "));Serial.println(actionsQueue[actionsQueue.size()-1]); } } }
-#define CIPSEND_COMMAND F("AT+CIPSEND=") // F("AT+CIPSENDBUF=")
+#define CIPSEND_COMMAND F("AT+CIPSENDBUF=") // F("AT+CIPSENDBUF=")
 
 WIFIClient::WIFIClient()
 {

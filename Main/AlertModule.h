@@ -40,7 +40,7 @@ class AlertRule
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
     long dataAlertLong; // настройка, за которой следим (4 байта)
     
-    String alertRule; // строка с правилом
+    //String alertRule; // строка с правилом, самая тяжёлая часть для хранения в оперативке!
     bool bEnabled; // включено или нет
 
     RuleDataSource dataSource; // источник, с которого получаем установку значения для правила
@@ -63,7 +63,7 @@ class AlertRule
     String GetName() {return ruleName;}
     bool Construct(AbstractModule* linkedModule, const Command& command);
     String& GetTargetCommand() {return targetCommand;}
-    String& GetAlertRule() {return alertRule;}
+    String GetAlertRule();// {return alertRule;}
     AbstractModule* GetModule() {return linkedModule;}
 
     uint8_t GetLinkedRulesCount() {return linkedRulesCnt;}

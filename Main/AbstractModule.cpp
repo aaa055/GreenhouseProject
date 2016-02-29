@@ -35,7 +35,7 @@ void ModuleState::AddState(ModuleStates state, uint8_t idx)
       }
         
       break;
-
+#ifdef SAVE_RELAY_STATES
       case StateRelay:
         {
         uint8_t*  ui1 = new uint8_t;
@@ -49,7 +49,7 @@ void ModuleState::AddState(ModuleStates state, uint8_t idx)
         }
         
       break;
-
+#endif
       case StateLuminosity:
       {
         long*  ui1 = new long;
@@ -96,7 +96,7 @@ bool ModuleState::IsStateChanged(OneState* s)
             return true; // температура изменилась
         }
         break;
-  
+#ifdef SAVE_RELAY_STATES  
         case StateRelay:
         {
           uint8_t*  ui1 = (uint8_t*) s->Data;
@@ -106,7 +106,7 @@ bool ModuleState::IsStateChanged(OneState* s)
           return true; // состояние реле изменилось
         }  
         break;
-  
+#endif
         case StateLuminosity:
         {
           long*  ui1 = (long*) s->Data;
@@ -159,7 +159,8 @@ void ModuleState::UpdateState(ModuleStates state, uint8_t idx, void* newData)
                     *t1 = *tNew; // пишем новую
                   } 
                   break;
-            
+
+                  #ifdef SAVE_RELAY_STATES
                   case StateRelay:
                   {
                     uint8_t*  ui1 = (uint8_t*) s->Data;
@@ -171,6 +172,7 @@ void ModuleState::UpdateState(ModuleStates state, uint8_t idx, void* newData)
                     *ui1 = *newState; // пишем новое состояние каналов реле
                   }  
                   break;
+                  #endif
                   
             
                   case StateLuminosity:

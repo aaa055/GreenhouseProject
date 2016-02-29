@@ -81,14 +81,15 @@ void WindowState::SwitchRelays(uint8_t rel1State, uint8_t rel2State)
   //Здесь включаем реле, устанавливая на нужный пин переданное состояние
   digitalWrite(RelayPin1,rel1State);
   digitalWrite(RelayPin2,rel2State);
-  
+
+  #ifdef SAVE_RELAY_STATES
   if(RelayStateHolder) // сообщаем, что реле мы выключили или включили
   {
    uint8_t idx = RelayChannel1/8; // выясняем, какой индекс
 
- // теперь мы должны выяснить, в какой бит писать
-  uint8_t bitNum1 = RelayChannel1 % 8;
-  uint8_t bitNum2 = RelayChannel2 % 8;
+   // теперь мы должны выяснить, в какой бит писать
+   uint8_t bitNum1 = RelayChannel1 % 8;
+   uint8_t bitNum2 = RelayChannel2 % 8;
    
 
    OneState* os = RelayStateHolder->GetState(StateRelay,idx);
@@ -106,6 +107,7 @@ void WindowState::SwitchRelays(uint8_t rel1State, uint8_t rel2State)
    } // if(os)
       
   } // if
+  #endif
   
 }
 void WindowState::UpdateState(uint16_t dt)
@@ -196,7 +198,8 @@ void TempSensors::Setup()
     tempSensor.begin(TEMP_SENSORS[i]);
     tempSensor.readTemperature(&tempData);
    }
-      
+
+   #ifdef SAVE_RELAY_STATES   
    // добавляем N восьмиканальных состояний реле
    uint8_t relayCnt = (SUPPORTED_WINDOWS*2)/8;
    if((SUPPORTED_WINDOWS*2) > 8 && (SUPPORTED_WINDOWS*2) % 8)
@@ -206,7 +209,8 @@ void TempSensors::Setup()
     relayCnt = 1;
     
    for(uint8_t i=0;i<relayCnt;i++)
-    State.AddState(StateRelay,i);  
+    State.AddState(StateRelay,i);
+   #endif  
   
    SetupWindows(); // настраиваем фрамуги
 

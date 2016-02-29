@@ -115,6 +115,38 @@ TempSensors tempSensors;
 // модуль управления по SMS
  SMSModule smsModule;
  String smsReceiveBuff;
+ 
+void NEOWAY_EVENT_FUNC()
+{
+  char ch;
+  while(NEOWAY_SERIAL.available())
+  {
+    ch = NEOWAY_SERIAL.read();
+
+    if(ch == '\r')
+      continue;
+    
+    if(ch == '\n')
+    {
+      smsModule.ProcessAnswerLine(smsReceiveBuff);
+      smsReceiveBuff = F("");
+    }
+    else
+    {
+        
+        if(smsModule.WaitForSMSWelcome && ch == '>') // ждут команду >
+        {
+          smsModule.WaitForSMSWelcome = false;
+          smsModule.ProcessAnswerLine(F(">"));
+        }
+        else
+          smsReceiveBuff += ch;
+    }
+
+    
+  } // while
+
+}
 #endif
 
 #ifdef USE_WATERING_MODULE
@@ -166,12 +198,11 @@ void WIFI_EVENT_FUNC()
 
     
   } // while
-
-
-    
+   
 }
 
 #endif
+
 
 #ifdef AS_CONTROLLER
 // Модуль поддержки регистрации сторонних коробочек - только в режиме работы контроллера
@@ -337,16 +368,24 @@ void setup()
 
   Serial.println(F(""));
 }
+// эта функция вызывается после обновления состояния каждого модуля.
+// передаваемый параметр - указатель на обновлённый модуль.
+// если модулю предстоит долгая работа - помимо этого инструмента
+// модуль должен дёргать функцию yield!
 void ModuleUpdateProcessed(AbstractModule* module)
 {
   UNUSED(module);
-  // эта функция вызывается после обновления состояния каждого модуля.
 
   // используем её, чтобы проверить состояние порта UART для WI-FI-модуля - вдруг надо внеочередно обновить
     #ifdef USE_WIFI_MODULE
     // модуль Wi-Fi обновляем каждый раз после обновления очередного модуля
     WIFI_EVENT_FUNC(); // вызываем функцию проверки данных в порту
     #endif
+
+   #ifdef USE_SMS_MODULE
+   // и модуль GSM тоже тут обновим
+   NEOWAY_EVENT_FUNC();
+   #endif     
 }
 void loop() 
 {
@@ -398,39 +437,19 @@ void loop()
 // до сюда можно добавлять любой сторонний код
 
 }
-
-#ifdef USE_SMS_MODULE
-void NEOWAY_EVENT_FUNC()
+// обработчик простоя, используем и его. Если сторонняя библиотека устроена правильно - она будет
+// вызывать yield периодически - этим грех не воспользоваться, чтобы избежать потери данных
+// в портах UART. 
+void yield()
 {
-  char ch;
-  while(NEOWAY_SERIAL.available())
-  {
-    ch = NEOWAY_SERIAL.read();
+   #ifdef USE_WIFI_MODULE
+    // модуль Wi-Fi обновляем каждый раз при вызове функции yield
+    WIFI_EVENT_FUNC(); // вызываем функцию проверки данных в порту
+    #endif
 
-    if(ch == '\r')
-      continue;
-    
-    if(ch == '\n')
-    {
-      smsModule.ProcessAnswerLine(smsReceiveBuff);
-      smsReceiveBuff = F("");
-    }
-    else
-    {
-        
-        if(smsModule.WaitForSMSWelcome && ch == '>') // ждут команду >
-        {
-          smsModule.WaitForSMSWelcome = false;
-          smsModule.ProcessAnswerLine(F(">"));
-        }
-        else
-          smsReceiveBuff += ch;
-    }
-
-    
-  } // while
-
-
-    
+   #ifdef USE_SMS_MODULE
+   // и модуль GSM тоже тут обновим
+   NEOWAY_EVENT_FUNC();
+   #endif 
 }
-#endif
+

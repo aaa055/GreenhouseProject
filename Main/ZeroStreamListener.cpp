@@ -73,25 +73,29 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                 AbstractModule* m = c->GetModule(i);
                 if(m != this)
                 {
-                  uint8_t tempCnt = m->State.GetStateCount(StateTemperature);//GetTempSensors();                 
-                  uint8_t relayCnt = m->State.GetStateCount(StateRelay);//GetRelayChannels();
+                  uint8_t tempCnt = m->State.GetStateCount(StateTemperature);
+                  
+                  #ifdef SAVE_RELAY_STATES               
+                  uint8_t relayCnt = m->State.GetStateCount(StateRelay);
+                  #endif
 
                   for(uint8_t j=0;j<tempCnt;j++)
-                    if(m->State.IsStateChanged(StateTemperature,j))//IsTempChanged(j))
+                    if(m->State.IsStateChanged(StateTemperature,j))
                     {
                         hasChanges = true;
                         break;
                     }
-
+                  #ifdef SAVE_RELAY_STATES
                   if(!hasChanges)
                   {
                     for(uint8_t j=0;j<relayCnt;j++)
-                      if(m->State.IsStateChanged(StateRelay,j))//IsRelayStateChanged(j))
+                      if(m->State.IsStateChanged(StateRelay,j))
                       {
                         hasChanges = true;
                         break;
                       }
                   } // if(!hasChanges)
+                  #endif
                   
                   if(hasChanges)
                       break;
@@ -120,12 +124,14 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                 {
                  // состояние модуля изменилось, проверяем, чего именно изменилось
                  String mName = m->GetID();
-                 uint8_t tempCnt = m->State.GetStateCount(StateTemperature);//GetTempSensors();
-                 //uint8_t relayCnt = m->State.GetStateCount(StateRelay);//GetRelayChannels();
+                 uint8_t tempCnt = m->State.GetStateCount(StateTemperature);
+                 #ifdef SAVE_RELAY_STATES
+                 //uint8_t relayCnt = m->State.GetStateCount(StateRelay);
+                 #endif
 
                  for(uint8_t i=0;i<tempCnt;i++)
                  {
-                    if( m->State.IsStateChanged(StateTemperature,i))//IsTempChanged(i)) // температура на датчике изменилась
+                    if( m->State.IsStateChanged(StateTemperature,i)) // температура на датчике изменилась
                     {
                       OneState* os =  m->State.GetState(StateTemperature,i);
                       if(os)
@@ -199,12 +205,17 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                     }
                     else if(propName == PROP_RELAY_CNT) // кол-во каналов реле - в каждом канале - 8 реле
                     {
+                      #ifdef SAVE_RELAY_STATES
                        // ПРИМЕР:
                       // CTGET=0|PROP|M|RELAY_CNT
-                      uint8_t relayCnt = mod->State.GetStateCount(StateRelay);//GetRelayChannels();
+                      uint8_t relayCnt = mod->State.GetStateCount(StateRelay);
                       
                       answerStatus = true;
                       answer = String(PROP_RELAY_CNT) + PARAM_DELIMITER + String(relayCnt);
+                      #else
+                      answerStatus = false;
+                      answer = NOT_SUPPORTED;
+                      #endif
                       
                     } // else if
                     else if(propName == PROP_TEMP) // запросили температуру
@@ -252,6 +263,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                          }
                          else
                          {
+                          #ifdef SAVE_RELAY_STATES
                            // получаем состояние реле
                            if(mod->State.HasState(StateRelay))//HasRelay()) // если поддерживаем реле
                            {
@@ -274,8 +286,16 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                                 } // if(os)
                               }
                              
+                            } // if has relay
+                            else
+                            {
+                              answerStatus = false;
+                              answer = NOT_SUPPORTED;  
                             }
-                           
+                           #else
+                            answerStatus = false;
+                            answer = NOT_SUPPORTED; 
+                           #endif
                          } // else
                     } // else if
                     else
@@ -469,6 +489,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                     }
                     else if(propName == PROP_RELAY_CNT) // кол-во каналов реле
                     {
+                      #ifdef SAVE_RELAY_STATES
+                      
                        // ПРИМЕР:
                       // CTSET=0|PROP|M|RELAY_CNT|5
                       uint8_t relayCnt = command.GetArg(3).toInt();
@@ -484,6 +506,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
 
                       for(uint8_t k = 0;k<channelsCnt;k++)
                         mod->State.AddState(StateRelay,k);
+
+                      #endif
 
                       answerStatus = true;
                       answer = REG_SUCC;
@@ -534,13 +558,14 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                          }
                          else
                          {
+                          #ifdef SAVE_RELAY_STATES
                            // сохраняем состояние реле
                            String curRelayState = command.GetArg(4);
                            uint8_t relayIdx = command.GetArg(3).toInt();
 
                            uint8_t channelIdx = relayIdx/8;
                            uint8_t bitNum = relayIdx % 8;
-
+                            
                            OneState* os = mod->State.GetState(StateRelay,channelIdx);
                            if(os)
                            {
@@ -548,8 +573,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                             bitWrite(curRState,bitNum,(curRelayState == STATE_ON));
                             mod->State.UpdateState(StateRelay,channelIdx,(void*) &curRState);
                            } 
-
-                           //mod->State.SetRelayState(relayIdx,curRelayState);
+                           #endif
                            
                             answerStatus = true;
                             answer = REG_SUCC;

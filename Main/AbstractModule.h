@@ -54,7 +54,9 @@ typedef struct Temperature Humidity;
 typedef enum
 {
 StateTemperature = 1, // есть температурные датчики
+#ifdef SAVE_RELAY_STATES
 StateRelay = 2, // есть реле
+#endif
 StateLuminosity = 4, // есть датчики освещенности
 StateHumidity = 8 // есть датчики влажности
 
