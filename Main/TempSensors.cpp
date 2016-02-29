@@ -19,6 +19,10 @@ void WindowState::Setup(ModuleState* state,  uint8_t relayChannel1, uint8_t rela
   // настраиваем пины, через которые мы будем рулить реле
   pinMode(RelayPin1,OUTPUT);
   pinMode(RelayPin2, OUTPUT);
+
+  // выключаем реле
+  digitalWrite(RelayPin1,RELAY_OFF);
+  digitalWrite(RelayPin2,RELAY_OFF);
 }
 
 bool WindowState::ChangePosition(DIRECTION dir, unsigned long newPos)

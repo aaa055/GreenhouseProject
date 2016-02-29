@@ -236,7 +236,7 @@ bool WIFIClient::Prepare(const String& uriRequested)
 bool WIFIClient::SendPacket(Stream* s)
 {
 
- if(!HasPacket()) // нечего больше отсылать
+ if(!packetsLeft) // нечего больше отсылать
   return false;
   
   #ifdef WIFI_DEBUG
@@ -288,7 +288,6 @@ bool WIFIClient::SendPacket(Stream* s)
         {
           for(uint16_t i=0;i<dataLeft;i++)
             s->write(workFile.read()); // пишем данные в поток
-            //str += (char) workFile.read();
         }
       }
     } // else
@@ -297,7 +296,7 @@ bool WIFIClient::SendPacket(Stream* s)
   else
   {
     // у нас идёт работа с данными уже
-    if(dataToSend.length())//ajaxQueryFound)
+    if(dataToSend.length())
     {
         // тут дочитываем недостающие байты из данных, сформированных в ответ на AJAX-запрос, или данные страницы. сформированной в памяти
       str = dataToSend.substring(0,nextPacketLength);
@@ -311,8 +310,7 @@ bool WIFIClient::SendPacket(Stream* s)
       if(isFileOpen) // если файл открыт
       {
         for(uint16_t i=0;i<nextPacketLength;i++)
-          s->write(workFile.read()); // пишем данные в поток
-          //str += (char) workFile.read();
+         s->write(workFile.read()); // пишем данные в поток
       }
     }
   }
@@ -327,7 +325,7 @@ bool WIFIClient::SendPacket(Stream* s)
  else
   nextPacketLength = (contentLength - sentContentLength);
   
-  return HasPacket(); // если ещё есть пакеты - продолжаем отсылать
+  return (packetsLeft > 0); // если ещё есть пакеты - продолжаем отсылать
 }
 uint16_t WIFIClient::GetPacketLength()
 {
@@ -343,7 +341,7 @@ uint16_t WIFIClient::GetPacketLength()
 
 bool WiFiModule::IsKnownAnswer(const String& line)
 {
-  return ( line == F("OK") || line == F("ERROR") || line == F("FAIL") || line == F("SEND OK") || line == F("SEND FAIL"));
+  return ( line == F("OK") || line == F("ERROR") || line == F("FAIL") || line.endsWith(F("SEND OK")) || line.endsWith(F("SEND FAIL")));
 }
 
 void WiFiModule::ProcessAnswerLine(const String& line)
@@ -352,7 +350,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
   #ifdef WIFI_DEBUG
      WIFI_DEBUG_WRITE(line);WIFI_DEBUG_WRITE(NEWLINE);
     //Serial.print(F("<== Receive \"")); Serial.print(line); Serial.println(F("\" answer from ESP-01..."));
-    WIFI_DEBUG_WRITE("[CA] " + String(currentAction));WIFI_DEBUG_WRITE(NEWLINE);
+    //WIFI_DEBUG_WRITE("[CA] " + String(currentAction));WIFI_DEBUG_WRITE(NEWLINE);
   #endif
 
   // здесь может придти запрос от сервера
@@ -817,6 +815,7 @@ void WiFiModule::ProcessQueue()
         WIFI_DEBUG_WRITE(F("Restart the ESP-01..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("AT+RST"));
+      //SendCommand(F("AT+GMR"));
       }
       break;
 
@@ -827,7 +826,8 @@ void WiFiModule::ProcessQueue()
         WIFI_DEBUG_WRITE(F("Disable echo..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       SendCommand(F("ATE0"));
-      //SendCommand(F("AT+CIOBAUD=57600")); // переводим на другую скорость
+      //SendCommand(F("AT+GMR"));
+      //SendCommand(F("AT+CIOBAUD=230400")); // переводим на другую скорость
       }
       break;
 
@@ -837,7 +837,7 @@ void WiFiModule::ProcessQueue()
       #ifdef WIFI_DEBUG
        WIFI_DEBUG_WRITE(F("Go to SoftAP mode..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
-      SendCommand(F("AT+CWMODE=3"));
+      SendCommand(F("AT+CWMODE_DEF=3"));
       }
       break;
 
@@ -848,7 +848,7 @@ void WiFiModule::ProcessQueue()
         WIFI_DEBUG_WRITE(F("Creating the access point..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
       
-        String com = F("AT+CWSAP=\"");
+        String com = F("AT+CWSAP_DEF=\"");
         com += Settings->GetStationID();
         com += F("\",\"");
         com += Settings->GetStationPassword();
@@ -904,7 +904,7 @@ void WiFiModule::ProcessQueue()
       #ifdef WIFI_DEBUG
         WIFI_DEBUG_WRITE(F("Connecting to the router..."));WIFI_DEBUG_WRITE(NEWLINE);
       #endif
-        String com = F("AT+CWJAP=\"");
+        String com = F("AT+CWJAP_DEF=\"");
         com += Settings->GetRouterID();
         com += F("\",\"");
         com += Settings->GetRouterPassword();
@@ -1005,7 +1005,7 @@ void WiFiModule::UpdateClients()
   
       // клиент подсоединён и ждёт данных от нас - отсылаем ему следующий пакет
       currentClientIDX = idx; // сохраняем номер клиента, которому будем посылать данные
-      String command = F("AT+CIPSEND=");
+      String command = F("AT+CIPSENDBUF=");
       command += String(idx);
       command += F(",");
       command += String(clients[idx].GetPacketLength());

@@ -7,7 +7,7 @@
 #include <SD.h>
 
 #define MAX_WIFI_CLIENTS 4 // максимальное кол-во клиентов
-#define WIFI_PACKET_LENGTH 512 // по скольку байт в пакете отсылать данные
+#define WIFI_PACKET_LENGTH 2048 // по скольку байт в пакете отсылать данные
 
 // список заголовков, с которыми мы работаем
 #define H_HTTP_STATUS F("HTTP/1.1 ") // статус ответа

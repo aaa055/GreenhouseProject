@@ -211,7 +211,7 @@
 #define SDCARD_CS_PIN 53 // номер пина Chip Select для SD-модуля 
 #define WIFI_SERIAL Serial2 // какой хардварный сериал использовать для WI-FI?
 #define WIFI_EVENT_FUNC serialEvent2 // функция для обработки событий входящего трафика от модуля
-#define WIFI_BAUDRATE 57600 // скорость работы с UART для WI-FI
+#define WIFI_BAUDRATE 115200 // скорость работы с UART для WI-FI
 #define STATION_ID F("TEPLICA") // ID точки доступа, которую создаёт модуль WI-FI
 #define STATION_PASSWORD F("12345678") // пароль к точке доступа, которую создаёт вай-фай (МИНИМУМ 8 СИМВОЛОВ, ИНАЧЕН НЕ БУДЕТ РАБОТАТЬ!)
 #define ROUTER_ID F("")  // SSID домашнего роутера, к которому коннектится модуль WI-FI
@@ -219,6 +219,14 @@
 #define WIFI_SETTINGS_COMMAND F("T_SETT") // установить настройки модуля: CTSET=WIFI|T_SETT|SHOULD_CONNECT_TO_ROUTER(0 or 1)|ROUTER_ID|ROUTER_PASS|STATION_ID|STATION_PASS
 #define IP_COMMAND F("IP") // получить текущие IP-адреса, как самой точки доступа, так и назначенный роутером, CTGET=WIFI|IP
 #define BUSY F("BUSY") // если мы не можем ответить на запрос - тогда возвращаем ER=WIFI|BUSY
+
+// в дебаг-режиме переводим отладочный порт на такую же скорость, как и скорость
+// порта, через который мы работаем с ESP
+#ifdef WIFI_DEBUG
+#undef SERIAL_BAUD_RATE
+#define SERIAL_BAUD_RATE WIFI_BAUDRATE
+#warning Serial BAUD RATE IS CHANGED TO WIFI_SERIAL BAUD RATE DUE TO WIFI_DEBUG MODE!
+#endif
 
 // настройки модуля LOOP
 #define MIN_LOOP_PARAMS 5 // минимальное количество параметров, которые надо передать
