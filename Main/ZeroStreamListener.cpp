@@ -198,7 +198,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                     {
                        // ПРИМЕР:
                       // CTGET=0|PROP|M|TEMP_CNT
-                      uint8_t tempCnt = mod->State.GetStateCount(StateTemperature);//GetTempSensors();
+                      uint8_t tempCnt = mod->State.GetStateCount(StateTemperature);
 
                       answerStatus = true;
                       answer = String(PROP_TEMP_CNT) + PARAM_DELIMITER + String(tempCnt);
@@ -231,11 +231,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                          else
                          {
                            // получаем сохраненную температуру от датчика
-                           if(mod->State.HasState(StateTemperature))//HasTemperature()) // если поддерживаем температуру
+                           if(mod->State.HasState(StateTemperature)) // если поддерживаем температуру
                            {
                             uint8_t sensorIdx = command.GetArg(3).toInt();
 
-                            if(sensorIdx < mod->State.GetStateCount(StateTemperature))//mod->State.GetTempSensors())
+                            if(sensorIdx < mod->State.GetStateCount(StateTemperature))
                             {
                               OneState* os = mod->State.GetState(StateTemperature,sensorIdx);
                               if(os)
@@ -265,11 +265,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                          {
                           #ifdef SAVE_RELAY_STATES
                            // получаем состояние реле
-                           if(mod->State.HasState(StateRelay))//HasRelay()) // если поддерживаем реле
+                           if(mod->State.HasState(StateRelay)) // если поддерживаем реле
                            {
                             uint8_t relayIdx = command.GetArg(3).toInt();
 
-                              if(relayIdx < mod->State.GetStateCount(StateRelay)*8)//GetRelayChannels())
+                              if(relayIdx < mod->State.GetStateCount(StateRelay)*8)
                               {
                                 
                                 uint8_t stateIdx = relayIdx/8;

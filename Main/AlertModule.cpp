@@ -707,7 +707,7 @@ void AlertModule::SaveRules() // сохраняем настройки в EEPROM
 bool AlertModule::AddRule(AbstractModule* m, const Command& c)
 {
 
-// сперва ищем правило с таким же именем, как у переданное
+// сперва ищем правило с таким же именем, как и переданное
  String rName = c.GetArg(1);
  for(uint8_t i= 0;i<rulesCnt;i++)
  {
