@@ -17,6 +17,11 @@ void ModuleController::begin()
 _rtc.begin();
 #endif
 
+#if defined(USE_WIFI_MODULE)
+  sdCardInitFlag = SD.begin(SDCARD_CS_PIN); // пробуем инициализировать SD-модуль;
+#endif
+
+
   ModuleInterop.SetController(this); // устанавливаем контроллер для класса взаимодействия между модулями
 }
 void ModuleController::RegisterModule(AbstractModule* mod)

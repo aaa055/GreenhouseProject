@@ -226,7 +226,7 @@ bool HTTPClient::Prepare(bool SDAvailable, const HTTPQuery& query)
   // подставляем тип данных
   httpHeaders += H_CONTENT_TYPE;
   if(ajaxQueryFound)
-    httpHeaders += F("text/javascript");
+    httpHeaders += F("application/json"); // устанавливаем нужный Content-Type для JSON-ответа
   else
   {
     if(dataFound)

@@ -1,7 +1,6 @@
 #ifndef _WIFI_MODULE_H
 #define _WIFI_MODULE_H
 
-#include <SD.h>
 #include "AbstractModule.h"
 #include "TinyVector.h"
 #include "Settings.h"

@@ -92,7 +92,7 @@ bool CommandParser::ParseCommand(const String& command,const String& ourID,Comma
   if(!(tmpBuf == CMD_PREFIX || tmpBuf == CHILD_PREFIX) ) // not right command
     return false;
 
-   COMMAND_DESTINATION dest = tmpBuf == CMD_PREFIX ? cdCONTROLLER : cdCHILDMODULE;
+  COMMAND_DESTINATION dest = tmpBuf == CMD_PREFIX ? cdCONTROLLER : cdCHILDMODULE;
 
   tmpBuf = commandBuf.substring(CMD_PREFIX_LEN,CMD_PREFIX_LEN+CMD_TYPE_LEN);
 

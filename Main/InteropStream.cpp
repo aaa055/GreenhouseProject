@@ -15,21 +15,23 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
  
   Clear();
 
+  //TODO: тут налицо оверхед, т.к. мы вынуждены собирать строку полной команды,
+  // а это совершенно ни к чему.
   String fullCommand = CMD_PREFIX;
   fullCommand += cType == ctGET ? CMD_GET : CMD_SET;
   fullCommand += COMMAND_DELIMITER;
   fullCommand += command;
   CommandParser* cParser = mainController->GetCommandParser();
 
-      Command cmd;
-      if(cParser->ParseCommand(fullCommand, mainController->GetControllerID(), cmd))
-      {
-    
-        cmd.SetInternal(isInternalCommand); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
-        cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
-        mainController->ProcessModuleCommand(cmd,false);
-        return true;
-      }
+  Command cmd;
+  if(cParser->ParseCommand(fullCommand, mainController->GetControllerID(), cmd))
+  {
+
+    cmd.SetInternal(isInternalCommand); // говорим, что команда - как бы от юзера, контроллер после выполнения команды перейдёт в ручной режим
+    cmd.SetIncomingStream(this); // говорим, чтобы модуль плевался ответами в класс взаимодействия между модулями
+    mainController->ProcessModuleCommand(cmd,false);
+    return true;
+  }
 
 
   return false;

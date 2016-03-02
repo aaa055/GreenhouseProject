@@ -397,7 +397,7 @@ void WiFiModule::Setup()
   ModuleController* c = GetController();
   Settings = c->GetSettings();
 
-  sdCardInited = SD.begin(SDCARD_CS_PIN); // пробуем инициализировать SD-модуль
+  sdCardInited = c->HasSDCard(); // проверяем, есть ли у контроллера возможность работы с SD-картой
 
   nextClientIDX = 0;
   currentClientIDX = 0;

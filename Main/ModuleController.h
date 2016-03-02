@@ -12,6 +12,10 @@
 #include "DS3231Support.h"
 #endif
 
+#if defined(USE_WIFI_MODULE)
+#include <SD.h>
+#endif
+
 class AbstractModule; // forward declaration
 typedef Vector<AbstractModule*> ModulesVec;
 
@@ -34,12 +38,18 @@ class ModuleController
   DS3231Clock _rtc; // часы реального времени
 #endif
 
+#if defined(USE_WIFI_MODULE)
+  bool sdCardInitFlag;
+#endif
 
 public:
   ModuleController(COMMAND_DESTINATION wAs, const String& id);
 
   void begin(); // начинаем работу
 
+#if defined(USE_WIFI_MODULE)
+  bool HasSDCard() {return sdCardInitFlag;}
+#endif
   #ifdef USE_DS3231_REALTIME_CLOCK
   // модуль реального времени
   DS3231Clock& GetClock();
