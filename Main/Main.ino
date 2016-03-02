@@ -46,6 +46,10 @@
 #include "WiFiModule.h"
 #endif
 
+#ifdef USE_LOG_MODULE
+#include "LogModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 const char init_1[] PROGMEM = "CTSET=LOOP|SD|SET|100|11|PIN|6|T";// помигаем 5 раз диодом для проверки
@@ -162,6 +166,11 @@ LuminosityModule luminosityModule;
 #ifdef USE_HUMIDITY_MODULE
 // модуль работы с датчиками влажности DHT
 HumidityModule humidityModule;
+#endif
+
+#ifdef USE_LOG_MODULE
+// модуль логгирования информации
+LogModule logModule;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -334,6 +343,10 @@ void setup()
 
   #ifdef USE_HUMIDITY_MODULE
   controller.RegisterModule(&humidityModule);
+  #endif
+
+  #ifdef USE_LOG_MODULE
+  controller.RegisterModule(&logModule);
   #endif
 
  // модуль алертов регистрируем последним, т.к. он должен вычитать зависимости с уже зарегистрированными модулями

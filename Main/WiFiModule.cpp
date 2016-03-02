@@ -17,7 +17,6 @@ void WiFiModule::ProcessAnswerLine(const String& line)
   // получаем ответ на команду, посланную модулю
   #ifdef WIFI_DEBUG
      WIFI_DEBUG_WRITE(line,currentAction);
-    //Serial.print(F("<== Receive \"")); Serial.print(line); Serial.println(F("\" answer from ESP-01..."));
   #endif
 
   // здесь может придти запрос от сервера
@@ -394,17 +393,15 @@ void WiFiModule::ProcessURIRequest(int clientID, const HTTPQuery& query)
 void WiFiModule::Setup()
 {
   // настройка модуля тут
-  ModuleController* c = GetController();
-  Settings = c->GetSettings();
-
-  sdCardInited = c->HasSDCard(); // проверяем, есть ли у контроллера возможность работы с SD-картой
+  Settings = mainController->GetSettings();
+  sdCardInited = mainController->HasSDCard(); // проверяем, есть ли у контроллера возможность работы с SD-картой
 
   nextClientIDX = 0;
   currentClientIDX = 0;
   inSendData = false;
   
   for(uint8_t i=0;i<MAX_WIFI_CLIENTS;i++)
-    clients[i].Setup(c,WIFI_PACKET_LENGTH);
+    clients[i].Setup(mainController,WIFI_PACKET_LENGTH);
 
   waitForQueryCompleted = false;
   WaitForDataWelcome = false; // не ждём приглашения
@@ -695,7 +692,6 @@ void WiFiModule::Update(uint16_t dt)
 }
 bool  WiFiModule::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = NOT_SUPPORTED;
   bool answerStatus = false;
@@ -878,7 +874,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
   } // GET
 
   SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-  c->Publish(this);
+  mainController->Publish(this);
 
   return answerStatus;
 }

@@ -55,8 +55,8 @@ void ModuleState::AddState(ModuleStates state, uint8_t idx)
         long*  ui1 = new long;
         long*  ui2 = new long;
 
-        *ui1 = -1; // нет данных об освещенности
-        *ui2 = -1;
+        *ui1 = NO_LUMINOSITY_DATA; // нет данных об освещенности
+        *ui2 = NO_LUMINOSITY_DATA;
         
         s->Data = ui1;
         s->PreviousData = ui2;
@@ -245,7 +245,7 @@ void AbstractModule::Publish()
      
       txt += toPublish.Text;
       
-      controller->PublishToStream(streamDefOut,toPublish.Status,txt);
+      mainController->PublishToStream(streamDefOut,toPublish.Status,txt);
     } // if
     
 }

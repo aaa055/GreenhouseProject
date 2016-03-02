@@ -39,7 +39,7 @@ void BH1750Support::writeByte(uint8_t toWrite)
 long BH1750Support::GetCurrentLuminosity() 
 {
 
-  long curLuminosity = -1;
+  long curLuminosity = NO_LUMINOSITY_DATA;
 
   Wire.beginTransmission(deviceAddress); // начинаем опрос датчика освещенности
  if(Wire.requestFrom(deviceAddress, 2) == 2)// ждём два байта
@@ -72,8 +72,7 @@ void LuminosityModule::Setup()
 
   
   // настройка модуля тут
-  controller = GetController();
-  settings = controller->GetSettings();
+  settings = mainController->GetSettings();
 
   workMode = lightAutomatic; // автоматический режим работы
   bRelaysIsOn = false; // все реле выключены
@@ -140,12 +139,11 @@ void LuminosityModule::Update(uint16_t dt)
 
   lastUpdateCall += dt;
   if(lastUpdateCall < LUMINOSITY_UPDATE_INTERVAL) // обновляем согласно настроенному интервалу
-  {
     return;
-  }
-  lastUpdateCall = 0;
+  else
+    lastUpdateCall = 0;
 
-  long lum = -1;
+  long lum = NO_LUMINOSITY_DATA;
 
   #if LIGHT_SENSORS_COUNT > 0
     lum = lightMeter.GetCurrentLuminosity();
@@ -275,7 +273,7 @@ bool  LuminosityModule::ExecCommand(const Command& command)
      #if LIGHT_SENSORS_COUNT > 0
       String(lightMeter.GetCurrentLuminosity());
       #else
-        String(F("-1"));
+        String(NO_LUMINOSITY_DATA);
       #endif
       
       answer += PARAM_DELIMITER;
@@ -283,7 +281,7 @@ bool  LuminosityModule::ExecCommand(const Command& command)
       #if LIGHT_SENSORS_COUNT > 1
         String(lightMeter2.GetCurrentLuminosity());
       #else
-        String(F("-1"));
+        String(NO_LUMINOSITY_DATA);
       #endif
     }
     else
@@ -319,7 +317,7 @@ bool  LuminosityModule::ExecCommand(const Command& command)
  
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    controller->Publish(this);
+    mainController->Publish(this);
     
   return answerStatus;
 }

@@ -98,7 +98,6 @@ class AbstractModule
 {
   private:
     String moduleID;    
-    ModuleController* controller;
     
     #ifdef USE_PUBLISHERS
     AbstractPublisher* publishers[MAX_PUBLISHERS];
@@ -111,6 +110,8 @@ class AbstractModule
     #endif
 
 protected:
+
+  ModuleController* mainController;
 
   PublishStruct toPublish; // структура для публикации данных от модуля
   void SetPublishData(const Command* srcCommand, bool stat, const String& text,bool addModuleID = true, void* data = NULL)
@@ -125,7 +126,7 @@ protected:
     
 public:
 
-  AbstractModule(const String& id) : moduleID(id), controller(NULL)
+  AbstractModule(const String& id) : moduleID(id),mainController(NULL)
   { 
     #ifdef USE_PUBLISHERS
     InitPublishers();
@@ -141,8 +142,8 @@ public:
   void Publish();
 
   
-  void SetController(ModuleController* c) {controller = c;}
-  ModuleController* GetController() {return controller;}
+  void SetController(ModuleController* c) {mainController = c;}
+  ModuleController* GetController() {return mainController;}
   String GetID() {return moduleID;}
   void SetID(const String& id) {moduleID = id;}
 

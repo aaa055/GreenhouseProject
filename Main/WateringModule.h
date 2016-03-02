@@ -27,7 +27,6 @@ class WateringModule : public AbstractModule // модуль управлени�
   WateringChannel wateringChannels[WATER_RELAYS_COUNT]; // каналы полива
   WateringChannel dummyAllChannels; // управляем всеми каналами посредством этой структуры
 
-  ModuleController* controller; // контроллер
   GlobalSettings* settings; // настройки
 
   WateringWorkMode workMode; // текущий режим работы

@@ -228,8 +228,8 @@ void TempSensors::Update(uint16_t dt)
   lastUpdateCall += dt;
   if(lastUpdateCall < TEMP_UPDATE_INTERVAL) // обновляем согласно настроенному интервалу
     return;
-
-  lastUpdateCall = 0;
+  else
+    lastUpdateCall = 0;
 
   // опрашиваем наши датчики
   Temperature t;
@@ -255,8 +255,7 @@ void TempSensors::Update(uint16_t dt)
 }
 bool  TempSensors::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
-  GlobalSettings* sett = c->GetSettings();
+  GlobalSettings* sett = mainController->GetSettings();
   
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = PARAMS_MISSED;  
@@ -593,7 +592,7 @@ bool  TempSensors::ExecCommand(const Command& command)
   
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    c->Publish(this);
+    mainController->Publish(this);
   
   
   return answerStatus;

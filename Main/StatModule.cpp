@@ -24,7 +24,6 @@ void StatModule::Update(uint16_t dt)
 
 bool  StatModule::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = UNKNOWN_COMMAND;
   bool answerStatus = false; 
@@ -59,7 +58,7 @@ bool  StatModule::ExecCommand(const Command& command)
  #ifdef USE_DS3231_REALTIME_CLOCK   
     else if(t == CURDATETIME_COMMAND)
     {
-       DS3231Clock rtc = c->GetClock();
+       DS3231Clock rtc = mainController->GetClock();
        DS3231Time tm = rtc.getTime();
        String s = rtc.getDayOfWeekStr(tm);
        s += F(" ");
@@ -79,7 +78,7 @@ bool  StatModule::ExecCommand(const Command& command)
  
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer,false); // готовим данные для публикации
-    c->Publish(this);
+    mainController->Publish(this);
     
   return answerStatus;
 }

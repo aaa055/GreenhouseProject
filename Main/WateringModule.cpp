@@ -7,8 +7,7 @@ void WateringModule::Setup()
 {
   // настройка модуля тут
 
-  controller = GetController();
-  settings = controller->GetSettings();
+  settings = mainController->GetSettings();
 
   blinker.begin(DIODE_WATERING_MANUAL_MODE_PIN, F("WM"));  // настраиваем блинкер на нужный пин
 
@@ -232,7 +231,7 @@ void WateringModule::Update(uint16_t dt)
   #ifdef USE_DS3231_REALTIME_CLOCK
 
     // обновляем состояние часов
-    DS3231Clock watch =  controller->GetClock();
+    DS3231Clock watch =  mainController->GetClock();
     DS3231Time t =   watch.getTime();
     
     if(currentDOW == -1) // если мы не сохраняли текущий день недели, то
@@ -310,8 +309,6 @@ void WateringModule::Update(uint16_t dt)
 }
 bool  WateringModule::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
-  GlobalSettings* settings = c->GetSettings();
   
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = UNKNOWN_COMMAND;
@@ -560,7 +557,7 @@ bool  WateringModule::ExecCommand(const Command& command)
  
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    c->Publish(this);
+    mainController->Publish(this);
     
   return answerStatus;
 }

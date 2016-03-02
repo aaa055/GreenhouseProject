@@ -38,7 +38,7 @@ void LoopModule::Update(uint16_t dt)
           // конструируем команду
           Command com;
           com.SetIncomingStream(lnk->IncomingCtream); // не забываем сохранить вызвавший команду поток
-          com.Construct(lnk->linkedModule->GetID(),lnk->paramsToPass,lnk->typeOfCommand,GetController()->GetWorkMode());
+          com.Construct(lnk->linkedModule->GetID(),lnk->paramsToPass,lnk->typeOfCommand,mainController->GetWorkMode());
 
           com.SetInternal(true); // говорим, что команда - от одного модуля к другому
 
@@ -59,7 +59,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
   if(paramsCount < MIN_LOOP_PARAMS) // мало параметров передано
   {
      SetPublishData(&command,false,PARAMS_MISSED); // сохраняем данные для публикации
-     GetController()->Publish(this); // публикуем их от своего имени
+     mainController->Publish(this); // публикуем их от своего имени
     return NULL;
   }
 
@@ -73,7 +73,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
     if(!regModule)
     {
       SetPublishData(&command,false,UNKNOWN_MODULE); // сохраняем данные для публикации
-      GetController()->Publish(this); // публикуем
+      mainController->Publish(this); // публикуем
       return false;
     }
     // добавляем новую связь
@@ -111,12 +111,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
 
 AbstractModule* LoopModule::GetRegisteredModule(const String& moduleID)
 {
-  ModuleController* c = GetController();
-  if(c)
-  {
-    return c->GetModuleByID(moduleID);
-  }
-  return NULL;
+    return mainController->GetModuleByID(moduleID);
 }
 
 LoopLink* LoopModule::GetLink(const String& loopName)

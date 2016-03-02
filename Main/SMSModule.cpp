@@ -10,7 +10,7 @@ bool SMSModule::IsKnownAnswer(const String& line)
 
 void SMSModule::Setup()
 {
-  Settings = GetController()->GetSettings();
+  Settings = mainController->GetSettings();
 
   // будем смотреть этот пин на предмет наличия питания у модуля NEOWAY
   pinMode(NEOWAY_VCCIO_CHECK_PIN,INPUT);
@@ -699,8 +699,7 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     return;
   }
 
-  ModuleController* c = GetController();
-  AbstractModule* stateModule = c->GetModuleByID(F("STATE"));
+  AbstractModule* stateModule = mainController->GetModuleByID(F("STATE"));
 
   if(!stateModule)
   {
@@ -848,7 +847,6 @@ void SMSModule::SendSMS(const String& sms)
 
 bool  SMSModule::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = UNKNOWN_COMMAND;
   bool answerStatus = false; 
@@ -885,7 +883,7 @@ bool  SMSModule::ExecCommand(const Command& command)
  
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    c->Publish(this);
+    mainController->Publish(this);
     
   return answerStatus;
 }

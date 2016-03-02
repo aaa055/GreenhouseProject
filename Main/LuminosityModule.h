@@ -57,7 +57,6 @@ class LuminosityModule : public AbstractModule // модуль управлен�
 {
   private:
 
-  ModuleController* controller; // контроллер
   GlobalSettings* settings; // настройки
 
   BlinkModeInterop blinker;

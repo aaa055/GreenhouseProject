@@ -87,7 +87,6 @@ void PinModule::Update(uint16_t dt)
 
 bool  PinModule::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = PARAMS_MISSED;
   bool answerStatus = false;  
@@ -112,7 +111,7 @@ bool  PinModule::ExecCommand(const Command& command)
 
   // отвечаем на команду
     SetPublishData(&command,true,answer,answerStatus); // готовим данные для публикации
-    c->Publish(this);
+    mainController->Publish(this);
     return answerStatus;
     
   } // if ctGET
@@ -194,7 +193,7 @@ bool  PinModule::ExecCommand(const Command& command)
    
     } // if
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    c->Publish(this);
+    mainController->Publish(this);
     return answerStatus;
 
   } // if ctSET

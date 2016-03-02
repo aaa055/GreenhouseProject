@@ -138,7 +138,7 @@ bool AlertRule::HasAlert()
         
        long* lum = (long*) os->Data;
 
-       if(*lum == -1) // нет датчика на линии
+       if(*lum == NO_LUMINOSITY_DATA) // нет датчика на линии
         return false;
 
        long mappedLum = dataAlertLong;//map(dataAlert,0,0xFF,0,0xFFFF);
@@ -653,7 +653,6 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
 }
 void AlertModule::LoadRules() // читаем настройки из EEPROM
 {
-  ModuleController* c = GetController();
   
   for(uint8_t i=0;i<rulesCnt;i++)
   {
@@ -680,7 +679,7 @@ void AlertModule::LoadRules() // читаем настройки из EEPROM
   {
     AlertRule* r = new AlertRule;
     alertRules[i] = r;
-    readAddr += r->Load(readAddr,c); // просим правило прочитать своё внутреннее состояние
+    readAddr += r->Load(readAddr,mainController); // просим правило прочитать своё внутреннее состояние
   } // for
   
 }
@@ -756,9 +755,8 @@ void AlertModule::Setup()
 
   lastUpdateCall = 0;
 
-  controller = GetController();
-  cParser = controller->GetCommandParser();
-  controllerID = controller->GetControllerID();  
+  cParser = mainController->GetCommandParser();
+  controllerID = mainController->GetControllerID();  
 }
 void AlertModule::InitRules()
 {
@@ -777,11 +775,9 @@ void AlertModule::Update(uint16_t dt)
     
   if(lastUpdateCall < ALERT_UPD_INTERVAL) // обновляем согласно настроенному интервалу
     return;
-  
-
- 
+     
 #ifdef USE_DS3231_REALTIME_CLOCK
-  DS3231Clock rtc = controller->GetClock();
+  DS3231Clock rtc = mainController->GetClock();
   DS3231Time tm = rtc.getTime();
 #endif
 
@@ -840,7 +836,7 @@ void AlertModule::Update(uint16_t dt)
 
         // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
         //cmd.SetIncomingStream(pStream);
-        controller->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой
+        mainController->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой
 
         // дёргаем функцию обновления других вещей - типа, кооперативная работа
         yield();
@@ -954,7 +950,6 @@ void AlertModule::AddAlert(const String& strAlert)
 
 bool  AlertModule::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = UNKNOWN_COMMAND;
   bool answerStatus = false; 
@@ -982,7 +977,7 @@ bool  AlertModule::ExecCommand(const Command& command)
           {
 
             t =  command.GetArg(2); // имя модуля
-            AbstractModule* m = c->GetModuleByID(t);
+            AbstractModule* m = mainController->GetModuleByID(t);
             if(m && m != this && AddRule(m,command))
             {
               answerStatus = true;
@@ -1220,7 +1215,7 @@ bool  AlertModule::ExecCommand(const Command& command)
  
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    c->Publish(this);
+    mainController->Publish(this);
     
   return answerStatus;
 }

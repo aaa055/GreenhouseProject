@@ -44,10 +44,9 @@ void HumidityModule::Update(uint16_t dt)
   
   lastUpdateCall += dt;
   if(lastUpdateCall < HUMIDITY_UPDATE_INTERVAL) // обновляем согласно настроенному интервалу
-  {
     return;
-  }
-  lastUpdateCall = 0; 
+  else
+    lastUpdateCall = 0; 
 
   // получаем данные с датчиков влажности
   Humidity h;
@@ -81,7 +80,6 @@ void HumidityModule::Update(uint16_t dt)
 bool  HumidityModule::ExecCommand(const Command& command)
 {
 
-  ModuleController* c = GetController();
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = NOT_SUPPORTED;
   bool answerStatus = false;
@@ -167,7 +165,7 @@ bool  HumidityModule::ExecCommand(const Command& command)
   
 
   SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-  c->Publish(this);
+  mainController->Publish(this);
     
   return answerStatus;
 }

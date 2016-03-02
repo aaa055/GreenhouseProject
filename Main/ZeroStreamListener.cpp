@@ -18,7 +18,6 @@ void ZeroStreamListener::Update(uint16_t dt)
 
 bool  ZeroStreamListener::ExecCommand(const Command& command)
 {
-  ModuleController* c = GetController();
   String answer; answer.reserve(RESERVE_STR_LENGTH);
   answer = UNKNOWN_COMMAND;
   bool answerStatus = false;
@@ -61,16 +60,16 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
         {
           answerStatus = true;
           shouldAddModuleID = false;
-          answer = SMS_NUMBER_COMMAND; answer += PARAM_DELIMITER; answer += c->GetSettings()->GetSmsPhoneNumber();
+          answer = SMS_NUMBER_COMMAND; answer += PARAM_DELIMITER; answer += mainController->GetSettings()->GetSmsPhoneNumber();
         }
         else if(t == HAS_CHANGES_COMMAND) // есть ли изменения в состоянии модулей?
         {
           // CTGET=0|HAS_CHANGES - ВЕРНЕТ 1, ЕСЛИ ЕСТЬ ИЗМЕНЕНИЯ, И 0 - ЕСЛИ НЕТ
-            size_t cnt = c->GetModulesCount();
+            size_t cnt = mainController->GetModulesCount();
             bool hasChanges = false;
             for(size_t i=0;i<cnt;i++)
             {
-                AbstractModule* m = c->GetModule(i);
+                AbstractModule* m = mainController->GetModule(i);
                 if(m != this)
                 {
                   uint8_t tempCnt = m->State.GetStateCount(StateTemperature);
@@ -114,12 +113,12 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           // ЧЕМ ОБЪЁМ ОПЕРАТИВКИ !!! НАДО ПЕРЕПИСАТЬ, ЧТОБЫ РАБОТАЛО С ПОСЛЕДОВАТЕЛЬНЫМИ ОБРАЩЕНИЯМИ, ЛИБО
           // ПО ОЧЕРЕДИ ПИСАЛО СТРОКИ В ПОТОК !!!
           
-            size_t cnt = c->GetModulesCount();
+            size_t cnt = mainController->GetModulesCount();
             answer = F("");
            
             for(size_t i=0;i<cnt;i++)
             {
-                AbstractModule* m = c->GetModule(i);
+                AbstractModule* m = mainController->GetModule(i);
                 if(m != this)
                 {
                  // состояние модуля изменилось, проверяем, чего именно изменилось
@@ -158,10 +157,10 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           shouldAddModuleID = false;
           answerStatus = true;
           answer = F("");
-          size_t cnt = c->GetModulesCount();
+          size_t cnt = mainController->GetModulesCount();
           for(size_t i=0;i<cnt;i++)
           {
-            AbstractModule* mod = c->GetModule(i);
+            AbstractModule* mod = mainController->GetModule(i);
 
             if(mod != this)
             {
@@ -178,7 +177,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
         {
         // запросили чтение свойств
           String reqID = command.GetArg(1);
-          AbstractModule* mod = c->GetModuleByID(reqID);
+          AbstractModule* mod = mainController->GetModuleByID(reqID);
           if(mod)
           {
                   uint8_t argsCnt = command.GetArgsCount();
@@ -376,7 +375,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
        #endif
        if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по SMS
        {
-          GlobalSettings* sett = c->GetSettings();
+          GlobalSettings* sett = mainController->GetSettings();
           sett->SetSmsPhoneNumber(command.GetArg(1));
           sett->Save();
           answerStatus = true;
@@ -445,7 +444,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                dow -= 7;             
 
             
-             DS3231Clock cl = c->GetClock();
+             DS3231Clock cl = mainController->GetClock();
              cl.setTime(sec.toInt(),minute.toInt(),hour.toInt(),dow,dayint,monthint,yearint);
 
              answerStatus = true;
@@ -458,7 +457,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
        {
         // запросили установку свойств
           String reqID = command.GetArg(1);
-          AbstractModule* mod = c->GetModuleByID(reqID);
+          AbstractModule* mod = mainController->GetModuleByID(reqID);
           if(mod)
           {
                   uint8_t argsCnt = command.GetArgsCount();
@@ -606,7 +605,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
  
  // отвечаем на команду
     SetPublishData(&command,answerStatus,answer,shouldAddModuleID); // готовим данные для публикации
-    c->Publish(this);
+    mainController->Publish(this);
     
   return answerStatus;
 }

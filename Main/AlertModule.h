@@ -96,7 +96,6 @@ class AlertModule : public AbstractModule
 #endif
 
     unsigned long lastUpdateCall;
-    ModuleController* controller;
     String controllerID;
     CommandParser* cParser;
 
