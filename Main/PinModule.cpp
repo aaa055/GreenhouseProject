@@ -13,53 +13,51 @@ void PinModule::UpdatePinStates()
   {
     PIN_STATE* s = &(pinStates[i]);
     
-    if(s->isActive) // если мы управляем пином
+    if(s->isActive && s->hasChanges) // если мы управляем пином
     {
+      s->hasChanges = false;
       pinMode(s->pinNumber,OUTPUT); // делаем пин запоминающим значения
       digitalWrite(s->pinNumber,s->pinState); // запоминаем текущее состояние пина
     }
   } // for
   
 }
-bool PinModule::PinExist(uint8_t pinNumber)
+PIN_STATE* PinModule::GetPin(uint8_t pinNumber)
 {
-   uint8_t sz = pinStates.size();
-  for(uint8_t i=0;i<sz;i++)
-  {
-    PIN_STATE* s = &(pinStates[i]);
-    if(s->pinNumber == pinNumber)
-      return true;
-  } // for
-  return false;
-}
-bool PinModule::AddPin(uint8_t pinNumber,uint8_t currentState)
-{
-  bool canAdd = true;
-
   uint8_t sz = pinStates.size();
   for(uint8_t i=0;i<sz;i++)
   {
     PIN_STATE* s = &(pinStates[i]);
     if(s->pinNumber == pinNumber)
-    {
-        canAdd = false;
-        s->pinState = currentState;
-          
-        s->isActive = true;
-        break;
-    }
+      return s;
   } // for
-  if(canAdd) // можем добавлять
+  return NULL;  
+}
+bool PinModule::PinExist(uint8_t pinNumber)
+{
+  return (GetPin(pinNumber) != NULL);
+}
+bool PinModule::AddPin(uint8_t pinNumber,uint8_t currentState)
+{
+  PIN_STATE* s = GetPin(pinNumber);
+  if(s)
   {
+    s->pinState = currentState;          
+    s->isActive = true;
+    s->hasChanges = true; 
+    return true;   
+  }
+
+  // можем добавлять, т.к. не нашли пин
     PIN_STATE p;
     p.pinNumber = pinNumber;
     p.pinState = currentState;
     p.isActive = true;
+    p.hasChanges = true;
     pinMode(pinNumber,OUTPUT);
     pinStates.push_back(p);
-  } // if(canAdd)
 
-  return canAdd;
+  return true;
 }
 uint8_t PinModule::GetPinState(uint8_t pinNumber)
 {
@@ -69,14 +67,13 @@ uint8_t PinModule::GetPinState(uint8_t pinNumber)
     PIN_STATE* s = &(pinStates[i]);
     if(s->pinNumber == pinNumber)
     {
-      pinMode(s->pinNumber,INPUT); // читаем прямо из пина, его текущее состояние
-      uint8_t curState = digitalRead(s->pinNumber);
-      pinMode(s->pinNumber,OUTPUT);
-      return curState;
+      return s->pinState;
     }
     
   } // for
-
+// не можем читать состояние пина, не зарегистрированного у нас, поскольку
+// этим пином может управлять другой модуль, и мы не можем переводить его в режим 
+// чтения состояния. Поэтому возвращаем LOW.
   return LOW;
 }
 void PinModule::Update(uint16_t dt)
@@ -161,6 +158,7 @@ bool  PinModule::ExecCommand(const Command& command)
             {
               s->pinState = s->pinState == LOW ? HIGH : LOW;
               s->isActive = true;
+              s->hasChanges = true;
               answerStatus = true;
               answer = strNum + PARAM_DELIMITER;
               answer +=  (s->pinState == HIGH ? STATE_ON : STATE_OFF);
@@ -180,6 +178,7 @@ bool  PinModule::ExecCommand(const Command& command)
             if(s->pinNumber == pinNumber)
             {
               s->isActive = false;
+              s->hasChanges = false;
               answerStatus = true;
               answer =  strNum + PARAM_DELIMITER + PIN_DETACH;
               break;

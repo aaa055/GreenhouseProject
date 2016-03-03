@@ -9,6 +9,7 @@ typedef struct
   uint8_t pinNumber;
   uint8_t pinState;
   bool isActive;
+  bool hasChanges;
   
 } PIN_STATE;
 
@@ -24,6 +25,7 @@ class PinModule : public AbstractModule
     uint8_t GetPinState(uint8_t pinNumber);
     bool AddPin(uint8_t pinNumber,uint8_t currentState);
     bool PinExist(uint8_t pinNumber);
+    PIN_STATE* GetPin(uint8_t pinNumber);
    
   public:
     PinModule() : AbstractModule(F("PIN")) {}
