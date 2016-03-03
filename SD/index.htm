@@ -127,46 +127,36 @@ function prevent_default(e)
   if(!e)
     return;
 
-
   if(e.stopPropagation) e.stopPropagation();
   else e.cancelBubble = true;
   
   if(e.preventDefault) e.preventDefault();
-  else e.returnValue = false;
-    
-    
+  else e.returnValue = false; 
 }
 function OnlyDigits(event,elem) 
 {
-
 if(!event)
   event = window.event;
 
-
-	if(event)
-	{
+	if(event){
     var work = event.charCode || event.keyCode;
     
-		if ((work < 45 || work> 57) ) 
-		{
+		if ((work < 45 || work> 57) ){
 			if( !(work == 8 || work == 9 || work == 13) )
 				prevent_default(event);
 		}
-      
-	} // if(event)
-
+	}
 }
-String.prototype.trim = function() {
+String.prototype.trim = function(){
 	return this.replace(/^\s+|\s+$/g,"");
 }
-String.prototype.ltrim = function() {
+String.prototype.ltrim = function(){
 	return this.replace(/^\s+/,"");
 }
-String.prototype.rtrim = function() {
+String.prototype.rtrim = function(){
 	return this.replace(/\s+$/,"");
 }
-String.prototype.format = function() 
-{
+String.prototype.format = function(){
   var args = arguments;
   return this.replace(/{(\d+)}/g, function(match, number) { 
     return typeof args[number] != 'undefined'
@@ -175,16 +165,13 @@ String.prototype.format = function()
     ;
   });
 }
-function getE(id)
-{
+function getE(id){
 	return document.getElementById(id);
 }
-function showElem(elemId, visible)
-{
+function showElem(elemId, visible){
  var elem = getE(elemId);
 
- if(elem != null)
- {
+ if(elem != null){
   var cs = elem.runtimeStyle;
 
   if(cs == null)
@@ -198,11 +185,9 @@ function showElem(elemId, visible)
   else
     cs.display = "none";
   
-
  }
-
 }
-var Action = function(isGet,command,func_done,func_fail,elemToDisable) {
+var Action = function(isGet,command,func_done,func_fail,elemToDisable){
  this.isGet =isGet;
  this.command = command;
  this.func_done = func_done;
@@ -213,106 +198,87 @@ return this;
 }
 var queue = new Array();
 var currentAction = null;
-function processQueue()
-{
+function processQueue(){
   if(currentAction != null || !queue.length)
     return;
     
    currentAction = queue.shift();
    queryController(currentAction.isGet,currentAction.command,currentAction.func_done,currentAction.func_fail,currentAction.elemToDisable);
 }
-function addToQueue(isGet,command,func_done,func_fail,elemToDisable)
-{
+function inQueue(isGet,command){
+for(var i=0;i<queue.length;i++){
+  if(queue[i].isGet == isGet && queue[i].command == command)
+    return true;
+}
+return false;
+}
+function addToQueue(isGet,command,func_done,func_fail,elemToDisable){
+
+  if(inQueue(isGet,command)) return;
+
   var e = getE(elemToDisable);
   if(e)
     e.setAttribute("disabled","disabled");
   queue.push(new Action(isGet,command,func_done,func_fail,e));
 }
-function getXmlHttp()
-{
+function getXmlHttp(){
   var xmlhttp;
-  try 
-  {
+  try{
     xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
   } 
-  catch (e) 
-  {
-    try 
-    {
+  catch (e){
+    try{
       xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
     } 
-    catch (E) 
-    {
+    catch (E){
       xmlhttp = false;
     }
   }
-  if (!xmlhttp && typeof XMLHttpRequest!='undefined') 
-  {
+  if (!xmlhttp && typeof XMLHttpRequest!='undefined'){
     xmlhttp = new XMLHttpRequest();
   }
   return xmlhttp;
 }
-
-var inQueryController = false;
 var getPrefix = "CTGET=";
 var setPrefix = "CTSET=";
 var noData = "&lt;нет данных&gt;";
 var workAsLocalPage = false;
 
-function queryController(isGet, command, func_done,func_fail, elemToDisable)
-{
+function queryController(isGet, command, func_done,func_fail, elemToDisable){
   var xmlhttp = getXmlHttp();
-  if(!xmlhttp)
-  {
+  if(!xmlhttp){
     alert("No xmlhttp!");
     return;
   }
   
-  if(inQueryController)
-  {
-    alert("В процессе обработки команды к контроллеру, обратитесь позднее.");
-    return;
-  }
-   
   var addr = (workAsLocalPage ? serverAddress : "/") + (isGet ? getPrefix : setPrefix) + command;
     
   xmlhttp.open("GET", addr, true);
-  xmlhttp.onreadystatechange = function() 
-  {
+  xmlhttp.onreadystatechange = function(){
   
-    if (xmlhttp.readyState == 4) 
-    {
-       if(xmlhttp.status == 200) 
-       {
+    if (xmlhttp.readyState == 4){
+       if(xmlhttp.status == 200){
          if(func_done)
           func_done(parse(eval("e = " + xmlhttp.responseText)));
           
-         inQueryController = false;
          currentAction = null;
        }
-       else
-       {
+       else{
         if(func_fail)
           func_fail();
           
-        inQueryController = false;
         currentAction = null;
-       }
-        
+       }       
       if(elemToDisable)
         elemToDisable.removeAttribute("disabled");
-    }
-    
+    }  
   }
-  inQueryController = true;
   xmlhttp.send(null);   
 }
-function reportError(query)
-{
+function reportError(query){
   alert("Неудачное выполнение запроса:\n\n" + query);
 }
-function parse(obj)
-{
+function parse(obj){
   var ans = obj.answer;
   var idx = ans.indexOf("=");
   var which = ans.substring(0,idx);
@@ -326,17 +292,14 @@ function parse(obj)
   
   return obj;
 }
-function reportTemperature(obj)
-{
-  if(obj.IsOkAnswer)
-  {
+function reportTemperature(obj){
+  if(obj.IsOkAnswer){
     var result = "";
     var template = getE("temp_template").innerHTML;
     result += template.format("cth","","Показания");
     // получили значение температур
     var sensorsCnt = obj.Params.length - 2;
-    for(var i=0;i<sensorsCnt;i++)
-    {
+    for(var i=0;i<sensorsCnt;i++){
       var tempData = obj.Params[2 + i];
       var dt = parseInt(tempData);
       if(isNaN(dt) || dt < 0) // нет показаний с датчика
@@ -352,17 +315,14 @@ function reportTemperature(obj)
   else
     reportError(obj.query);
 }
-function reportHumidity(obj)
-{
-  if(obj.IsOkAnswer)
-  {
+function reportHumidity(obj){
+  if(obj.IsOkAnswer){
     var result = "";
     var template = getE("humidity_template").innerHTML;
     result += template.format("cth","","Влажность", "Температура");
     // получили значение температур и влажностей
     var sensorsCnt = parseInt(obj.Params[1]);
-    for(var i=0;i<sensorsCnt;i+=2)
-    {
+    for(var i=0;i<sensorsCnt;i+=2){
       var humidityData = obj.Params[2 + i];
       var dt = parseInt(humidityData);
       if(isNaN(dt) || dt < 0) // нет показаний с датчика
@@ -391,33 +351,37 @@ var LightState = function(obj) {
 return this;
 }
 var currentLightState = null;
-function setLightStateUI(isOn,isAuto)
-{
+function setLightStateUI(isOn,isAuto){
   
+  if(lightActionRequested)
+    return;
+    
       var stateStr = isOn ? "ВКЛ" : "ВЫКЛ";
       var r = getE('light_on_off_b');
       var e = getE('sp_light_state');
       inLightOnOff = true;
-      e.value = isOn ? 1 : 0;
+      r.value = isOn ? 1 : 0;
       inLightOnOff = false;
+      
+      inLightSwitchState = true;
+      r = getE('light_state_b');
+      r.value = isAuto ? 1 : 0;
+      inLightSwitchState = false;
+      
       e.innerHTML  = stateStr;
       e.setAttribute("class", (isOn ? "bld dgreen" : "bld dred"));
 }
-function parseLightState(obj)
-{
+function parseLightState(obj){
   currentLightState = new LightState(obj);
   setLightStateUI(currentLightState.IsON,currentLightState.IsAutoMode);
 }
 
-function reportLight(obj)
-{
-  if(obj.IsOkAnswer)
-  {
+function reportLight(obj){
+  if(obj.IsOkAnswer){
     var result = "";
     var template = getE("light_template").innerHTML;
     result += template.format("cth","Первый датчик","Второй датчик");
     // получили значение освещенности
-
       var light1 = obj.Params[1];
       var light2 = obj.Params[2];
       
@@ -440,38 +404,40 @@ function reportLight(obj)
   else
     reportError(obj.query);
 }
-function reportLightOnOff(obj)
-{
- if(obj.IsOkAnswer)
-  {
-      var isLightOn = obj.Params[1] == "ON";
-      setLightStateUI(isLightOn,(currentLightState != null ? currentLightState.IsAutoMode : true) );
+var lightActionRequested = false;
+function reportLightOnOff(obj){
+ if(obj.IsOkAnswer){
+      lightActionRequested = false;
   }
   else
     reportError(obj.query);
 }
+function reportLightState(obj){
+if(obj.IsOkAnswer){
+  
+  lightActionRequested = false;
 
-function dummyFail()
-{
+}
+ else
+    reportError(obj.query);
+
+}
+
+function dummyFail(){
 alert("Не удалось получить данные!");
 }
-function getTemperature()
-{
+function getTemperature(){
   addToQueue(true,"STATE|TEMP|ALL",reportTemperature,dummyFail, 'temp_b');
 }
-function getHumidity()
-{
+function getHumidity(){
   addToQueue(true,"HUMIDITY|ALL",reportHumidity,dummyFail, 'humidity_b');
 }
-function getLight()
-{
+function getLight(){
   addToQueue(true,"LIGHT",reportLight,dummyFail, 'light_b');
 }
 var inLightOnOff = false;
-function lightOnOff()
-{
-  if(inLightOnOff)
-  {
+function lightOnOff(){
+  if(inLightOnOff){
     inLightOnOff = false;
     return;
   }
@@ -486,35 +452,58 @@ function lightOnOff()
     cs = "OFF";
     
   command += cs;
-  
+  lightActionRequested = true;
   addToQueue(false,command,reportLightOnOff,dummyFail, 'light_on_off_b');
 }
-
+var inLightSwitchState = false;
+function lightSwitchState(){
+if(inLightSwitchState) {
+  inLightSwitchState = false;
+  return;
+  }
+  var command = "LIGHT|MODE|";
+  var cs = "ON";
+  
+  var r = getE('light_state_b');
+  
+  if(r.value == 1)
+    cs = "AUTO";
+  else
+    cs = "MANUAL";
+    
+  command += cs;
+  lightActionRequested = true;
+  addToQueue(false,command,reportLightState,dummyFail, 'light_state_b');
+}
+function processStates(){
+    addToQueue(true,"LIGHT|STATE",parseLightState,null, '');
+}
 var lastselmenu = null;
-function init()
-{
+function init(){
 selectmenu(getE('temp'));
+
 if(window.location.protocol.indexOf("file") != -1) 
   workAsLocalPage = true; // мы запущены с локального диска
 else
   workAsLocalPage = false;
   
   // команды получения текущего состояния датчиков
-  addToQueue(true,"LIGHT|STATE",parseLightState,null, '');
+  processStates();
   addToQueue(true,"STATE|TEMP|ALL",reportTemperature,dummyFail, 'temp_b');
   addToQueue(true,"HUMIDITY|ALL",reportHumidity,dummyFail, 'humidity_b');
   addToQueue(true,"LIGHT",reportLight,dummyFail, 'light_b');
+  addToQueue(true,"LIGHT|MODE",reportLightState,dummyFail, 'light_state_b');
 
-  window.setInterval(processQueue,200);
+  window.setInterval(processStates,1000);
+
+  window.setInterval(processQueue,100);
 }
-function unselectmenu(elem)
-{
+function unselectmenu(elem){
   elem.removeAttribute("class");
   elem.setAttribute("class","mi");
   showElem("c_" + elem.id, false);
 }
-function selectmenu(elem)
-{
+function selectmenu(elem){
   if(lastselmenu != null)
     unselectmenu(lastselmenu);
     
@@ -562,9 +551,8 @@ function selectmenu(elem)
 <p><input type='button' onclick='getLight()' id='light_b' value='Опросить датчики'/></p>
 <h2 class='mtop mbtm'>Управление досветкой</h2>
 Состояние досветки: <span id="sp_light_state" class='bld dred'></span>
-<p>
-<span class='bld dred'>ВЫКЛ</span> <input type='range' min='0' max='1' onchange="lightOnOff();" id='light_on_off_b' value='0'/> <span class='bld dgreen'>ВКЛ</span>
-</p>
+<p><span class='bld dred'>ВЫКЛ</span> <input type='range' min='0' max='1' onchange="lightOnOff();" id='light_on_off_b' value='0'/> <span class='bld dgreen'>ВКЛ</span></p>
+<p>Режим работы:<br/><span class='bld dred'>Ручной</span> <input type='range' min='0' max='1' onchange="lightSwitchState();" id='light_state_b' value='0'/> <span class='bld dgreen'>Авто</span></p>
 </div>
 <div id='c_humidity' class='hdn'>
 <h2>Показания датчиков влажности</h2>
