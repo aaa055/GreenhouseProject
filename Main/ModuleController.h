@@ -46,7 +46,7 @@ class ModuleController
   LogModule* logWriter;
 #endif
 
-#if defined(USE_WIFI_MODULE)
+#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
   bool sdCardInitFlag;
 #endif
 

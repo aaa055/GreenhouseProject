@@ -23,7 +23,7 @@ class LogModule : public AbstractModule // модуль логгирования
 
   unsigned long lastUpdateCall;
   DS3231Clock rtc;
-  byte lastDOW;
+  int8_t lastDOW;
 
   bool hasSD;
   File logFile; // текущий файл для логгирования
@@ -32,7 +32,7 @@ class LogModule : public AbstractModule // модуль логгирования
   unsigned long loggingInterval; // интервал между логгированиями
 
 #ifdef LOG_ACTIONS_ENABLED
-  byte lastActionsDOW;
+  int8_t lastActionsDOW;
   void EnsureActionsFileCreated(); // убеждаемся, что файл с записями текущих действий создан
   void CreateActionsFile(const DS3231Time& tm); // создаёт новый файл лога с записью действий
 #endif
