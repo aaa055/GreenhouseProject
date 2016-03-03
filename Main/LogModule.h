@@ -10,6 +10,13 @@
 #include "DS3231Support.h"
 #include <SD.h>
 
+typedef struct
+{
+  AbstractModule* RaisedModule; // модуль, который инициировал событие
+  String Message; // действие, которое было произведено
+  
+} LogAction; // структура с описанием действий, которые произошли 
+
 class LogModule : public AbstractModule // модуль логгирования данных с датчиков
 {
   private:
@@ -20,7 +27,15 @@ class LogModule : public AbstractModule // модуль логгирования
 
   bool hasSD;
   File logFile; // текущий файл для логгирования
-  String currentLogFileName; // текущее имя файла, с которым мы работаем сейчас 
+  File actionFile; // файл с записями о произошедших действиях
+  String currentLogFileName; // текущее имя файла, с которым мы работаем сейчас
+  unsigned long loggingInterval; // интервал между логгированиями
+
+#ifdef LOG_ACTIONS_ENABLED
+  byte lastActionsDOW;
+  void EnsureActionsFileCreated(); // убеждаемся, что файл с записями текущих действий создан
+  void CreateActionsFile(const DS3231Time& tm); // создаёт новый файл лога с записью действий
+#endif
 
   void CreateNewLogFile(const DS3231Time& tm);
   void GatherLogInfo(const DS3231Time& tm); 
@@ -39,6 +54,8 @@ class LogModule : public AbstractModule // модуль логгирования
     bool ExecCommand(const Command& command);
     void Setup();
     void Update(uint16_t dt);
+
+    void WriteAction(const LogAction& action); // записывает действие в файл событий
 
 };
 

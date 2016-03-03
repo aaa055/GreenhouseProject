@@ -2,6 +2,9 @@
 #include "InteropStream.h"
 
 ModuleController::ModuleController(COMMAND_DESTINATION wAs, const String& id) : workAs(wAs), ourID(id), cParser(NULL)
+#ifdef USE_LOG_MODULE
+,logWriter(NULL)
+#endif
 {
   settings.Load(); // загружаем настройки
 
@@ -25,6 +28,21 @@ _rtc.begin();
 
 
   ModuleInterop.SetController(this); // устанавливаем контроллер для класса взаимодействия между модулями
+}
+void ModuleController::Log(AbstractModule* mod, const String& message)
+{
+ #ifdef USE_LOG_MODULE
+  if(!logWriter)
+    return;
+
+  LogAction la;
+  la.RaisedModule = mod;
+  la.Message = message;
+  logWriter->WriteAction(la); // пишем в лог
+ #else
+  UNUSED(mod);
+  UNUSED(message);
+ #endif
 }
 void ModuleController::RegisterModule(AbstractModule* mod)
 {

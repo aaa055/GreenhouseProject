@@ -5,16 +5,141 @@
   #define LOG_DEBUG_WRITE(s) Serial.println((s))
 #endif 
 
-#define WRITE_TO_LOG(str) logFile.write((const uint8_t*) str.c_str(),str.length())
+#define WRITE_TO_FILE(f,str) f.write((const uint8_t*) str.c_str(),str.length())
+#define WRITE_TO_LOG(str) WRITE_TO_FILE(logFile,str)
+#define WRITE_TO_ACTION_LOG(str) WRITE_TO_FILE(actionFile,str)
 
 void LogModule::Setup()
 {
    lastUpdateCall = 0;
    rtc = mainController->GetClock();
    lastDOW = -1;
+#ifdef LOG_ACTIONS_ENABLED   
+   lastActionsDOW = -1;
+#endif   
    hasSD = mainController->HasSDCard();
+
+   loggingInterval = LOGGING_INTERVAL; // по умолчанию, берём из Globals.h. Позже - будет из настроек.
   // настройка модуля тут
  }
+#ifdef LOG_ACTIONS_ENABLED 
+void LogModule::CreateActionsFile(const DS3231Time& tm)
+{  
+   String logFileName;
+   if(tm.dayOfMonth < 10)
+    logFileName += F("0");
+   logFileName += String(tm.dayOfMonth);
+
+   if(tm.month < 10)
+    logFileName += F("0");
+   logFileName += String(tm.month);
+
+   logFileName += String(tm.year);
+
+   logFileName += F(".log");
+
+   String logDirectory = ACTIONS_DIRECTORY; // папка с логами действий
+
+   if(!SD.exists(logDirectory)) // нет папки ACTIONS_DIRECTORY
+   {
+    #ifdef LOGGING_DEBUG_MODE
+    LOG_DEBUG_WRITE(F("Creating the actions directory..."));
+    #endif
+      
+      SD.mkdir(logDirectory); // создаём папку
+   }
+
+ if(!SD.exists(logDirectory)) // проверяем её существование, на всякий
+  {
+    // не удалось создать папку actions
+    #ifdef LOGGING_DEBUG_MODE
+    LOG_DEBUG_WRITE(F("Unable to access to actions directory!"));
+    #endif
+
+    return;
+  }
+
+  logFileName = logDirectory + String(F("/")) + logFileName; // формируем полный путь
+
+  if(actionFile)
+  {
+    // уже есть открытый файл, проверяем, не пытаемся ли мы открыть файл с таким же именем
+    if(logFileName.endsWith(actionFile.name())) // такой же файл
+      return; 
+    else
+      actionFile.close(); // закрываем старый
+  } // if
+  
+  actionFile = SD.open(logFileName,FILE_WRITE); // открываем файл
+   
+}
+#endif
+void LogModule::WriteAction(const LogAction& action)
+{
+#ifdef LOG_ACTIONS_ENABLED  
+  EnsureActionsFileCreated(); // убеждаемся, что файл создан
+  if(!actionFile)
+  {
+    // что-то пошло не так
+    #ifdef LOGGING_DEBUG_MODE
+    LOG_DEBUG_WRITE(F("NO ACTIONS FILE AVAILABLE!"));
+    #endif
+
+    return;
+  }
+
+  #ifdef LOGGING_DEBUG_MODE
+  LOG_DEBUG_WRITE( String(F("Write the \"")) + action.Message + String(F("\" action...")));
+  #endif
+
+  String comma = COMMA_DELIMITER;
+  String rn = NEWLINE;
+
+  DS3231Time tm = rtc.getTime();
+  
+  String hhmm;
+  if(tm.hour < 10)
+     hhmm += F("0");
+  hhmm += String(tm.hour);
+
+  hhmm += F(":");
+  
+  if(tm.minute < 10)
+    hhmm += F("0");
+  hhmm += String(tm.minute);
+
+  WRITE_TO_ACTION_LOG(hhmm);
+  WRITE_TO_ACTION_LOG(comma);
+  WRITE_TO_ACTION_LOG(action.RaisedModule->GetID());
+  WRITE_TO_ACTION_LOG(comma);
+  WRITE_TO_ACTION_LOG(csv(action.Message));
+  WRITE_TO_ACTION_LOG(rn);
+
+  actionFile.flush(); // сливаем данные на диск
+  yield(); // даём поработать другим модулям
+#else
+UNUSED(action);
+#endif
+  
+}
+#ifdef LOG_ACTIONS_ENABLED
+void LogModule::EnsureActionsFileCreated()
+{
+  DS3231Time tm = rtc.getTime();
+
+  if(tm.dayOfWeek != lastActionsDOW)
+  {
+    // перешли на другой день недели, создаём новый файл
+    lastActionsDOW = tm.dayOfWeek;
+    
+    if(actionFile)
+      actionFile.close();
+      
+    CreateActionsFile(tm); // создаём новый файл
+  }
+ 
+}
+#endif
 void LogModule::CreateNewLogFile(const DS3231Time& tm)
 {
     if(logFile) // есть открытый файл
@@ -198,6 +323,8 @@ void LogModule::TryAddFileHeader()
    #endif
 
    logFile.flush(); // сливаем данные на карту
+   
+   yield(); // т.к. запись на SD-карту у нас может занимать какое-то время - дёргаем кооперативный режим
     
   } // if(!sz) - файл пуст
 }
@@ -215,6 +342,8 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
   }
   
   logFile.flush(); // сливаем информацию на карту
+  
+  yield(); // т.к. запись на SD-карту у нас может занимать какое-то время - дёргаем кооперативный режим
  
     #ifdef LOGGING_DEBUG_MODE
     LOG_DEBUG_WRITE(F("Gathering sensors data..."));
@@ -382,6 +511,8 @@ void LogModule::WriteLogLine(const String& hhmm, const String& moduleName, const
 
   logFile.flush(); // сливаем данные на карту
 
+  yield(); // т.к. запись на SD-карту у нас может занимать какое-то время - дёргаем кооперативный режим
+
 }
 String LogModule::csv(const String& src)
 {
@@ -397,11 +528,11 @@ String LogModule::csv(const String& src)
     input.indexOf(NEWLINE) != -1
  )
  { // нашли запрещённые символы - надо обрамить в двойные кавычки строку
-  String quotation = F("\"");
+  
   String s; s.reserve(input.length() + 2);
-  s += quotation;
+  s += fnd;
   s += input;
-  s += quotation;
+  s += fnd;
   
   return s;
  }
@@ -411,7 +542,7 @@ String LogModule::csv(const String& src)
 void LogModule::Update(uint16_t dt)
 { 
   lastUpdateCall += dt;
-  if(lastUpdateCall < LOGGING_INTERVAL) // не надо обновлять ничего - не пришло время
+  if(lastUpdateCall < loggingInterval) // не надо обновлять ничего - не пришло время
     return;
   else
     lastUpdateCall = 0;
@@ -429,6 +560,9 @@ void LogModule::Update(uint16_t dt)
   {
    lastDOW = tm.dayOfWeek;
    CreateNewLogFile(tm); // создаём новый файл
+#ifdef LOG_ACTIONS_ENABLED
+   EnsureActionsFileCreated(); // создаём новый файл действий, если он ещё не был создан
+#endif
   }
 
   GatherLogInfo(tm); // собираем информацию в лог

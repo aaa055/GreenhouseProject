@@ -354,13 +354,23 @@ bool  TempSensors::ExecCommand(const Command& command)
                }
               
             }
+            else
+            {
+              // сменили позицию, пишем в лог действие
+              mainController->Log(this,s + String(PARAM_DELIMITER) + whichCommand);
+              
+            } // else
 
           }
           else
           { 
             
               if(Windows[channelIdx].ChangePosition( bOpen ? dirOPEN : dirCLOSE, interval) ) // смогли сменить позицию окна
+              {
+                  // сменили позицию, пишем в лог действие
+                  mainController->Log(this,s + String(PARAM_DELIMITER) + whichCommand);
                   answer = bOpen ? STATE_OPENING : STATE_CLOSING;
+              }
                else
                {
                 // позицию окна не сменили, смотрим - занято ли оно?

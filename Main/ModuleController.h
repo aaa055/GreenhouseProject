@@ -12,7 +12,11 @@
 #include "DS3231Support.h"
 #endif
 
-#if defined(USE_WIFI_MODULE)
+#ifdef USE_LOG_MODULE
+#include "LogModule.h"
+#endif
+
+#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
 #include <SD.h>
 #endif
 
@@ -38,6 +42,10 @@ class ModuleController
   DS3231Clock _rtc; // часы реального времени
 #endif
 
+#ifdef USE_LOG_MODULE
+  LogModule* logWriter;
+#endif
+
 #if defined(USE_WIFI_MODULE)
   bool sdCardInitFlag;
 #endif
@@ -47,13 +55,19 @@ public:
 
   void begin(); // начинаем работу
 
-#if defined(USE_WIFI_MODULE)
+#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
   bool HasSDCard() {return sdCardInitFlag;}
 #endif
   #ifdef USE_DS3231_REALTIME_CLOCK
   // модуль реального времени
   DS3231Clock& GetClock();
   #endif
+
+  #ifdef USE_LOG_MODULE
+  void SetLogWriter(LogModule* lw) {logWriter = lw;}
+  #endif
+
+  void Log(AbstractModule* mod, const String& message); // добавляет строчку в лог действий
 
   // возвращает текущие настройки контроллера
   GlobalSettings* GetSettings() {return &settings;}

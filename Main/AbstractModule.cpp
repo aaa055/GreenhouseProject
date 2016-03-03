@@ -1,4 +1,5 @@
 #include "AbstractModule.h"
+#include "ModuleController.h"
 
 ModuleState::ModuleState() : supportedStates(0)
 {

@@ -183,7 +183,7 @@ bool  LuminosityModule::ExecCommand(const Command& command)
           && workMode == lightManual)  // и мы в ручном режиме, то
           {
             // просто игнорируем команду, потому что нами управляют в ручном режиме
-           } // if
+          } // if
            else
            {
               if(!command.IsInternal()) // пришла команда от пользователя,
@@ -192,6 +192,12 @@ bool  LuminosityModule::ExecCommand(const Command& command)
                 // мигаем светодиодом на 8 пине
                 blinker.blink(WORK_MODE_BLINK_INTERVAL);
               }
+
+            if(!bRelaysIsOn)
+            {
+              // значит - досветка была выключена и будет включена, надо записать в лог событие
+              mainController->Log(this,s); 
+            }
 
             bRelaysIsOn = true; // включаем реле досветки
             
@@ -219,6 +225,12 @@ bool  LuminosityModule::ExecCommand(const Command& command)
                 // мигаем светодиодом на 8 пине
                 blinker.blink(WORK_MODE_BLINK_INTERVAL);
               }
+
+            if(bRelaysIsOn)
+            {
+              // значит - досветка была включена и будет выключена, надо записать в лог событие
+              mainController->Log(this,s); 
+            }
 
             bRelaysIsOn = false; // выключаем реле досветки
             

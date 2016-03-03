@@ -3,12 +3,13 @@
 
 #include <WString.h>
 
+class ModuleController; // forward declaration
+
 #include "Globals.h"
 #include "CommandParser.h"
 #ifdef USE_PUBLISHERS
 #include "Publishers.h"
 #endif
-#include "ModuleController.h"
 #include "TinyVector.h"
 
 // структура для публикации
@@ -22,8 +23,6 @@ struct PublishStruct
   bool AddModuleIDToAnswer; // добавлять ли имя модуля в ответ?
   void* Data; // любая информация, в зависимости от типа модуля
 };
-
-class ModuleController;
 
 struct Temperature // структура показаний с датчика температуры
 {

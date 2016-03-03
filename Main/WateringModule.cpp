@@ -18,6 +18,7 @@ void WateringModule::Setup()
   lastDOW = -1; // неизвестный день недели
   currentDOW = -1; // ничего не знаем про текущий день недели
   currentHour = -1; // и про текущий час тоже ничего не знаем
+  lastAnyChannelActiveFlag = -1; // ещё не собирали активность каналов
 
   #ifdef USE_DS3231_REALTIME_CLOCK
     bIsRTClockPresent = true; // есть часы реального времени
@@ -299,6 +300,26 @@ void WateringModule::Update(uint16_t dt)
     // обновлять состояние канала не надо, потому что мы в ручном режиме работы.
       HoldChannelState(-1,&dummyAllChannels);
           
+  } // else
+
+  // проверяем, есть ли изменения с момента последнего вызова
+  if(lastAnyChannelActiveFlag < 0)
+  {
+    // ещё не собирали статус, собираем первый раз
+    lastAnyChannelActiveFlag = IsAnyChannelActive(wateringOption) ? 1 : 0;
+  }
+  else
+  {
+    // уже собирали, надо проверить с текущим состоянием
+    byte nowAnyChannelActive = IsAnyChannelActive(wateringOption) ? 1 : 0;
+    
+    if(nowAnyChannelActive != lastAnyChannelActiveFlag)
+    {
+      lastAnyChannelActiveFlag = nowAnyChannelActive; // сохраняем последний статус, чтобы не дёргать запись в лог лишний раз
+      // состояние каналов изменилось, пишем в лог
+      String mess = lastAnyChannelActiveFlag? STATE_ON : STATE_OFF;
+      mainController->Log(this,mess);
+    }
   } // else
 
   // обновили все каналы, теперь можно сбросить флаг перехода через день недели
