@@ -307,6 +307,14 @@ void WateringModule::Update(uint16_t dt)
   {
     // ещё не собирали статус, собираем первый раз
     lastAnyChannelActiveFlag = IsAnyChannelActive(wateringOption) ? 1 : 0;
+
+    if(lastAnyChannelActiveFlag)
+    {
+      // если любой канал активен - значит, полив включили, а по умолчанию он выключен.
+      // значит, надо записать в лог
+      String mess = lastAnyChannelActiveFlag? STATE_ON : STATE_OFF;
+      mainController->Log(this,mess);
+    }
   }
   else
   {
