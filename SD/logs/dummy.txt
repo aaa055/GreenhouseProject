@@ -1,0 +1,1 @@
+Because Gitnub Desktop does not sync the empty directories!
