@@ -53,6 +53,7 @@ class ModuleController
 public:
   ModuleController(COMMAND_DESTINATION wAs, const String& id);
 
+  void Setup(); // настраивает контроллер на работу (инициализация нужных железок и т.п.)
   void begin(); // начинаем работу
 
 #if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)

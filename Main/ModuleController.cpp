@@ -6,11 +6,6 @@ ModuleController::ModuleController(COMMAND_DESTINATION wAs, const String& id) : 
 ,logWriter(NULL)
 #endif
 {
-  settings.Load(); // загружаем настройки
-
-#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
-  sdCardInitFlag = SD.begin(SDCARD_CS_PIN); // пробуем инициализировать SD-модуль
-#endif
 
 }
 #ifdef USE_DS3231_REALTIME_CLOCK
@@ -21,14 +16,23 @@ DS3231Clock& ModuleController::GetClock()
 #endif
 void ModuleController::begin()
 {
+ // тут можно написать код, который выполнится непосредственно перед началом работы
+}
+void ModuleController::Setup()
+{
+  settings.Load(); // загружаем настройки
+  ModuleInterop.SetController(this); // устанавливаем контроллер для класса взаимодействия между модулями
+
 #ifdef USE_DS3231_REALTIME_CLOCK
 _rtc.begin();
 #endif
 
-
-
-  ModuleInterop.SetController(this); // устанавливаем контроллер для класса взаимодействия между модулями
+#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
+  sdCardInitFlag = SD.begin(SDCARD_CS_PIN); // пробуем инициализировать SD-модуль
+#endif
+  
 }
+
 void ModuleController::Log(AbstractModule* mod, const String& message)
 {
  #ifdef USE_LOG_MODULE

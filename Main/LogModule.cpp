@@ -25,16 +25,17 @@ void LogModule::Setup()
 #ifdef LOG_ACTIONS_ENABLED 
 void LogModule::CreateActionsFile(const DS3231Time& tm)
 {  
+  // формат YYYYMMDD.LOG
    String logFileName;
-   if(tm.dayOfMonth < 10)
-    logFileName += F("0");
-   logFileName += String(tm.dayOfMonth);
+   logFileName += String(tm.year);
 
    if(tm.month < 10)
     logFileName += F("0");
    logFileName += String(tm.month);
 
-   logFileName += String(tm.year);
+   if(tm.dayOfMonth < 10)
+    logFileName += F("0");
+   logFileName += String(tm.dayOfMonth);
 
    logFileName += F(".log");
 
@@ -148,17 +149,18 @@ void LogModule::CreateNewLogFile(const DS3231Time& tm)
     currentLogFileName = F("");
 
    // формируем имя нашего нового лог-файла:
-   // DDMMYYYY.log - вписываемся тютелька в тютельку в формат 8.3
+   // формат YYYYMMDD.LOG
    String logFileName;
-   if(tm.dayOfMonth < 10)
-    logFileName += F("0");
-   logFileName += String(tm.dayOfMonth);
+
+   logFileName += String(tm.year);
 
    if(tm.month < 10)
     logFileName += F("0");
    logFileName += String(tm.month);
-
-   logFileName += String(tm.year);
+   
+   if(tm.dayOfMonth < 10)
+    logFileName += F("0");
+   logFileName += String(tm.dayOfMonth);
 
    logFileName += F(".log");
 
