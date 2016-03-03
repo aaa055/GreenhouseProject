@@ -61,16 +61,10 @@ bool PinModule::AddPin(uint8_t pinNumber,uint8_t currentState)
 }
 uint8_t PinModule::GetPinState(uint8_t pinNumber)
 {
-  uint8_t sz = pinStates.size();
-  for(uint8_t i=0;i<sz;i++)
-  {
-    PIN_STATE* s = &(pinStates[i]);
-    if(s->pinNumber == pinNumber)
-    {
-      return s->pinState;
-    }
-    
-  } // for
+  PIN_STATE* s = GetPin(pinNumber);
+  if(s)
+    return s->pinState;
+        
 // не можем читать состояние пина, не зарегистрированного у нас, поскольку
 // этим пином может управлять другой модуль, и мы не можем переводить его в режим 
 // чтения состояния. Поэтому возвращаем LOW.
