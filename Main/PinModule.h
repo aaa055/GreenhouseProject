@@ -23,7 +23,7 @@ class PinModule : public AbstractModule
     void UpdatePinStates();
 
     uint8_t GetPinState(uint8_t pinNumber);
-    bool AddPin(uint8_t pinNumber,uint8_t currentState);
+    PIN_STATE* AddPin(uint8_t pinNumber,uint8_t currentState);
     bool PinExist(uint8_t pinNumber);
     PIN_STATE* GetPin(uint8_t pinNumber);
    

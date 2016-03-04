@@ -37,15 +37,18 @@ bool PinModule::PinExist(uint8_t pinNumber)
 {
   return (GetPin(pinNumber) != NULL);
 }
-bool PinModule::AddPin(uint8_t pinNumber,uint8_t currentState)
+PIN_STATE* PinModule::AddPin(uint8_t pinNumber,uint8_t currentState)
 {
+  if(!pinNumber) // если номер пина 0 - не надо ничего делать
+    return NULL;
+    
   PIN_STATE* s = GetPin(pinNumber);
   if(s)
   {
     s->pinState = currentState;          
     s->isActive = true;
     s->hasChanges = true; 
-    return true;   
+    return s;   
   }
 
   // можем добавлять, т.к. не нашли пин
@@ -57,7 +60,7 @@ bool PinModule::AddPin(uint8_t pinNumber,uint8_t currentState)
     pinMode(pinNumber,OUTPUT);
     pinStates.push_back(p);
 
-  return true;
+  return &(pinStates[pinStates.size()-1]);
 }
 uint8_t PinModule::GetPinState(uint8_t pinNumber)
 {
@@ -112,78 +115,79 @@ bool  PinModule::ExecCommand(const Command& command)
 
     if(command.GetArgsCount() > 1)
     {
-      String strNum = command.GetArg(0);
-      uint8_t pinNumber = strNum.toInt();
-      
-      String state = command.GetArg(1);
-      state.toUpperCase();
+      String strNum = command.GetArg(0); // номер пина
 
+      String state = command.GetArg(1); // статус пина
+      state.toUpperCase();
+      
+      // берём номер первого пина, на который будем опираться
+      uint8_t pinNumber = strNum.toInt();
+
+      byte pinLevel = LOW;
+      bool bActive = !(state == PIN_DETACH); // если послана команда DETACH - выключаем слежение
+   
       if(state == STATE_ON_ALT || state == STATE_ON)
-      {
-        answer = strNum + PARAM_DELIMITER + STATE_ON;
-        answerStatus = true;
-        AddPin(pinNumber,HIGH);
-        
-      } // if(state == STATE_ON_ALT || state == STATE_ON)
+        pinLevel = HIGH;
       else
-      if(state == STATE_OFF_ALT || state == STATE_OFF)
+      if(state == PIN_TOGGLE)
       {
-        answer = strNum + PARAM_DELIMITER + STATE_OFF;
-        answerStatus = true;
-        AddPin(pinNumber,LOW);
-      } // if(state == STATE_OFF_ALT || state == STATE_OFF)
-      else 
-      if(state == PIN_TOGGLE) // toggle state
-      {
-          
            if(!PinExist(pinNumber)) // ещё нет такого пина для слежения
            {
               pinMode(pinNumber,INPUT); // читаем из пина его текущее состояние
-              AddPin(pinNumber,digitalRead(pinNumber));
+              pinLevel = digitalRead(pinNumber);
+              pinLevel = pinLevel == HIGH ? LOW : HIGH;
            }
-           
-
-          // инвертируем его состояние
-          uint8_t sz = pinStates.size();
-          for(uint8_t i=0;i<sz;i++)
-          {
-            PIN_STATE* s = &(pinStates[i]);
-            if(s->pinNumber == pinNumber)
+           else // пин уже существует для слежения
+           {
+            PIN_STATE* s = GetPin(pinNumber);
+            if(s)
             {
-              s->pinState = s->pinState == LOW ? HIGH : LOW;
-              s->isActive = true;
-              s->hasChanges = true;
-              answerStatus = true;
-              answer = strNum + PARAM_DELIMITER;
-              answer +=  (s->pinState == HIGH ? STATE_ON : STATE_OFF);
-              break;
+              pinLevel = s->pinState;
+              pinLevel = pinLevel == LOW ? HIGH : LOW;
             }
-            
-          } // for
-               
-      } //  else if(state == PIN_TOGGLE) // toggle state
-      else 
-      if(state == PIN_DETACH) // не следить за пином
+           } // else
+                 
+      } // toggle state
+
+      if(!bActive)
       {
-           uint8_t sz = pinStates.size();
-          for(uint8_t i=0;i<sz;i++)
-          {
-            PIN_STATE* s = &(pinStates[i]);
-            if(s->pinNumber == pinNumber)
-            {
-              s->isActive = false;
-              s->hasChanges = false;
-              answerStatus = true;
-              answer =  strNum + PARAM_DELIMITER + PIN_DETACH;
-              break;
-            }
-            
-          } // for
-       
-      } // PIN_DETACH
+         // пришла команда DETACH, поэтому менять статус пина - не надо
+         PIN_STATE* s = GetPin(pinNumber);
+         if(s)
+          pinLevel = s->pinState; // читаем статус из пина
+         else
+          AddPin(pinNumber,pinLevel); // пина нету, просто добавляем с уровнем LOW
+      }
 
+       // добавляем пин
+       PIN_STATE* s = AddPin(pinNumber,pinLevel);
+       if(s)
+       {
+            answerStatus = true;
+            answer = strNum + PARAM_DELIMITER;
+            answer +=  (s->pinState == HIGH ? STATE_ON : STATE_OFF);
+       }
 
-   
+       // добавляем все пины, которые нам передали в параметрах через запятую
+       int idx;
+       while((idx = strNum.indexOf(F(","))) != -1)
+       {
+         String pinNum = strNum.substring(0,idx);
+         strNum = strNum.substring(idx+1);
+         PIN_STATE* s = AddPin(pinNum.toInt(),pinLevel);
+         if(s)
+         {
+          s->isActive = bActive;
+          s->hasChanges = bActive;
+         }
+       } // while
+       s =  AddPin(strNum.toInt(),pinLevel);
+       if(s)
+       {
+        s->isActive = bActive;
+        s->hasChanges = bActive;
+       }
+      
     } // if
     SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
     mainController->Publish(this);
