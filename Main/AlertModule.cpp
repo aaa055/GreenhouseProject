@@ -76,11 +76,12 @@ bool AlertRule::HasAlert()
     {
      if(!linkedModule->State.HasState(StateTemperature))  // не поддерживаем температуру
         return false;
-
+/*
      if(!linkedModule->State.IsStateChanged(StateTemperature,sensorIdx)) // ничего не изменилось
       {
         return false;
       }
+*/      
        OneState* os = linkedModule->State.GetState(StateTemperature,sensorIdx);
        if(!os)
         return false;
@@ -127,11 +128,12 @@ bool AlertRule::HasAlert()
       
      if(!linkedModule->State.HasState(StateLuminosity))  // не поддерживаем освещенность
         return false;
-
+/*
      if(!linkedModule->State.IsStateChanged(StateLuminosity,sensorIdx)) // ничего не изменилось
       {
         return false;
       }
+*/      
        OneState* os = linkedModule->State.GetState(StateLuminosity,sensorIdx);
        if(!os)
         return false;
@@ -159,11 +161,12 @@ bool AlertRule::HasAlert()
     {
      if(!linkedModule->State.HasState(StateHumidity))  // не поддерживаем влажность
         return false;
-
+/*
      if(!linkedModule->State.IsStateChanged(StateHumidity,sensorIdx)) // ничего не изменилось
       {
         return false;
       }
+*/      
        OneState* os = linkedModule->State.GetState(StateHumidity,sensorIdx);
        if(!os)
         return false;
@@ -188,7 +191,8 @@ bool AlertRule::HasAlert()
     break;
 
     case rtUnknown:
-    break;
+     // нет того, за чем следим, считаем, что мы сработали по времени
+     return true;
   } // switch
 
   return false;
@@ -215,6 +219,7 @@ String AlertRule::GetAlertRule() // конструируем правило, к�
       break;
 
       case rtUnknown:
+      result += PROP_NONE; // нет у нас установки, за чем следить
       break;
       
     }
@@ -440,81 +445,6 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
     dataAlertLong = dataAlert; // применяем короткую настройку
 
 
-/*
-   // теперь конструируем правило, это нужно для запроса просмотра правила
-    alertRule = ruleName + PARAM_DELIMITER;
-    alertRule += lmName + PARAM_DELIMITER;
-    switch(target)
-    {
-      case rtTemp:
-      alertRule += PROP_TEMP;
-      break;
-      
-      case rtLuminosity:
-      alertRule += PROP_LIGHT;
-      break;
-
-      case rtHumidity:
-      alertRule += PROP_HUMIDITY;
-      break;
-
-      case rtUnknown:
-      break;
-      
-    }
-    alertRule += String(PARAM_DELIMITER) + String(sensorIdx) + PARAM_DELIMITER;
-
-    switch(operand)
-    {
-      case roLessThan:
-        alertRule += LESS_THAN;
-      break;
-      case roGreaterThan:
-        alertRule += GREATER_THAN;
-      break;
-      case roLessOrEqual:
-        alertRule += LESS_OR_EQUAL_THAN;
-      break;
-      case roGreaterOrEqual:
-        alertRule += GREATER_OR_EQUAL_THAN;
-      break;
-    }
-    
-    alertRule += PARAM_DELIMITER;
-
-    switch(dataSource)
-    {
-      case tsOpenTemperature:
-        alertRule += T_OPEN_MACRO;
-      break;
-      case tsCloseTemperature:
-        alertRule += T_CLOSE_MACRO;
-      break;
-      case tsPassed:
-        alertRule += dataAlertLong;
-      break;
-    }
-    alertRule += PARAM_DELIMITER;
-    
-  alertRule += String(whichTime) + PARAM_DELIMITER;
-  alertRule += String((uint16_t)workTime) + PARAM_DELIMITER;
-
-  String lRulesNames;
-  for(uint8_t i=0;i<linkedRulesCnt;i++)
-  {
-    if(lRulesNames.length())
-      lRulesNames += F(",");
-      
-    lRulesNames += linkedRuleNames[i];
-    
-  } // for
-
-  if(!lRulesNames.length())
-    lRulesNames = F("_");
- 
-  alertRule += lRulesNames;
-*/
-
   
   return (readed+6); // оставляем в хвосте 6 свободных байт на будущее
 }
@@ -539,13 +469,13 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   
   // ищем имя
   ruleName = command.GetArg(curArgIdx++);
-//  alertRule = ruleName + PARAM_DELIMITER;
  
   // записываем имя связанного модуля
-  //alertRule += command.GetArg(curArgIdx++) + PARAM_DELIMITER;
   curArgIdx++; // пропускаем имя связанного модуля, нам его уже дали в параметрах функции
   
   String ruleTargetStr = command.GetArg(curArgIdx++);
+
+  target = rtUnknown; // да ни за чем не следим
   
   if(ruleTargetStr == PROP_TEMP) // следим за температурой
     target = rtTemp;
@@ -556,12 +486,8 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   if(ruleTargetStr == PROP_HUMIDITY) // следим за влажностью
     target = rtHumidity;
 
- // alertRule += ruleTargetStr + PARAM_DELIMITER;
-
- // alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
   sensorIdx = command.GetArg(curArgIdx++).toInt();
   String op = command.GetArg(curArgIdx++);
- // alertRule += op + PARAM_DELIMITER;
   
   if(op == GREATER_THAN)
     operand = roGreaterThan;
@@ -572,7 +498,6 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   else if(op == GREATER_OR_EQUAL_THAN)
     operand = roGreaterOrEqual;
 
-  //alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
 
   String strTempAlert = command.GetArg(curArgIdx++);
 
@@ -591,19 +516,15 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   // дошли до температуры, после неё - настройки срабатывания
 
   // следом идёт час начала работы
-  //alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
   whichTime = command.GetArg(curArgIdx++).toInt();
 
   
   // дальше идёт продолжительность работы, в минутах
-  //alertRule += command.GetArg(curArgIdx) + PARAM_DELIMITER;
   workTime = command.GetArg(curArgIdx++).toInt(); // переводим в миллисекунды
 
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
-  //alertRule += command.GetArg(curArgIdx);
   String linkedRules = command.GetArg(curArgIdx++);
-
 
   // парсим имена связанных правил
   if(linkedRules != F("_")) // есть связанные правила
@@ -1047,7 +968,7 @@ bool  AlertModule::ExecCommand(const Command& command)
             else
             {
                  String sParam = command.GetArg(1);
-                 sParam.toUpperCase();
+                 //sParam.toUpperCase();
  
                 if(sParam == ALL) // удалить все правила
                 {

@@ -294,6 +294,7 @@
 #define PROP_RELAY F("RELAY") // нам передали/запросили состояние канала реле CTGET=0|PROP|MODULE_NAME|RELAY|0, CTSET=0|PROP|MODULE_NAME|RELAY|0|ON
 #define PROP_LIGHT F("LIGHT") // свойство "освещенность"
 #define PROP_HUMIDITY F("HUMIDITY") // свойство "влажность"
+#define PROP_NONE F("_") // нет свойства
 
 // команды модуля "0"
 //#define USE_REMOTE_MODULES // раскомментировать, если нужна регистрация модулей на лету (при использовании сторонних железок, общающихся с контроллером)

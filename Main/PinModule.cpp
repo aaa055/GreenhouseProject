@@ -91,15 +91,8 @@ bool  PinModule::ExecCommand(const Command& command)
        String strNum = command.GetArg(0);
        uint8_t pinNumber = strNum.toInt();
        uint8_t currentState = GetPinState(pinNumber);
-      if(currentState == HIGH)
-      {
-        answer = strNum + PARAM_DELIMITER + STATE_ON;
-      }
-      else
-      {
-        answer = strNum + PARAM_DELIMITER +STATE_OFF;
-      }
-      answerStatus = true;
+       answer = strNum + PARAM_DELIMITER + (currentState == HIGH ? STATE_ON : STATE_OFF);
+       answerStatus = true;
     }
     
 
