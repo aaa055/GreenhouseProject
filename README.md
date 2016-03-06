@@ -16,6 +16,9 @@
 <img src="screen3.png" hspace='10'/>
 <img src="screen4.png" hspace='10'/>
 <img src="screen5.png" hspace='10'/>
+<img src="screen6.png" hspace='10'/>
+<img src="screen7.png" hspace='10'/>
+<img src="screen8.png" hspace='10'/>
 <p>
 # Как использовать
 <p>
