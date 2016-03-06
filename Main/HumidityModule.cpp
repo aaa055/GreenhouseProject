@@ -40,8 +40,7 @@ const HumidityAnswer& HumidityModule::QuerySensor(uint8_t pin, HumiditySensorTyp
 void HumidityModule::Update(uint16_t dt)
 { 
   // обновление модуля тут
-
-  
+ 
   lastUpdateCall += dt;
   if(lastUpdateCall < HUMIDITY_UPDATE_INTERVAL) // обновляем согласно настроенному интервалу
     return;
@@ -80,7 +79,8 @@ void HumidityModule::Update(uint16_t dt)
 bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
 {
 
-  if(wantAnswer) PublishSingleton.Text = NOT_SUPPORTED;
+  if(wantAnswer) 
+    PublishSingleton = NOT_SUPPORTED;
 
   if(command.GetType() == ctSET) // установка свойств
   {
@@ -92,26 +92,29 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
       uint8_t argsCnt = command.GetArgsCount();
       if(argsCnt < 1)
       {
-        if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED; // не хватает параметров
+        if(wantAnswer) 
+          PublishSingleton = PARAMS_MISSED; // не хватает параметров
         
       } // argsCnt < 1
       else
       {
         // argsCnt >= 1
         String param = command.GetArg(0);
-        if(param == PROP_CNT) // запросили данные о кол-ве датчиков: GTGET=HUMIDITY|CNT
+        if(param == PROP_CNT) // запросили данные о кол-ве датчиков: CTGET=HUMIDITY|CNT
         {
           PublishSingleton.Status = true;
           if(wantAnswer) 
           {
-            PublishSingleton.Text = PROP_CNT; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += String(SUPPORTED_HUMIDITY_SENSORS);
+            PublishSingleton = PROP_CNT; 
+            PublishSingleton << PARAM_DELIMITER << SUPPORTED_HUMIDITY_SENSORS;
           }
         } // PROP_CNT
         else
         if(param == ALL) // запросили показания со всех датчиков
         {
           PublishSingleton.Status = true;
-          if(wantAnswer) PublishSingleton.Text = String(SUPPORTED_HUMIDITY_SENSORS);
+          if(wantAnswer) 
+            PublishSingleton = SUPPORTED_HUMIDITY_SENSORS;
           
           for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
           {
@@ -124,10 +127,7 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
                 Humidity* h = (Humidity*) stateHumidity->Data;
                 if(wantAnswer) 
                 {
-                  PublishSingleton.Text += PARAM_DELIMITER;
-                  PublishSingleton.Text += *h;
-                  PublishSingleton.Text += PARAM_DELIMITER;
-                  PublishSingleton.Text += *t;
+                  PublishSingleton << PARAM_DELIMITER << (*h) << PARAM_DELIMITER << (*t);
                 }
              } // if
           } // for
@@ -141,11 +141,14 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
           if(idx >= SUPPORTED_HUMIDITY_SENSORS)
           {
             // плохой индекс
-            if(wantAnswer) PublishSingleton.Text = NOT_SUPPORTED;
+            if(wantAnswer) 
+              PublishSingleton = NOT_SUPPORTED;
           } // плохой индекс
           else
           {
-             if(wantAnswer) PublishSingleton.Text = param;
+             if(wantAnswer) 
+              PublishSingleton = param;
+              
              OneState* stateTemp = State.GetState(StateTemperature,idx);
              OneState* stateHumidity = State.GetState(StateHumidity,idx);
              if(stateTemp && stateHumidity)
@@ -156,10 +159,7 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
                 Humidity* h = (Humidity*) stateHumidity->Data;
                 if(wantAnswer)
                 {
-                  PublishSingleton.Text += PARAM_DELIMITER;
-                  PublishSingleton.Text += *h;
-                  PublishSingleton.Text += PARAM_DELIMITER;
-                  PublishSingleton.Text += *t;
+                  PublishSingleton << PARAM_DELIMITER << (*h) << PARAM_DELIMITER << (*t);
                 }
              } // if
             

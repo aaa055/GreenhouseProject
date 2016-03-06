@@ -46,7 +46,7 @@
 #define MAX_STORED_ALERTS 0 // максимальное кол-во сохраняемых последних текстовых алертов (0 - нет поддержки сохраняемых событий)
 #define MAX_ALERT_RULES 20 // максимальное кол-во поддерживаемых правил
 #define MAX_RECEIVE_BUFFER_LENGTH 256 // максимальная длина (в байтах) пакета в сети, дла защиты от спама
-#define MAX_ARGS_IN_LIST 30 // максимальное кол-во аргументов у команды, передаваемой контроллеру по UART
+#define MAX_ARGS_IN_LIST 20 // максимальное кол-во аргументов у команды, передаваемой контроллеру по UART
 
 
 // настройки модуля алертов (событий по срабатыванию каких-либо условий)
@@ -321,7 +321,7 @@
  * 
  */
 
- #define SHARED_BUFFER_LENGTH 500 // сколько байт резервировать для общего буфера обмена
+ #define SHARED_BUFFER_LENGTH 200 // сколько байт резервировать для общего буфера обмена
 
  #ifdef _DEBUG
   #define CHECK_PUBLISH_CONSISTENCY { if(PublishSingleton.Busy && PublishSingleton.Text.length() > 0) {Serial.print(F("[ERROR] Attempt to writing to unclear PublishSingleton: ")); Serial.println(PublishSingleton.Text);} }

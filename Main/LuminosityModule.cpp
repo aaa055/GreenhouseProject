@@ -161,13 +161,15 @@ void LuminosityModule::Update(uint16_t dt)
 
 bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  if(wantAnswer) PublishSingleton.Text = UNKNOWN_COMMAND;
+  if(wantAnswer) 
+    PublishSingleton = UNKNOWN_COMMAND;
   
   uint8_t argsCnt = command.GetArgsCount();
   
   if(command.GetType() == ctSET) 
   {
-      if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED;
+      if(wantAnswer) 
+        PublishSingleton = PARAMS_MISSED;
 
       if(argsCnt > 0)
       {
@@ -199,7 +201,8 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
             bRelaysIsOn = true; // включаем реле досветки
             
             PublishSingleton.Status = true;
-            if(wantAnswer) PublishSingleton.Text = STATE_ON;
+            if(wantAnswer) 
+              PublishSingleton = STATE_ON;
             
            } // else
  
@@ -232,7 +235,8 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
             bRelaysIsOn = false; // выключаем реле досветки
             
             PublishSingleton.Status = true;
-            if(wantAnswer) PublishSingleton.Text = STATE_OFF;
+            if(wantAnswer) 
+              PublishSingleton = STATE_OFF;
             
            } // else
          } // STATE_OFF
@@ -262,8 +266,8 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
               PublishSingleton.Status = true;
               if(wantAnswer)
               {
-                PublishSingleton.Text = WORK_MODE; PublishSingleton.Text += PARAM_DELIMITER;
-                PublishSingleton.Text += workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+                PublishSingleton = WORK_MODE; 
+                PublishSingleton << PARAM_DELIMITER << (workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL);
               }
               
            } // if (argsCnt > 1)
@@ -283,19 +287,19 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
       PublishSingleton.Status = true;
       if(wantAnswer) 
       {
-        PublishSingleton.Text = 
+        PublishSingleton = 
      #if LIGHT_SENSORS_COUNT > 0
-      String(lightMeter.GetCurrentLuminosity());
+      (lightMeter.GetCurrentLuminosity());
       #else
-        String(NO_LUMINOSITY_DATA);
+        NO_LUMINOSITY_DATA;
       #endif
       
-     PublishSingleton.Text += PARAM_DELIMITER;
-     PublishSingleton.Text += 
+     PublishSingleton << PARAM_DELIMITER;
+     PublishSingleton << 
       #if LIGHT_SENSORS_COUNT > 1
-        String(lightMeter2.GetCurrentLuminosity());
+        (lightMeter2.GetCurrentLuminosity());
       #else
-        String(NO_LUMINOSITY_DATA);
+        NO_LUMINOSITY_DATA;
       #endif
       }
     }
@@ -305,9 +309,12 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
        String s = command.GetArg(0);
        if(s == WORK_MODE) // запросили режим работы
        {
-          String wm = workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
           PublishSingleton.Status = true;
-          if(wantAnswer) PublishSingleton.Text = String(WORK_MODE) + PARAM_DELIMITER + wm;
+          if(wantAnswer) 
+          {
+            PublishSingleton = WORK_MODE;
+            PublishSingleton << PARAM_DELIMITER << (workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL);
+          }
           
        } // if(s == WORK_MODE)
        else
@@ -315,11 +322,8 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
        {
           if(wantAnswer)
           {
-            PublishSingleton.Text = LIGHT_STATE_COMMAND;
-            PublishSingleton.Text += PARAM_DELIMITER;
-            PublishSingleton.Text += bRelaysIsOn ? STATE_ON : STATE_OFF;
-            PublishSingleton.Text += PARAM_DELIMITER;
-            PublishSingleton.Text += workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+            PublishSingleton = LIGHT_STATE_COMMAND;
+            PublishSingleton << PARAM_DELIMITER << (bRelaysIsOn ? STATE_ON : STATE_OFF) << PARAM_DELIMITER << (workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL);
           }
           
           PublishSingleton.Status = true;

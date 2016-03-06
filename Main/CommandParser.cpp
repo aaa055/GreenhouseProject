@@ -23,7 +23,8 @@ void Command::Construct(const String& id,const String& arg, COMMAND_TYPE ct,COMM
     // разбиваем на аргументы
         int curIdx = 0;
         String tmpStr = Arg;
-
+        String param;
+        
         while(curIdx != -1)
         {
           curIdx = tmpStr.indexOf(PARAM_DELIMITER);
@@ -36,7 +37,7 @@ void Command::Construct(const String& id,const String& arg, COMMAND_TYPE ct,COMM
               
             break;
           } // if
-          String param = tmpStr.substring(0,curIdx);
+          param = tmpStr.substring(0,curIdx);
           tmpStr = tmpStr.substring(curIdx+1,tmpStr.length());
           if(param.length() > 0)
           {
@@ -79,15 +80,16 @@ commandBuf = F("");
 bool CommandParser::ParseCommand(const String& command,const String& ourID,Command& outCommand)
 {
   Clear(); // clear first
+
+  //TODO: тяжёлая функция, много локальных переменных и дёрганья substring - переписать!
   
   commandBuf = command;
+  
   if(commandBuf.length() < MIN_COMMAND_LENGTH)
-  {
     return false;
-  }
 
   String tmpBuf = commandBuf.substring(0,CMD_PREFIX_LEN);
-  String commandType,commandArg,commandModuleId, deviceID = F("");
+  String commandType,commandArg,commandModuleId;
   
   if(!(tmpBuf == CMD_PREFIX || tmpBuf == CHILD_PREFIX) ) // not right command
     return false;
@@ -101,7 +103,6 @@ bool CommandParser::ParseCommand(const String& command,const String& ourID,Comma
 
     commandType = tmpBuf;
     commandArg = commandBuf.substring(CMD_PREFIX_LEN+CMD_TYPE_LEN+1);
-
 
     if(commandArg.length() > 0)
     {
@@ -119,9 +120,7 @@ bool CommandParser::ParseCommand(const String& command,const String& ourID,Comma
 
               // проверяем, наш ли?
               if(commandModuleId != ourID) // не нам пришла команда, игнорируем!
-              {
                 return false;
-              }
 
               // теперь ищем правильное имя модуля, оно идёт сразу за параметрами
               idx = commandArg.indexOf(PARAM_DELIMITER);

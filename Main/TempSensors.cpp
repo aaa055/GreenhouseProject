@@ -257,16 +257,20 @@ void TempSensors::Update(uint16_t dt)
 bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
 {
   GlobalSettings* sett = mainController->GetSettings();
-  if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED;  
+  if(wantAnswer) 
+    PublishSingleton = PARAMS_MISSED;
+      
+  String commandRequested;
 
   if(command.GetType() == ctSET) // напрямую запись в датчики запрещена, пишем только в состояние каналов
   {
     uint8_t argsCnt = command.GetArgsCount();
+    
     if(argsCnt > 2)
     {
-      String s = command.GetArg(0);
-      s.toUpperCase();
-      if(s == PROP_WINDOW) // надо записать состояние окна, от нас просят что-то сделать
+      commandRequested = command.GetArg(0);
+      commandRequested.toUpperCase();
+      if(commandRequested == PROP_WINDOW) // надо записать состояние окна, от нас просят что-то сделать
       {
         if(command.IsInternal() // если команда пришла от другого модуля
         && workMode == wmManual) // и мы в ручном режиме, то
@@ -332,7 +336,8 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
             {
               if(Windows[i].ChangePosition(bOpen? dirOPEN : dirCLOSE,bOpen ? interval : 0))
               {
-                if(wantAnswer) PublishSingleton.Text = bOpen ? STATE_OPENING : STATE_CLOSING;
+                if(wantAnswer) 
+                  PublishSingleton = (bOpen ? STATE_OPENING : STATE_CLOSING);
                 bAnyPosChanged = true;
               } 
             } // for
@@ -343,19 +348,21 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
               if(Windows[from].IsBusy())
                {
                 // окно занято сменой позиции
-                if(wantAnswer) PublishSingleton.Text = Windows[from].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING;
+                if(wantAnswer) 
+                  PublishSingleton = (Windows[from].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING);
                }
                else
                {
                 // окно не сменяет позицию
-                if(wantAnswer) PublishSingleton.Text =  bOpen ? STATE_OPEN : STATE_CLOSED;
+                if(wantAnswer) 
+                  PublishSingleton =  (bOpen ? STATE_OPEN : STATE_CLOSED);
                }
               
             }
             else
             {
               // сменили позицию, пишем в лог действие
-              mainController->Log(this,s + String(PARAM_DELIMITER) + whichCommand);
+              mainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
               
             } // else
 
@@ -366,8 +373,9 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
               if(Windows[channelIdx].ChangePosition( bOpen ? dirOPEN : dirCLOSE, interval) ) // смогли сменить позицию окна
               {
                   // сменили позицию, пишем в лог действие
-                  mainController->Log(this,s + String(PARAM_DELIMITER) + whichCommand);
-                  if(wantAnswer) PublishSingleton.Text = bOpen ? STATE_OPENING : STATE_CLOSING;
+                  mainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
+                  if(wantAnswer) 
+                    PublishSingleton = (bOpen ? STATE_OPENING : STATE_CLOSING);
               }
                else
                {
@@ -375,12 +383,12 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                 if(Windows[channelIdx].IsBusy()) // занято, возвращаем состояние - открывается или закрывается
                 {
                    if(wantAnswer) 
-                    PublishSingleton.Text = Windows[channelIdx].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING; 
+                    PublishSingleton = (Windows[channelIdx].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING); 
                 }   
                 else // окно ничем не занято, возвращаем положение - открыто или закрыто
                 {
                   if(wantAnswer) 
-                      PublishSingleton.Text =  bOpen ? STATE_OPEN : STATE_CLOSED;
+                      PublishSingleton =  (bOpen ? STATE_OPEN : STATE_CLOSED);
                 }
                }
           }
@@ -389,7 +397,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
         
       } // if PROP_WINDOW
       else
-      if(s == TEMP_SETTINGS) // установить температуры закрытия/открытия
+      if(commandRequested == TEMP_SETTINGS) // установить температуры закрытия/открытия
       {
         uint8_t tOpen = command.GetArg(1).toInt();
         uint8_t tClose = command.GetArg(2).toInt();
@@ -399,26 +407,34 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
         sett->Save();
         
         PublishSingleton.Status = true;
-        if(wantAnswer) PublishSingleton.Text = String(TEMP_SETTINGS) + PARAM_DELIMITER + REG_SUCC;
+        if(wantAnswer) 
+        {
+          PublishSingleton = TEMP_SETTINGS;
+          PublishSingleton << PARAM_DELIMITER << REG_SUCC;
+        }
       } // TEMP_SETTINGS
       
     } // if(argsCnt > 2)
     else if(argsCnt > 1)
     {
-      String s = command.GetArg(0);
-      s.toUpperCase();
+      commandRequested = command.GetArg(0);
+      commandRequested.toUpperCase();
 
-      if (s == WORK_MODE)
+      if (commandRequested == WORK_MODE)
       {
         // запросили установить режим работы
-        s = command.GetArg(1);
-        s.toUpperCase();
+        commandRequested = command.GetArg(1);
+        commandRequested.toUpperCase();
 
 
-        if(s == WM_AUTOMATIC)
+        if(commandRequested == WM_AUTOMATIC)
         {
           PublishSingleton.Status = true;
-          if(wantAnswer) PublishSingleton.Text = String(WORK_MODE) + PARAM_DELIMITER + s;
+          if(wantAnswer) 
+          {
+            PublishSingleton = WORK_MODE;
+            PublishSingleton << PARAM_DELIMITER << commandRequested;
+          }
           workMode = wmAutomatic;
 
           // говорим, что температура изменилась, чтобы форсировать обработку 
@@ -440,16 +456,20 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           
           blinker.blink();
         }
-        else if(s == WM_MANUAL)
+        else if(commandRequested == WM_MANUAL)
         {
           PublishSingleton.Status = true;
-          if(wantAnswer) PublishSingleton.Text = String(WORK_MODE) + PARAM_DELIMITER + s;
+          if(wantAnswer) 
+          {
+            PublishSingleton = WORK_MODE;
+            PublishSingleton << PARAM_DELIMITER << commandRequested;
+          }
           workMode = wmManual;
           blinker.blink(WORK_MODE_BLINK_INTERVAL);
         }
         
       } // WORK_MODE
-      else if(s == WM_INTERVAL) // запросили установку интервала
+      else if(commandRequested == WM_INTERVAL) // запросили установку интервала
       {
               unsigned long newInt = (unsigned long) command.GetArg(1).toInt();
               if(newInt > 0)
@@ -459,7 +479,11 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                 sett->Save();
                 
                 PublishSingleton.Status = true;
-                if(wantAnswer) PublishSingleton.Text = String(WM_INTERVAL) + PARAM_DELIMITER + REG_SUCC;
+                if(wantAnswer) 
+                {
+                  PublishSingleton = WM_INTERVAL;
+                  PublishSingleton << PARAM_DELIMITER << REG_SUCC;
+                }
               } // if
       } // WM_INTERVAL
     } // argsCnt > 1
@@ -473,28 +497,32 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
       {
         // параметров хватает
         // проверяем, есть ли там запрос на кол-во, или просто индекс?
-        String s = command.GetArg(0);
-        s.toUpperCase();
+        commandRequested = command.GetArg(0);
+        commandRequested.toUpperCase();
 
-          if(s == PROP_TEMP) // обращение по температуре
+          if(commandRequested == PROP_TEMP) // обращение по температуре
           {
-              s = command.GetArg(1);
-              s.toUpperCase();
+              commandRequested = command.GetArg(1);
+              commandRequested.toUpperCase();
 
-              if(s == PROP_TEMP_CNT) // кол-во датчиков
+              if(commandRequested == PROP_TEMP_CNT) // кол-во датчиков
               {
                  PublishSingleton.Status = true;
-                 if(wantAnswer) PublishSingleton.Text = String(PROP_TEMP_CNT) + PARAM_DELIMITER + State.GetStateCount(StateTemperature);
+                 if(wantAnswer) 
+                 {
+                  PublishSingleton = PROP_TEMP_CNT;
+                  PublishSingleton << PARAM_DELIMITER << State.GetStateCount(StateTemperature);
+                 }
               } // if
               else // запросили по индексу или запрос ALL
               {
-                if(s == ALL)
+                if(commandRequested == ALL)
                 {
                   // все датчики
                   PublishSingleton.Status = true;
                   if(wantAnswer)
                   { 
-                   PublishSingleton.Text = PROP_TEMP;
+                   PublishSingleton = PROP_TEMP;
                     
                     // получаем значение всех датчиков
                     for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
@@ -504,8 +532,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                        if(os)
                        {
                           Temperature* t = (Temperature*) os->Data;
-                          PublishSingleton.Text += PARAM_DELIMITER;
-                          PublishSingleton.Text += *t;
+                          PublishSingleton << PARAM_DELIMITER << (*t);
                        } // if(os)
                     } // for
                   } // want answer
@@ -514,11 +541,11 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                 else
                 {
                    // по индексу
-                uint8_t sensorIdx = s.toInt();
+                uint8_t sensorIdx = commandRequested.toInt();
                 if(sensorIdx >= SUPPORTED_SENSORS)
                 {
                    if(wantAnswer)
-                      PublishSingleton.Text = NOT_SUPPORTED; // неверный индекс
+                      PublishSingleton = NOT_SUPPORTED; // неверный индекс
                 }
                  else
                   {
@@ -531,7 +558,8 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                         if(os)
                         {
                           Temperature* t = (Temperature*) os->Data;
-                          PublishSingleton.Text = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + *t;
+                          PublishSingleton = PROP_TEMP;
+                          PublishSingleton << PARAM_DELIMITER  << sensorIdx << PARAM_DELIMITER << (*t);
                         }
                     } // if(wantAnswer)
                   }
@@ -539,27 +567,30 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
               } // else
               
           } // if
-          else if(s == PROP_WINDOW) // статус окна
+          else if(commandRequested == PROP_WINDOW) // статус окна
           {
-             s = command.GetArg(1);
-              s.toUpperCase();
+             commandRequested = command.GetArg(1);
+             commandRequested.toUpperCase();
 
-             if(s == PROP_WINDOW_CNT)
+             if(commandRequested == PROP_WINDOW_CNT)
              {
                     PublishSingleton.Status = true;
                     if(wantAnswer)
-                      PublishSingleton.Text = String(PROP_WINDOW_CNT) + PARAM_DELIMITER + String(SUPPORTED_WINDOWS);
+                    {
+                      PublishSingleton = PROP_WINDOW_CNT;
+                      PublishSingleton << PARAM_DELIMITER  << SUPPORTED_WINDOWS;
+                    }
 
              }
             else // запросили по индексу
             {
               //TODO: Тут может быть запрос ALL, а не только индекс!!!
               
-             uint8_t windowIdx = s.toInt();
+             uint8_t windowIdx = commandRequested.toInt();
              if(windowIdx >= SUPPORTED_WINDOWS)
              {
                 if(wantAnswer)
-                  PublishSingleton.Text = NOT_SUPPORTED; // неверный индекс
+                  PublishSingleton = NOT_SUPPORTED; // неверный индекс
              }
               else
               {
@@ -583,7 +614,10 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                 
                 PublishSingleton.Status = true;
                 if(wantAnswer)
-                  PublishSingleton.Text = String(PROP_WINDOW) + PARAM_DELIMITER + s + PARAM_DELIMITER + sAdd;
+                {
+                  PublishSingleton = PROP_WINDOW;
+                  PublishSingleton << PARAM_DELIMITER << commandRequested << PARAM_DELIMITER << sAdd;
+                }
               }
             } // else
           } // else
@@ -592,33 +626,40 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
       } // if
       else if(argsCnt > 0)
       {
-        String s = command.GetArg(0);
-        s.toUpperCase();
+        commandRequested = command.GetArg(0);
+        commandRequested.toUpperCase();
 
-        if(s == WORK_MODE) // запросили режим работы
+        if(commandRequested == WORK_MODE) // запросили режим работы
         {
           
           PublishSingleton.Status = true;
           if(wantAnswer)
           {
-            PublishSingleton.Text = String(WORK_MODE) + PARAM_DELIMITER + (workMode == wmAutomatic ? WM_AUTOMATIC : WM_MANUAL);
+            PublishSingleton = WORK_MODE;
+            PublishSingleton << PARAM_DELIMITER << (workMode == wmAutomatic ? WM_AUTOMATIC : WM_MANUAL);
           }
           
         } // if
         else
-        if(s == WM_INTERVAL) // запросили интервал срабатывания форточек
+        if(commandRequested == WM_INTERVAL) // запросили интервал срабатывания форточек
         {
           PublishSingleton.Status = true;
           if(wantAnswer)
-            PublishSingleton.Text = String(WM_INTERVAL) + PARAM_DELIMITER + String(sett->GetOpenInterval());
+          {
+            PublishSingleton = WM_INTERVAL;
+            PublishSingleton << PARAM_DELIMITER  << (sett->GetOpenInterval());
+          }
         } // WM_INTERVAL
         else
-        if(s == TEMP_SETTINGS) // запросили температуры открытия и закрытия
+        if(commandRequested == TEMP_SETTINGS) // запросили температуры открытия и закрытия
         {
           PublishSingleton.Status = true;
           
           if(wantAnswer)
-            PublishSingleton.Text = String(TEMP_SETTINGS) + PARAM_DELIMITER + String(sett->GetOpenTemp()) + PARAM_DELIMITER + String(sett->GetCloseTemp());
+          {
+            PublishSingleton = TEMP_SETTINGS;
+            PublishSingleton << PARAM_DELIMITER << (sett->GetOpenTemp()) << PARAM_DELIMITER << (sett->GetCloseTemp());
+          }
         }
         
       } // else if(argsCnt > 0)

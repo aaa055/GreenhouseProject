@@ -834,7 +834,7 @@ bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
   
   if(command.GetType() == ctSET) 
   {
-      PublishSingleton.Text = NOT_SUPPORTED;
+      PublishSingleton = NOT_SUPPORTED;
   }
   else
   if(command.GetType() == ctGET) //получить статистику
@@ -844,7 +844,7 @@ bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
     t.toUpperCase();
     if(t == GetID()) // нет аргументов
     {
-      PublishSingleton.Text = PARAMS_MISSED;
+      PublishSingleton = PARAMS_MISSED;
     }
     else
     if(t == STAT_COMMAND) // запросили данные статистики
@@ -852,12 +852,13 @@ bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
       SendStatToCaller(Settings->GetSmsPhoneNumber()); // посылаем статистику на указанный номер телефона
     
       PublishSingleton.Status = true;
-      PublishSingleton.Text = STAT_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += REG_SUCC;
+      PublishSingleton = STAT_COMMAND; 
+      PublishSingleton << PARAM_DELIMITER << REG_SUCC;
     }
     else
     {
       // неизвестная команда
-      PublishSingleton.Text = UNKNOWN_COMMAND;
+      PublishSingleton = UNKNOWN_COMMAND;
     } // else
     
   } // if

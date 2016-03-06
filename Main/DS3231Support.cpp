@@ -70,7 +70,7 @@ const char* DS3231Clock::getDayOfWeekStr(const DS3231Time& t)
 /*
 char* DS3231Clock::getMonthStr(const DS3231Time& t)
 {
-  static char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+  static const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   return months[t.month-1];
 }
 */

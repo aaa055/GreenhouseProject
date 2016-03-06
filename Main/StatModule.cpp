@@ -24,12 +24,12 @@ void StatModule::Update(uint16_t dt)
 
 bool  StatModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  if(wantAnswer) PublishSingleton.Text = UNKNOWN_COMMAND;
+  if(wantAnswer) PublishSingleton = UNKNOWN_COMMAND;
   PublishSingleton.AddModuleIDToAnswer = false;
   
   if(command.GetType() == ctSET) 
   {
-      if(wantAnswer) PublishSingleton.Text = NOT_SUPPORTED;
+      if(wantAnswer) PublishSingleton = NOT_SUPPORTED;
   }
   else
   if(command.GetType() == ctGET) //получить статистику
@@ -39,7 +39,7 @@ bool  StatModule::ExecCommand(const Command& command, bool wantAnswer)
     t.toUpperCase();
     if(t == GetID()) // нет аргументов
     {
-      if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED;
+      if(wantAnswer) PublishSingleton = PARAMS_MISSED;
     }
     else
     if(t == FREERAM_COMMAND) // запросили данные о свободной памяти
@@ -47,7 +47,8 @@ bool  StatModule::ExecCommand(const Command& command, bool wantAnswer)
      PublishSingleton.Status = true;
       if(wantAnswer) 
       {
-        PublishSingleton.Text = FREERAM_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += freeRam();
+        PublishSingleton = FREERAM_COMMAND; 
+        PublishSingleton << PARAM_DELIMITER << freeRam();
       }
     }
     else
@@ -56,7 +57,8 @@ bool  StatModule::ExecCommand(const Command& command, bool wantAnswer)
       PublishSingleton.Status = true;
       if(wantAnswer) 
       {
-        PublishSingleton.Text = UPTIME_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  (unsigned long) uptime/1000;
+        PublishSingleton = UPTIME_COMMAND; 
+        PublishSingleton << PARAM_DELIMITER <<  (unsigned long) uptime/1000;
       }
     }
  #ifdef USE_DS3231_REALTIME_CLOCK   
@@ -66,11 +68,9 @@ bool  StatModule::ExecCommand(const Command& command, bool wantAnswer)
        DS3231Time tm = rtc.getTime();
        if(wantAnswer) 
        {
-         PublishSingleton.Text = rtc.getDayOfWeekStr(tm);
-         PublishSingleton.Text += F(" ");
-         PublishSingleton.Text += rtc.getDateStr(tm);
-         PublishSingleton.Text += F(" ");
-         PublishSingleton.Text += rtc.getTimeStr(tm);
+         PublishSingleton = rtc.getDayOfWeekStr(tm);
+         PublishSingleton << F(" ") << (rtc.getDateStr(tm)) << F(" ");
+         PublishSingleton << rtc.getTimeStr(tm);
        }
       PublishSingleton.Status = true;
     }

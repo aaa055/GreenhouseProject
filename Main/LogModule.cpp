@@ -9,8 +9,16 @@
 #define WRITE_TO_LOG(str) WRITE_TO_FILE(logFile,str)
 #define WRITE_TO_ACTION_LOG(str) WRITE_TO_FILE(actionFile,str)
 
+String LogModule::_COMMA;
+String LogModule::_NEWLINE;
+
 void LogModule::Setup()
 {
+    LogModule::_COMMA = COMMA_DELIMITER;
+    LogModule::_NEWLINE = NEWLINE;
+
+    currentLogFileName.reserve(20); // резервируем память, чтобы избежать фрагментации
+
    lastUpdateCall = 0;
    #ifdef USE_DS3231_REALTIME_CLOCK
    rtc = mainController->GetClock();
@@ -100,8 +108,6 @@ void LogModule::WriteAction(const LogAction& action)
   LOG_DEBUG_WRITE( String(F("Write the \"")) + action.Message + String(F("\" action...")));
   #endif
 
-  String comma = COMMA_DELIMITER;
-  String rn = NEWLINE;
 
 #ifdef USE_DS3231_REALTIME_CLOCK
 
@@ -119,11 +125,11 @@ void LogModule::WriteAction(const LogAction& action)
   hhmm += String(tm.minute);
 
   WRITE_TO_ACTION_LOG(hhmm); 
-  WRITE_TO_ACTION_LOG(comma);
+  WRITE_TO_ACTION_LOG(LogModule::_COMMA);
   WRITE_TO_ACTION_LOG(action.RaisedModule->GetID());
-  WRITE_TO_ACTION_LOG(comma);
+  WRITE_TO_ACTION_LOG(LogModule::_COMMA);
   WRITE_TO_ACTION_LOG(csv(action.Message));
-  WRITE_TO_ACTION_LOG(rn);
+  WRITE_TO_ACTION_LOG(LogModule::_NEWLINE);
 
   actionFile.flush(); // сливаем данные на диск
 #else
@@ -161,23 +167,21 @@ void LogModule::CreateNewLogFile(const DS3231Time& tm)
     if(logFile) // есть открытый файл
       logFile.close(); // закрываем его
 
-    currentLogFileName = F("");
-
    // формируем имя нашего нового лог-файла:
    // формат YYYYMMDD.LOG
-   String logFileName;
 
-   logFileName += String(tm.year);
+   currentLogFileName = String(tm.year);
 
    if(tm.month < 10)
-    logFileName += F("0");
-   logFileName += String(tm.month);
+    currentLogFileName += F("0");
+    
+   currentLogFileName += String(tm.month);
    
    if(tm.dayOfMonth < 10)
-    logFileName += F("0");
-   logFileName += String(tm.dayOfMonth);
+    currentLogFileName += F("0");
+   currentLogFileName += String(tm.dayOfMonth);
 
-   logFileName += F(".log");
+   currentLogFileName += F(".log");
 
    String logDirectory = LOGS_DIRECTORY; // папка с логами
    if(!SD.exists(logDirectory)) // нет папки LOGS_DIRECTORY
@@ -200,31 +204,30 @@ void LogModule::CreateNewLogFile(const DS3231Time& tm)
   } 
 
    #ifdef LOGGING_DEBUG_MODE
-    LOG_DEBUG_WRITE(String(F("Creating the ")) + logFileName + String(F(" log file...")));
+    LOG_DEBUG_WRITE(String(F("Creating the ")) + currentLogFileName + String(F(" log file...")));
    #endif
 
    // теперь можем создать файл - даже если он существует, он откроется на запись
-   logFileName = logDirectory + String(F("/")) + logFileName; // формируем полный путь
+   currentLogFileName = logDirectory + String(F("/")) + currentLogFileName; // формируем полный путь
 
-   logFile = SD.open(logFileName,FILE_WRITE);
+   logFile = SD.open(currentLogFileName,FILE_WRITE);
 
    if(logFile)
    {
    #ifdef LOGGING_DEBUG_MODE
-    LOG_DEBUG_WRITE(String(F("File ")) + logFileName + String(F(" successfully created!")));
+    LOG_DEBUG_WRITE(String(F("File ")) + currentLogFileName + String(F(" successfully created!")));
    #endif
     
    }
    else
    {
    #ifdef LOGGING_DEBUG_MODE
-    LOG_DEBUG_WRITE(String(F("Unable to create the ")) + logFileName + String(F(" log file!")));
+    LOG_DEBUG_WRITE(String(F("Unable to create the ")) + currentLogFileName + String(F(" log file!")));
    #endif
     return;
    }
 
    // файл создали, можем с ним работать.
-   currentLogFileName = logFileName; // сохраняем имя файла, с которым мы сейчас работаем
 #ifdef ADD_LOG_HEADER
    TryAddFileHeader(); // пытаемся добавить заголовок в файл
 #endif   
@@ -247,8 +250,7 @@ void LogModule::TryAddFileHeader()
 
     size_t cnt = mainController->GetModulesCount();
     bool anyModuleNameWritten = false;
-    String comma = COMMA_DELIMITER;
-    String rn = NEWLINE;
+
     
     for(size_t i=0;i<cnt;i++)
     {
@@ -279,7 +281,7 @@ void LogModule::TryAddFileHeader()
           // есть интересующие нас состояния, можно писать в файл имя модуля и его индекс.
           if(anyModuleNameWritten) // уже было записано имя модуля, надо добавить запятую
           {
-            WRITE_TO_LOG(comma);
+            WRITE_TO_LOG(LogModule::_COMMA);
           }
           
           String mName = m->GetID(); // получаем имя модуля
@@ -293,7 +295,7 @@ void LogModule::TryAddFileHeader()
     } // for
 
     if(anyModuleNameWritten) // записали по крайней мере имя одного модуля, надо добавить перевод строки
-          WRITE_TO_LOG(rn);
+          WRITE_TO_LOG(LogModule::_NEWLINE);
 
     // теперь можем писать в файл вторую строку, с привязками типов датчиков к индексам
     String secondLine;
@@ -301,7 +303,7 @@ void LogModule::TryAddFileHeader()
     if(statesFound & StateTemperature) // есть температура
     {
       if(secondLine.length())
-        secondLine += comma;
+        secondLine += LogModule::_COMMA;
 
       secondLine += LOG_TEMP_TYPE;
       secondLine += COMMAND_DELIMITER;
@@ -311,7 +313,7 @@ void LogModule::TryAddFileHeader()
     if(statesFound & StateLuminosity) // есть освещенность
     {
       if(secondLine.length())
-        secondLine += comma;
+        secondLine += LogModule::_COMMA;
         
       secondLine += LOG_LUMINOSITY_TYPE;
       secondLine += COMMAND_DELIMITER;
@@ -321,7 +323,7 @@ void LogModule::TryAddFileHeader()
     if(statesFound & StateHumidity) // есть влажность
     {
       if(secondLine.length())
-        secondLine += comma;
+        secondLine += LogModule::_COMMA;
         
       secondLine += LOG_HUMIDITY_TYPE;
       secondLine += COMMAND_DELIMITER;
@@ -330,7 +332,7 @@ void LogModule::TryAddFileHeader()
     
    if(secondLine.length()) // можем записывать в файл вторую строку с привязкой датчиков к типам
    {
-    secondLine += rn;
+    secondLine += LogModule::_NEWLINE;
     WRITE_TO_LOG(secondLine);
    }
 
@@ -517,14 +519,12 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
 void LogModule::WriteLogLine(const String& hhmm, const String& moduleName, const String& sensorType, const String& sensorIdx, const String& sensorData)
 {
   // пишем строку с данными в лог
-  String comma = COMMA_DELIMITER;
-  String rn = NEWLINE;
   // HH:MM,MODULE_NAME,SENSOR_TYPE,SENSOR_IDX,SENSOR_DATA\r\n
-  WRITE_TO_LOG(hhmm);             WRITE_TO_LOG(comma);
-  WRITE_TO_LOG(moduleName);       WRITE_TO_LOG(comma);
-  WRITE_TO_LOG(sensorType);       WRITE_TO_LOG(comma);
-  WRITE_TO_LOG(sensorIdx);        WRITE_TO_LOG(comma);
-  WRITE_TO_LOG(csv(sensorData));  WRITE_TO_LOG(rn);
+  WRITE_TO_LOG(hhmm);             WRITE_TO_LOG(LogModule::_COMMA);
+  WRITE_TO_LOG(moduleName);       WRITE_TO_LOG(LogModule::_COMMA);
+  WRITE_TO_LOG(sensorType);       WRITE_TO_LOG(LogModule::_COMMA);
+  WRITE_TO_LOG(sensorIdx);        WRITE_TO_LOG(LogModule::_COMMA);
+  WRITE_TO_LOG(csv(sensorData));  WRITE_TO_LOG(LogModule::_NEWLINE);
 
   logFile.flush(); // сливаем данные на карту
 
@@ -538,11 +538,11 @@ String LogModule::csv(const String& src)
   String input = src;
   input.replace(fnd,rpl); // заменяем кавычки на двойные
   
- if(input.indexOf(COMMA_DELIMITER) != -1 ||
+ if(input.indexOf(LogModule::_COMMA) != -1 ||
     input.indexOf(F("\"")) != -1 ||
     input.indexOf(F(";")) != -1 ||
     input.indexOf(F(",")) != -1 || // прописываем запятую принудительно, т.к. пользователь может переопределить COMMA_DELIMITER
-    input.indexOf(NEWLINE) != -1
+    input.indexOf(LogModule::_NEWLINE) != -1
  )
  { // нашли запрещённые символы - надо обрамить в двойные кавычки строку
   

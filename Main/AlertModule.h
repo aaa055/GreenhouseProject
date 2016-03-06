@@ -40,7 +40,6 @@ class AlertRule
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
     long dataAlertLong; // настройка, за которой следим (4 байта)
     
-    //String alertRule; // строка с правилом, самая тяжёлая часть для хранения в оперативке!
     bool bEnabled; // включено или нет
     bool bFirstCall; // первый ли вызов правила?
 

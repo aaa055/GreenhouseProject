@@ -29,7 +29,6 @@ class ModuleController
 {
  private:
   ModulesVec modules; // список зарегистрированных модулей
-  //Stream* pStream; // текущий поток вывода по умолчанию
   COMMAND_DESTINATION workAs; // как работаем - как контроллер или дочерний модуль?
   
   String ourID; // ID контроллера
@@ -74,12 +73,6 @@ public:
 
   // возвращает текущие настройки контроллера
   GlobalSettings* GetSettings() {return &settings;}
-
-  // устанавливает текущий поток, в который надо выводить ответы
- // void SetCurrentStream(Stream* s) {pStream = s;}
-
-  // возвращает текущий поток
- // Stream* GetCurrentStream() {return pStream;}
  
   size_t GetModulesCount() {return modules.size(); }
   AbstractModule* GetModule(size_t idx) {return modules[idx]; }

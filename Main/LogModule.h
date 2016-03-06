@@ -16,6 +16,9 @@ class LogModule : public AbstractModule // модуль логгирования
 {
   private:
 
+  static String _COMMA;
+  static String _NEWLINE;
+
   unsigned long lastUpdateCall;
   #ifdef USE_DS3231_REALTIME_CLOCK
   DS3231Clock rtc;

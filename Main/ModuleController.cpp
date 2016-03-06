@@ -170,7 +170,7 @@ if(!mod) // ничего не передали, надо искать модул
   // Сообщаем в тот поток, откуда пришел запрос.
   PublishSingleton.AddModuleIDToAnswer = false;
   PublishSingleton.Status = false;
-  PublishSingleton.Text = UNKNOWN_MODULE;
+  PublishSingleton = UNKNOWN_MODULE;
   PublishToCommandStream(mod,c);
   return;
  }

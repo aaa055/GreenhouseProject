@@ -407,9 +407,9 @@ void WiFiModule::Setup()
   // получаем 40 байт. Но - у нас есть ещё
   // команды вида
   //+IPD:0,12324:GET /СTSET=LIGHT|ON HTTP/1.1\r\n
-  // и пр. Следовательно, резервируем 200 байт,
+  // и пр. Следовательно, резервируем 128 байт,
   // и вроде как - париться не должны.
-  httpQuery.reserve(200);
+  httpQuery.reserve(128);
   
   Settings = mainController->GetSettings();
   sdCardInited = 
@@ -716,7 +716,7 @@ bool  WiFiModule::ExecCommand(const Command& command, bool wantAnswer)
 {
   UNUSED(wantAnswer);
   
-  PublishSingleton.Text = NOT_SUPPORTED;
+  PublishSingleton = NOT_SUPPORTED;
 
   if(command.GetType() == ctSET) // установка свойств
   {
@@ -764,15 +764,16 @@ bool  WiFiModule::ExecCommand(const Command& command, bool wantAnswer)
            
           
           PublishSingleton.Status = true;
-          PublishSingleton.Text = t; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += REG_SUCC;
+          PublishSingleton = t; 
+          PublishSingleton << PARAM_DELIMITER << REG_SUCC;
         }
         else
-          PublishSingleton.Text = PARAMS_MISSED; // мало параметров
+          PublishSingleton = PARAMS_MISSED; // мало параметров
         
       } // WIFI_SETTINGS_COMMAND
     }
     else
-      PublishSingleton.Text = PARAMS_MISSED; // мало параметров
+      PublishSingleton = PARAMS_MISSED; // мало параметров
   } // SET
   else
   if(command.GetType() == ctGET) // чтение свойств
@@ -785,7 +786,7 @@ bool  WiFiModule::ExecCommand(const Command& command, bool wantAnswer)
       if(t == IP_COMMAND) // получить данные об IP
       {
         if(currentAction != wfaIdle) // не можем ответить на запрос немедленно
-          PublishSingleton.Text = BUSY;
+          PublishSingleton = BUSY;
         else
         {
         #ifdef WIFI_DEBUG
@@ -884,15 +885,13 @@ bool  WiFiModule::ExecCommand(const Command& command, bool wantAnswer)
         #endif
 
         PublishSingleton.Status = true;
-        PublishSingleton.Text = t; PublishSingleton.Text += PARAM_DELIMITER;
-        PublishSingleton.Text += apCurrentIP;
-        PublishSingleton.Text += PARAM_DELIMITER;
-        PublishSingleton.Text += stationCurrentIP;
+        PublishSingleton = t; 
+        PublishSingleton << PARAM_DELIMITER << apCurrentIP << PARAM_DELIMITER << stationCurrentIP;
         } // else not busy
       } // IP_COMMAND
     }
     else
-      PublishSingleton.Text = PARAMS_MISSED; // мало параметров
+      PublishSingleton = PARAMS_MISSED; // мало параметров
   } // GET
 
   mainController->Publish(this,command);

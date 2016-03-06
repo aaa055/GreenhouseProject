@@ -83,7 +83,7 @@ bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
 {
  
   if(wantAnswer)
-    PublishSingleton.Text = PARAMS_MISSED;
+    PublishSingleton = PARAMS_MISSED;
     
   if(command.GetType() == ctGET) //получить состояние пина
   {
@@ -94,7 +94,10 @@ bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
        uint8_t currentState = GetPinState(pinNumber);
        
        if(wantAnswer) // чтобы не работать с памятью, когда от нас не ждут ответа
-        PublishSingleton.Text = strNum + PARAM_DELIMITER + (currentState == HIGH ? STATE_ON : STATE_OFF);
+       {
+        PublishSingleton = strNum;
+        PublishSingleton << PARAM_DELIMITER << (currentState == HIGH ? STATE_ON : STATE_OFF);
+       }
         
        PublishSingleton.Status = true;
     }
@@ -162,8 +165,8 @@ bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
             PublishSingleton.Status = true;
             if(wantAnswer)
             {
-              PublishSingleton.Text = strNum + PARAM_DELIMITER;
-              PublishSingleton.Text +=  (s->pinState == HIGH ? STATE_ON : STATE_OFF);
+              PublishSingleton = strNum;
+              PublishSingleton << PARAM_DELIMITER << (s->pinState == HIGH ? STATE_ON : STATE_OFF);
             }
        }
 

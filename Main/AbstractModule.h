@@ -26,6 +26,23 @@ struct PublishStruct
     Data = NULL;
     Busy = false;
   }
+
+  PublishStruct& operator=(const String& src);
+  PublishStruct& operator=(const char* src);
+  PublishStruct& operator=(char src);
+  PublishStruct& operator=(const __FlashStringHelper *src);
+  PublishStruct& operator=(unsigned long src);
+  PublishStruct& operator=(int src);
+  PublishStruct& operator=(long src);
+
+  PublishStruct& operator<<(const String& src);
+  PublishStruct& operator<<(const char* src);
+  PublishStruct& operator<<(char src);
+  PublishStruct& operator<<(const __FlashStringHelper *src);
+  PublishStruct& operator<<(unsigned long src);
+  PublishStruct& operator<<(unsigned int src);
+  PublishStruct& operator<<(int src);
+  PublishStruct& operator<<(long src);
   
 };
 

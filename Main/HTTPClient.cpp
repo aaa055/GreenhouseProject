@@ -169,8 +169,8 @@ bool HTTPClient::Prepare(bool SDAvailable, const HTTPQuery& query)
  {
     ajaxQueryFound = true;
      
-    String command = uriRequested.substring(6);
-    if(ModuleInterop.QueryCommand(cType,command,false))
+    //String command = uriRequested.substring(6);
+    if(ModuleInterop.QueryCommand(cType,uriRequested.substring(6),false))
     {
       // можем формировать AJAX-ответ
       dataToSend = F("{");

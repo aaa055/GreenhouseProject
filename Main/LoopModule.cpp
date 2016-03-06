@@ -25,15 +25,7 @@ void LoopModule::Update(uint16_t dt)
       {
         // need to do the job
         lnk->lastTimerVal = lnk->lastTimerVal - lnk->interval;
-        if(lnk->countPasses > 0)
-        {
-          lnk->currPass++;
-          if(lnk->currPass >= lnk->countPasses) // все проходы выполнены
-          {
-            lnk->currPass = 0;
-            lnk->bActive = false;
-          } // if
-        } // if(lnk->countPasses > 0)
+        
 
           // конструируем команду
           Command com;
@@ -42,6 +34,16 @@ void LoopModule::Update(uint16_t dt)
 
           com.SetInternal(true); // говорим, что команда - от одного модуля к другому
           mainController->ProcessModuleCommand(com,lnk->linkedModule);
+
+        if(lnk->countPasses > 0)
+        {
+          lnk->currPass++;
+          if(lnk->currPass >= lnk->countPasses) // все проходы выполнены
+          {
+            lnk->currPass = 0;
+            lnk->bActive = false;            
+          } // if
+        } // if(lnk->countPasses > 0)          
 
      } // if
       
@@ -55,7 +57,9 @@ LoopLink* LoopModule::AddLink(const Command& command, bool wantAnswer)
 uint8_t paramsCount = command.GetArgsCount(); // сколько параметров пришло?
   if(paramsCount < MIN_LOOP_PARAMS) // мало параметров передано
   {
-    if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED;
+    if(wantAnswer) 
+      PublishSingleton = PARAMS_MISSED;
+      
     mainController->Publish(this,command); // публикуем их от своего имени
     return NULL;
   }
@@ -69,7 +73,9 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
     AbstractModule* regModule = GetRegisteredModule(moduleID);
     if(!regModule)
     {
-      if(wantAnswer) PublishSingleton.Text = UNKNOWN_MODULE;
+      if(wantAnswer) 
+        PublishSingleton = UNKNOWN_MODULE;
+        
       mainController->Publish(this,command); // публикуем
       return false;
     }
@@ -101,7 +107,9 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
       lnk->paramsToPass += command.GetArg(i);
     } // for
 
-     if(wantAnswer) PublishSingleton.Text = REG_SUCC;
+     if(wantAnswer) 
+      PublishSingleton = REG_SUCC;
+      
      PublishSingleton.Status = true;
      mainController->Publish(this,command); // публикуем их от своего имени
 

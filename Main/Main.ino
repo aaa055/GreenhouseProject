@@ -51,7 +51,7 @@
 #endif
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
-const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
+//const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 const char init_1[] PROGMEM = "CTSET=LOOP|SD|SET|100|11|PIN|6|T";// помигаем 5 раз диодом для проверки
 
 const char init_STUB[] PROGMEM = ""; // ЗАГЛУШКА, НЕ ТРОГАТЬ!
@@ -60,8 +60,8 @@ const char init_STUB[] PROGMEM = ""; // ЗАГЛУШКА, НЕ ТРОГАТЬ!
 // команды инициализации при старте контроллера
 const char* const  INIT_COMMANDS[] PROGMEM  = 
 {
-   init_0
-  ,init_1
+ //  init_0,
+  init_1
   ,init_STUB // ЗАГЛУШКА, НЕ ТРОГАТЬ!
 };
 
@@ -320,15 +320,14 @@ void setup()
   
    DS3231Clock rtc = controller.GetClock();
    DS3231Time tm = rtc.getTime();
-   
-   String s = F(", ");
-   
-   s += rtc.getDayOfWeekStr(tm);
-   s += F(" ");
-   s += rtc.getDateStr(tm);
-   s += F(" - ");
-   s += rtc.getTimeStr(tm);
-   Serial.print(s);
+
+   Serial.print(F(", "));
+   Serial.print(rtc.getDayOfWeekStr(tm));
+   Serial.print(F(" "));
+   Serial.print(rtc.getDateStr(tm));
+   Serial.print(F(" - "));
+   Serial.print(rtc.getTimeStr(tm));
+
    
   #endif 
 

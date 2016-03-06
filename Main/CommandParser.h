@@ -87,7 +87,7 @@ class Command
     // возвращает количество переданных аргументов
     uint8_t GetArgsCount() const {return ArgsCount;}
 
-    // возвращает аргумент по интексу
+    // возвращает аргумент по индексу
     String GetArg(uint16_t idx) const {return idx >= ArgsCount ? F("") : ArgsSplitted[idx];}
     
     Command() { Clear(); }
@@ -99,8 +99,7 @@ class CommandParser
 {
   private:
     String commandBuf;
- 
-
+    
   public:
     CommandParser();
 

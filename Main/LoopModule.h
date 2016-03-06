@@ -15,7 +15,6 @@ struct LoopLink // структура хранения информации дл
   uint8_t countPasses; // сколько проходов сделать всего
   String paramsToPass; // параметры, которые надо передать связанному модулю
   String typeOfCommand; // тип команды, которую надо передать связанному модулю
-
 };
 
 typedef Vector<LoopLink*> LinkVector;
