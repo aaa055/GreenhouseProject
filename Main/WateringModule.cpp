@@ -222,6 +222,9 @@ void WateringModule::HoldPumpState(WateringOption wateringOption)
 
 void WateringModule::Update(uint16_t dt)
 { 
+
+   blinker.update();
+  
    WateringOption wateringOption = settings->GetWateringOption(); // получаем опцию управления поливом
 
 #ifdef USE_PUMP_RELAY
@@ -325,7 +328,7 @@ void WateringModule::Update(uint16_t dt)
     {
       lastAnyChannelActiveFlag = nowAnyChannelActive; // сохраняем последний статус, чтобы не дёргать запись в лог лишний раз
       // состояние каналов изменилось, пишем в лог
-      String mess = lastAnyChannelActiveFlag? STATE_ON : STATE_OFF;
+      String mess = lastAnyChannelActiveFlag ? STATE_ON : STATE_OFF;
       mainController->Log(this,mess);
     }
   } // else
@@ -336,22 +339,18 @@ void WateringModule::Update(uint16_t dt)
   // через день недели.
   
 }
-bool  WateringModule::ExecCommand(const Command& command)
+bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = UNKNOWN_COMMAND;
-  
-  bool answerStatus = false; 
-  
+  UNUSED(wantAnswer);
+  PublishSingleton.Text = UNKNOWN_COMMAND;
+    
   if(command.GetType() == ctSET) 
   {
       uint8_t argsCount = command.GetArgsCount();
       
       if(argsCount < 1) // не хватает параметров
       {
-        answerStatus = false;
-        answer = PARAMS_MISSED;
+        PublishSingleton.Text = PARAMS_MISSED;
       }
       else
       {
@@ -392,15 +391,14 @@ bool  WateringModule::ExecCommand(const Command& command)
               }
       
               
-              answerStatus = true;
-              answer = WATER_SETTINGS_COMMAND; answer += PARAM_DELIMITER;
-              answer += REG_SUCC;
+              PublishSingleton.Status = true;
+              PublishSingleton.Text = WATER_SETTINGS_COMMAND; PublishSingleton.Text += PARAM_DELIMITER;
+              PublishSingleton.Text += REG_SUCC;
           } // argsCount > 3
           else
           {
             // не хватает команд
-            answerStatus = false;
-            answer = PARAMS_MISSED;
+            PublishSingleton.Text = PARAMS_MISSED;
           }
           
         } // WATER_SETTINGS_COMMAND
@@ -421,24 +419,22 @@ bool  WateringModule::ExecCommand(const Command& command)
                   settings->SetChannelWateringTime(channelIdx,wTime);
                   settings->SetChannelStartWateringTime(channelIdx,sTime);
                   
-                  answerStatus = true;
-                  answer = WATER_CHANNEL_SETTINGS; answer += PARAM_DELIMITER;
-                  answer += command.GetArg(1); answer += PARAM_DELIMITER;
-                  answer += REG_SUCC;
+                  PublishSingleton.Status = true;
+                  PublishSingleton.Text = WATER_CHANNEL_SETTINGS; PublishSingleton.Text += PARAM_DELIMITER;
+                  PublishSingleton.Text += command.GetArg(1); PublishSingleton.Text += PARAM_DELIMITER;
+                  PublishSingleton.Text += REG_SUCC;
                  
                 }
                 else
                 {
                   // плохой индекс
-                  answerStatus = false;
-                  answer = UNKNOWN_COMMAND;
+                  PublishSingleton.Text = UNKNOWN_COMMAND;
                 }
            }
            else
            {
             // не хватает команд
-            answerStatus = false;
-            answer = PARAMS_MISSED;            
+            PublishSingleton.Text = PARAMS_MISSED;            
            }
         }
         else
@@ -458,9 +454,9 @@ bool  WateringModule::ExecCommand(const Command& command)
             blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
            }
 
-              answerStatus = true;
-              answer = WORK_MODE; answer += PARAM_DELIMITER;
-              answer += param;
+              PublishSingleton.Status = true;
+              PublishSingleton.Text = WORK_MODE; PublishSingleton.Text += PARAM_DELIMITER;
+              PublishSingleton.Text += param;
         
         } // WORK_MODE
         else 
@@ -480,8 +476,8 @@ bool  WateringModule::ExecCommand(const Command& command)
 
           dummyAllChannels.IsChannelRelayOn = true; // включаем реле на всех каналах
 
-          answerStatus = true;
-          answer = STATE_ON;
+          PublishSingleton.Status = true;
+          PublishSingleton.Text = STATE_ON;
         } // STATE_ON
         else 
         if(which == STATE_OFF) // попросили выключить полив, CTSET=WATER|OFF
@@ -500,8 +496,8 @@ bool  WateringModule::ExecCommand(const Command& command)
 
           dummyAllChannels.IsChannelRelayOn = false; // выключаем реле на всех каналах
 
-          answerStatus = true;
-          answer = STATE_OFF;
+          PublishSingleton.Status = true;
+          PublishSingleton.Text = STATE_OFF;
           
         } // STATE_OFF        
 
@@ -516,36 +512,36 @@ bool  WateringModule::ExecCommand(const Command& command)
     
     if(t == GetID()) // нет аргументов, попросили вернуть статус полива
     {
-      answerStatus = true;
-      answer = IsAnyChannelActive(settings->GetWateringOption()) ? STATE_ON : STATE_OFF;
-      answer += PARAM_DELIMITER;
-      answer += workMode == wwmAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+      PublishSingleton.Status = true;
+      PublishSingleton.Text = IsAnyChannelActive(settings->GetWateringOption()) ? STATE_ON : STATE_OFF;
+      PublishSingleton.Text += PARAM_DELIMITER;
+      PublishSingleton.Text += workMode == wwmAutomatic ? WM_AUTOMATIC : WM_MANUAL;
     }
     else
     if(t == WATER_SETTINGS_COMMAND) // запросили данные о настройках полива
     {
-      answerStatus = true;
-      answer = WATER_SETTINGS_COMMAND; answer += PARAM_DELIMITER; 
-      answer += String(settings->GetWateringOption()); answer += PARAM_DELIMITER;
-      answer += String(settings->GetWateringWeekDays()); answer += PARAM_DELIMITER;
-      answer += String(settings->GetWateringTime()); answer += PARAM_DELIMITER;
-      answer += String(settings->GetStartWateringTime()); answer += PARAM_DELIMITER;
-      answer += String(settings->GetTurnOnPump());
+      PublishSingleton.Status = true;
+      PublishSingleton.Text = WATER_SETTINGS_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; 
+      PublishSingleton.Text += String(settings->GetWateringOption()); PublishSingleton.Text += PARAM_DELIMITER;
+      PublishSingleton.Text += String(settings->GetWateringWeekDays()); PublishSingleton.Text += PARAM_DELIMITER;
+      PublishSingleton.Text += String(settings->GetWateringTime()); PublishSingleton.Text += PARAM_DELIMITER;
+      PublishSingleton.Text += String(settings->GetStartWateringTime()); PublishSingleton.Text += PARAM_DELIMITER;
+      PublishSingleton.Text += String(settings->GetTurnOnPump());
     }
     else
     if(t == WATER_CHANNELS_COUNT_COMMAND)
     {
-      answerStatus = true;
-      answer = WATER_CHANNELS_COUNT_COMMAND; answer += PARAM_DELIMITER;
-      answer += String(WATER_RELAYS_COUNT);
+      PublishSingleton.Status = true;
+      PublishSingleton.Text = WATER_CHANNELS_COUNT_COMMAND; PublishSingleton.Text += PARAM_DELIMITER;
+      PublishSingleton.Text += String(WATER_RELAYS_COUNT);
       
     }
     else
     if(t == WORK_MODE) // получить режим работы
     {
-      answerStatus = true;
-      answer = WORK_MODE; answer += PARAM_DELIMITER;
-      answer += workMode == wwmAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+      PublishSingleton.Status = true;
+      PublishSingleton.Text = WORK_MODE; PublishSingleton.Text += PARAM_DELIMITER;
+      PublishSingleton.Text += workMode == wwmAutomatic ? WM_AUTOMATIC : WM_MANUAL;
     }
     else
     {
@@ -563,19 +559,18 @@ bool  WateringModule::ExecCommand(const Command& command)
               
               if(idx < WATER_RELAYS_COUNT)
               {
-                answerStatus = true;
+                PublishSingleton.Status = true;
              
-                answer = WATER_CHANNEL_SETTINGS; answer += PARAM_DELIMITER;
-                answer += command.GetArg(1); answer += PARAM_DELIMITER; 
-                answer += String(settings->GetChannelWateringWeekDays(idx)); answer += PARAM_DELIMITER;
-                answer += String(settings->GetChannelWateringTime(idx)); answer += PARAM_DELIMITER;
-                answer += String(settings->GetChannelStartWateringTime(idx));
+                PublishSingleton.Text = WATER_CHANNEL_SETTINGS; PublishSingleton.Text += PARAM_DELIMITER;
+                PublishSingleton.Text += command.GetArg(1); PublishSingleton.Text += PARAM_DELIMITER; 
+                PublishSingleton.Text += String(settings->GetChannelWateringWeekDays(idx)); PublishSingleton.Text += PARAM_DELIMITER;
+                PublishSingleton.Text += String(settings->GetChannelWateringTime(idx)); PublishSingleton.Text += PARAM_DELIMITER;
+                PublishSingleton.Text += String(settings->GetChannelStartWateringTime(idx));
               }
               else
               {
                 // плохой индекс
-                answerStatus = false;
-                answer = UNKNOWN_COMMAND;
+                PublishSingleton.Text = UNKNOWN_COMMAND;
               }
                       
             } // if
@@ -585,9 +580,8 @@ bool  WateringModule::ExecCommand(const Command& command)
   } // if
  
  // отвечаем на команду
-    SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    mainController->Publish(this);
+    mainController->Publish(this,command);
     
-  return answerStatus;
+  return PublishSingleton.Status;
 }
 

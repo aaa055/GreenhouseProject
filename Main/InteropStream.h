@@ -16,23 +16,21 @@ private:
 
 public:
 
-  InteropStream();
-
+   InteropStream();
+  virtual ~InteropStream() {}
     void SetController(ModuleController* c) {mainController = c;}
     ModuleController* GetController() {return mainController;};
 
-    bool QueryCommand(COMMAND_TYPE cType, const String& command, bool isInternalCommand); // вызывает команду для зарегистрированного модуля
-    
-    void Clear() { data = F("");}
-    const String& GetData() { return data;}
+    bool QueryCommand(COMMAND_TYPE cType, const String& command, bool isInternalCommand,bool wantAnwer=true); // вызывает команду для зарегистрированного модуля
+
+    const String& GetData() {return data;}
     
     virtual int available(){ return false; };
     virtual int read(){ return -1;};
     virtual int peek(){return -1;};
     virtual void flush(){};
 
-    virtual size_t print(const String &s);
-    virtual size_t println(const String &s);
+ 
     virtual size_t write(uint8_t toWr);  
   
 };
@@ -47,12 +45,14 @@ class BlinkModeInterop
     uint8_t pin; // пин, на котором диод
     String loopName; // имя периодически выполняемой операции
     String pinCommand;
+    bool needUpdate;
   
   public:
     BlinkModeInterop();
 
     void begin(uint8_t pin, const String& loopName); // запоминаем настройки
     void blink(uint16_t interval=0); // мигаем диодом
+    void update(); // обновляем состояние
 };
 
 #endif

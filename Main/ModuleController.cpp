@@ -1,12 +1,14 @@
 #include "ModuleController.h"
 #include "InteropStream.h"
 
+PublishStruct PublishSingleton;
+
 ModuleController::ModuleController(COMMAND_DESTINATION wAs, const String& id) : workAs(wAs), ourID(id), cParser(NULL)
 #ifdef USE_LOG_MODULE
 ,logWriter(NULL)
 #endif
 {
-
+  PublishSingleton.Text.reserve(SHARED_BUFFER_LENGTH); // 500 байт для ответа от модуля должно хватить.
 }
 #ifdef USE_DS3231_REALTIME_CLOCK
 DS3231Clock& ModuleController::GetClock()
@@ -58,26 +60,46 @@ void ModuleController::RegisterModule(AbstractModule* mod)
   }
 }
 
-void ModuleController::PublishToStream(Stream* pStream,bool bOk, const String& Answer)
+void ModuleController::PublishToCommandStream(AbstractModule* module,const Command& sourceCommand)
 {
+
+  Stream* ps = sourceCommand.GetIncomingStream();
+ 
   // Публикуем в переданный стрим
-  if(!pStream)
+  if(!ps)
   {
+#ifdef _DEBUG
+  if(PublishSingleton.Text.length())
+    Serial.println(String(F("No ps, but have answer: ")) + PublishSingleton.Text);
+#endif    
+    PublishSingleton.Busy = false; // освобождаем структуру
     return;
-  } 
-     pStream->print(bOk ? OK_ANSWER : ERR_ANSWER);
-     pStream->print(COMMAND_DELIMITER);
+  }
+
+     ps->print(PublishSingleton.Status ? OK_ANSWER : ERR_ANSWER);
+     ps->print(COMMAND_DELIMITER);
+
+    if(PublishSingleton.AddModuleIDToAnswer && module) // надо добавить имя модуля в ответ
+    {
+       ps->print(module->GetID());
+       ps->print(PARAM_DELIMITER);
+    }
     
-     pStream->println(Answer);
+     ps->println(PublishSingleton.Text);
+
+   
+   PublishSingleton.Busy = false; // освобождаем структуру
 }
 
 void ModuleController::CallRemoteModuleCommand(AbstractModule* mod, const String& command)
 {
 
   UNUSED(mod);
+  UNUSED(command);
   
-  pStream->println("BROADCAST THE COMMAND \"" + command + "\"");
-
+#ifdef _DEBUG  
+  Serial.println("BROADCAST THE COMMAND \"" + command + "\"");
+#endif
   /* ВОТ ТУТ ПОСЫЛКА КОМАНДЫ ПО ПРОТОКОЛУ (НАПРИМЕР RS485) МОДУЛЮ И ПОЛУЧЕНИЕ ОТВЕТА ОТ НЕГО.
    *  
     ВОПРОС, КУДА БУДЕТ ВЫВОДИТЬСЯ ОТВЕТ. ЕСТЬ ЮЗКЕЙС, КОГДА НАДО НАСТРОИТЬ LOOP ДЛЯ ПОЛУЧЕНИЯ
@@ -100,14 +122,10 @@ void ModuleController::CallRemoteModuleCommand(AbstractModule* mod, const String
   
 }
 
-void ModuleController::Publish(AbstractModule* module)
+void ModuleController::Publish(AbstractModule* module,const Command& sourceCommand)
 {
 
-  if(module)
-  {
-    // публикуем ответ для всех, кто подписался на ответ от модуля
-    module->Publish();
-  } // if(module)
+  PublishToCommandStream(module,sourceCommand);
   
 }
 AbstractModule* ModuleController::GetModuleByID(const String& id)
@@ -122,19 +140,25 @@ AbstractModule* ModuleController::GetModuleByID(const String& id)
   return NULL;
 }
 
-void ModuleController::ProcessModuleCommand(const Command& c, bool checkDestination)
+void ModuleController::ProcessModuleCommand(const Command& c, AbstractModule* mod, bool checkDestination)
 {
   if(checkDestination && (c.GetDestination() != workAs) ) // команда не для нас! 
   {
     return;
   }
+
+#ifdef _DEBUG
+//Serial.println("called: " +  c.GetTargetModuleID() + PARAM_DELIMITER + c.GetRawArguments());
+#endif  
   /*
    * например, контроллер работает в режиме дочернего модуля, тогда он отзывается только на команды
    * с префиксом CD, тогда как в режиме работы как контроллер - префикс CT.
    * 
    */
   
- AbstractModule* mod =  GetModuleByID(c.GetTargetModuleID());
+if(!mod) // ничего не передали, надо искать модуль
+  mod =  GetModuleByID(c.GetTargetModuleID());
+  
  if(!mod)
  {
   //TODO: МОДУЛЬ НЕ НАЙДЕН, ВОТ ЗАСАДА! НО: ТУТ МОЖНО ПЕРЕНАПРАВЛЯТЬ ЗАПРОС БРОАДКАСТОМ В СЕТЬ,
@@ -144,11 +168,19 @@ void ModuleController::ProcessModuleCommand(const Command& c, bool checkDestinat
 
   // А ПОКА - МЫ ПРОСТО СООБЩАЕМ, ЧТО МОДУЛЬ С ПЕРЕДАННЫМ ИМЕНЕМ НАМ НЕИЗВЕСТЕН.
   // Сообщаем в тот поток, откуда пришел запрос.
-  PublishToStream(c.GetIncomingStream(),false,UNKNOWN_MODULE);
+  PublishSingleton.AddModuleIDToAnswer = false;
+  PublishSingleton.Status = false;
+  PublishSingleton.Text = UNKNOWN_MODULE;
+  PublishToCommandStream(mod,c);
   return;
  }
      // нашли модуль
- mod->ExecCommand(c); // выполняем его команду
+
+CHECK_PUBLISH_CONSISTENCY;
+
+ PublishSingleton.Reset(); // очищаем структуру для публикации
+ PublishSingleton.Busy = true; // говорим, что структура занята для публикации
+ mod->ExecCommand(c,c.GetIncomingStream() != NULL); // выполняем его команду
  
 }
 

@@ -28,7 +28,7 @@ class HumidityModule : public AbstractModule // модуль управлени�
     , lastUpdateCall(256) // разнесём опросы датчиков по времени
     {}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command,bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 

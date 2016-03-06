@@ -24,16 +24,21 @@ void WiFiModule::ProcessAnswerLine(const String& line)
   {
      // пришёл запрос от сервера, сохраняем его
      waitForQueryCompleted = true; // ждём конца запроса
-     httpQuery = F(""); // сбрасываем запрос
+     //httpQuery = F(""); // сбрасываем запрос
+     httpQuery = line; // сохраняем первую строку запроса
   } // if
 
   if(waitForQueryCompleted) // ждём всего запроса, он нам может быть и не нужен
   {
+    /*
+    if(!httpQuery.length()) // сохраняем только первую строку запроса, остальные игнорируем, чтобы не забивать память
+    {
       httpQuery += line;
       httpQuery += NEWLINE;
-
-      if( /*line.endsWith(F(",CLOSED")) ||*/ !line.length() 
-     // || line.lastIndexOf(F("HTTP/1.")) != -1 // нашли полную строку 
+    }
+    */
+      if( /*line.endsWith(F(",CLOSED")) ||*/ !line.length() // нашли пустую строку, значит, запрос пришёл полностью
+      //|| line.lastIndexOf(F("HTTP/1.")) != -1 
       )
       {
         waitForQueryCompleted = false; // уже не ждём запроса
@@ -52,7 +57,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
       if(line == F("ready")) // получили
       {
         #ifdef WIFI_DEBUG
-          WIFI_DEBUG_WRITE(F("[OK] => ESP-01 restarted."),currentAction);
+          WIFI_DEBUG_WRITE(F("[OK] => ESP restarted."),currentAction);
           CHECK_QUEUE_TAIL(wfaWantReady);
        #endif
        actionsQueue.pop(); // убираем последнюю обработанную команду
@@ -393,9 +398,26 @@ void WiFiModule::ProcessURIRequest(int clientID, const HTTPQuery& query)
 void WiFiModule::Setup()
 {
   // настройка модуля тут
-  Settings = mainController->GetSettings();
-  sdCardInited = mainController->HasSDCard(); // проверяем, есть ли у контроллера возможность работы с SD-картой
 
+  // резервируем место под строку запроса.
+  // поскольку мы обрабатываем только первую строку,
+  // достаточно будет несколько десятков байт.
+  // попробуем подсчитать:
+  //+IPD:0,12324:GET /index.htm HTTP/1.1\r\n
+  // получаем 40 байт. Но - у нас есть ещё
+  // команды вида
+  //+IPD:0,12324:GET /СTSET=LIGHT|ON HTTP/1.1\r\n
+  // и пр. Следовательно, резервируем 200 байт,
+  // и вроде как - париться не должны.
+  httpQuery.reserve(200);
+  
+  Settings = mainController->GetSettings();
+  sdCardInited = 
+  #ifdef USE_WIFI_MODULE
+  mainController->HasSDCard(); // проверяем, есть ли у контроллера возможность работы с SD-картой
+  #else
+    false;
+  #endif  
   nextClientIDX = 0;
   currentClientIDX = 0;
   inSendData = false;
@@ -430,7 +452,7 @@ void WiFiModule::Setup()
 void WiFiModule::SendCommand(const String& command, bool addNewLine)
 {
   #ifdef WIFI_DEBUG
-    WIFI_DEBUG_WRITE(String(F("==> Send the \"")) + command + String(F("\" command to ESP-01...")),currentAction);
+    WIFI_DEBUG_WRITE(String(F("==> Send the \"")) + command + String(F("\" command to ESP...")),currentAction);
   #endif
 
   WIFI_SERIAL.write(command.c_str(),command.length());
@@ -459,7 +481,7 @@ void WiFiModule::ProcessQueue()
       {
         // надо рестартовать модуль
       #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Restart the ESP-01..."),currentAction);
+        WIFI_DEBUG_WRITE(F("Restart the ESP..."),currentAction);
       #endif
       SendCommand(F("AT+RST"));
       //SendCommand(F("AT+GMR"));
@@ -690,11 +712,11 @@ void WiFiModule::Update(uint16_t dt)
   ProcessQueue();
 
 }
-bool  WiFiModule::ExecCommand(const Command& command)
+bool  WiFiModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = NOT_SUPPORTED;
-  bool answerStatus = false;
+  UNUSED(wantAnswer);
+  
+  PublishSingleton.Text = NOT_SUPPORTED;
 
   if(command.GetType() == ctSET) // установка свойств
   {
@@ -741,16 +763,16 @@ bool  WiFiModule::ExecCommand(const Command& command)
           }
            
           
-          answerStatus = true;
-          answer = t; answer += PARAM_DELIMITER; answer += REG_SUCC;
+          PublishSingleton.Status = true;
+          PublishSingleton.Text = t; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += REG_SUCC;
         }
         else
-          answer = PARAMS_MISSED; // мало параметров
+          PublishSingleton.Text = PARAMS_MISSED; // мало параметров
         
       } // WIFI_SETTINGS_COMMAND
     }
     else
-      answer = PARAMS_MISSED; // мало параметров
+      PublishSingleton.Text = PARAMS_MISSED; // мало параметров
   } // SET
   else
   if(command.GetType() == ctGET) // чтение свойств
@@ -763,7 +785,7 @@ bool  WiFiModule::ExecCommand(const Command& command)
       if(t == IP_COMMAND) // получить данные об IP
       {
         if(currentAction != wfaIdle) // не можем ответить на запрос немедленно
-          answer = BUSY;
+          PublishSingleton.Text = BUSY;
         else
         {
         #ifdef WIFI_DEBUG
@@ -861,21 +883,20 @@ bool  WiFiModule::ExecCommand(const Command& command)
           WIFI_DEBUG_WRITE(F("IP info requested."),currentAction);
         #endif
 
-        answerStatus = true;
-        answer = t; answer += PARAM_DELIMITER;
-        answer += apCurrentIP;
-        answer += PARAM_DELIMITER;
-        answer += stationCurrentIP;
+        PublishSingleton.Status = true;
+        PublishSingleton.Text = t; PublishSingleton.Text += PARAM_DELIMITER;
+        PublishSingleton.Text += apCurrentIP;
+        PublishSingleton.Text += PARAM_DELIMITER;
+        PublishSingleton.Text += stationCurrentIP;
         } // else not busy
       } // IP_COMMAND
     }
     else
-      answer = PARAMS_MISSED; // мало параметров
+      PublishSingleton.Text = PARAMS_MISSED; // мало параметров
   } // GET
 
-  SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-  mainController->Publish(this);
+  mainController->Publish(this,command);
 
-  return answerStatus;
+  return PublishSingleton.Status;
 }
 

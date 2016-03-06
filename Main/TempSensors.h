@@ -89,7 +89,7 @@ class TempSensors : public AbstractModule // модуль опроса темп�
   public:
     TempSensors() : AbstractModule(F("STATE")){}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 

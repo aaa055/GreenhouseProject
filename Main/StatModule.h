@@ -11,7 +11,7 @@ class StatModule : public AbstractModule
   public:
     StatModule() : AbstractModule(F("STAT")) {}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 };

@@ -220,48 +220,4 @@ OneState* ModuleState::GetState(ModuleStates state, uint8_t idx)
     return NULL;
 }
 
-void AbstractModule::Publish()
-{
-    toPublish.Module = this; // сохраняем указатель на нас, все остальное уже должно быть заполнено
-    Stream* streamDefOut = toPublish.SourceCommand->GetIncomingStream(); // в какой поток вывести по умолчанию
-    uint8_t streamFillCnt = 0; // был ли вывод в поток, в который мы собираемся вывести информацию?
-    
-   #ifdef USE_PUBLISHERS 
-    for(uint8_t i=0;i<MAX_PUBLISHERS;i++)
-    {
-      if(publishers[i])
-      {
-        if(publishers[i]->Publish(&toPublish,streamDefOut)) // публикуем в подписчика
-          streamFillCnt++; 
-      }
-    } // for
-    #endif
-
-    if(!streamFillCnt) // в этот поток никто не совался, можно выводить туда
-    {
-      // публикуем ответ в тот поток, откуда пришла команда
-      String txt;
-      if(toPublish.AddModuleIDToAnswer) // надо добавить имя модуля в ответ
-       txt = toPublish.Module->GetID() + PARAM_DELIMITER;
-     
-      txt += toPublish.Text;
-      
-      mainController->PublishToStream(streamDefOut,toPublish.Status,txt);
-    } // if
-    
-}
-#ifdef USE_PUBLISHERS
-bool AbstractModule::AddPublisher(AbstractPublisher* p)
-{
-     for(uint8_t i=0;i<MAX_PUBLISHERS;i++)
-    {
-      if(!publishers[i])
-      {
-        publishers[i] = p;
-        return true;
-      }
-    } // for
-    return false;
-}
-#endif
 

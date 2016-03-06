@@ -11,7 +11,7 @@ class RemoteModule : public AbstractModule // модуль пересыла ко
   public:
     RemoteModule(const String& id) : AbstractModule(id) {}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 

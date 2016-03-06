@@ -2,11 +2,6 @@
 #define _LOG_MODULE_H
 #include "AbstractModule.h"
 #include "Globals.h"
-
-#ifndef USE_DS3231_REALTIME_CLOCK
-#error Define the USE_DS3231_REALTIME_CLOCK in Globals.h, please, or undef the USE_LOG_MODULE.
-#endif
-
 #include "DS3231Support.h"
 #include <SD.h>
 
@@ -22,7 +17,9 @@ class LogModule : public AbstractModule // модуль логгирования
   private:
 
   unsigned long lastUpdateCall;
+  #ifdef USE_DS3231_REALTIME_CLOCK
   DS3231Clock rtc;
+  #endif
   int8_t lastDOW;
 
   bool hasSD;
@@ -51,7 +48,7 @@ class LogModule : public AbstractModule // модуль логгирования
   public:
     LogModule() : AbstractModule(F("LOG")) {}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 

@@ -437,7 +437,7 @@ void SMSModule::ProcessIncomingCall(const String& line) // обрабатыва�
       
       #ifdef NEOWAY_DEBUG_MODE
           Serial.print(F("RING DETECTED: ")); Serial.println(ring);
-        #endif
+      #endif
 
  
   if(ring != Settings->GetSmsPhoneNumber()) // не наш номер
@@ -658,14 +658,13 @@ void SMSModule::ProcessQueuedWindowCommand(uint16_t dt)
 
         // теперь проверяем ответ. Если окна не в движении - нам вернётся OPEN или CLOSED последним параметром.
         // только в этом случае мы можем исполнять команду
-        String streamAnswer = ModuleInterop.GetData();
-        streamAnswer.trim();
-        int16_t idx = streamAnswer.lastIndexOf(PARAM_DELIMITER);
+        const char* strPtr = PublishSingleton.Text.c_str();
+        int16_t idx = PublishSingleton.Text.lastIndexOf(PARAM_DELIMITER);
         if(idx != -1)
         {
-          String state = streamAnswer.substring(idx+1,streamAnswer.length());
+          strPtr += idx + 1;
           
-              if(state == STATE_OPEN || state == STATE_CLOSED)
+              if(strstr(strPtr,String(STATE_OPEN).c_str()) || strstr(strPtr,String(STATE_CLOSED).c_str()))
               {
                 // окна не двигаются, можем отправлять команду
                  if(ModuleInterop.QueryCommand(ctSET,queuedWindowCommand,false))
@@ -755,22 +754,17 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
       Serial.println(F("Command CTGET=STATE|WINDOW|0 parsed, execute it..."));
     #endif
 
-    String streamAnswer = ModuleInterop.GetData(); // получили ответ от другого модуля
-    streamAnswer.trim();
-    int16_t idx = streamAnswer.lastIndexOf(PARAM_DELIMITER);
-    if(idx != -1)
-    {
-      String state = streamAnswer.substring(idx+1,streamAnswer.length());
-      if(state == STATE_OPEN || state == STATE_OPENING)
+    const char* strPtr = PublishSingleton.Text.c_str();
+     if(strstr(strPtr,String(STATE_OPEN).c_str()))
         sms += W_OPEN;
       else
         sms += W_CLOSED;
-    }
+
 
      sms += NEWLINE;
  
     #ifdef NEOWAY_DEBUG_MODE
-      Serial.print(F("Receive answer from STATE: ")); Serial.println(streamAnswer);
+      Serial.print(F("Receive answer from STATE: ")); Serial.println(PublishSingleton.Text);
     #endif
   }
     // получаем состояние полива
@@ -782,24 +776,13 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
       Serial.println(F("Command CTGET=WATER parsed, execute it..."));
     #endif
 
-    String streamAnswer = ModuleInterop.GetData(); // получили ответ от другого модуля
-    streamAnswer.trim();
-    int16_t idx = streamAnswer.lastIndexOf(PARAM_DELIMITER);
-    if(idx != -1)
-    {
-      streamAnswer = streamAnswer.substring(0,idx);
-      idx = streamAnswer.lastIndexOf(PARAM_DELIMITER);
-      if(idx != -1)
-      {
-        String state = streamAnswer.substring(idx+1,streamAnswer.length());
-        if(state == STATE_ON)
-          sms += WTR_ON;
-        else
-          sms += WTR_OFF;
-      }
-    }
-    
-    
+    const char* strPtr = PublishSingleton.Text.c_str();
+    String sOFF = STATE_OFF;
+    if(strstr(strPtr,sOFF.c_str()))
+      sms += WTR_OFF;
+    else
+      sms += WTR_ON;
+          
   }
 
   // тут отсылаем SMS
@@ -845,16 +828,13 @@ void SMSModule::SendSMS(const String& sms)
   
 }
 
-bool  SMSModule::ExecCommand(const Command& command)
+bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = UNKNOWN_COMMAND;
-  bool answerStatus = false; 
+  UNUSED(wantAnswer);
   
   if(command.GetType() == ctSET) 
   {
-      answerStatus = false;
-      answer = NOT_SUPPORTED;
+      PublishSingleton.Text = NOT_SUPPORTED;
   }
   else
   if(command.GetType() == ctGET) //получить статистику
@@ -864,27 +844,27 @@ bool  SMSModule::ExecCommand(const Command& command)
     t.toUpperCase();
     if(t == GetID()) // нет аргументов
     {
-      answerStatus = false;
-      answer = PARAMS_MISSED;
+      PublishSingleton.Text = PARAMS_MISSED;
     }
     else
     if(t == STAT_COMMAND) // запросили данные статистики
     {
       SendStatToCaller(Settings->GetSmsPhoneNumber()); // посылаем статистику на указанный номер телефона
-      answerStatus = true;
-      answer = STAT_COMMAND; answer += PARAM_DELIMITER; answer += REG_SUCC;
+    
+      PublishSingleton.Status = true;
+      PublishSingleton.Text = STAT_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += REG_SUCC;
     }
     else
     {
       // неизвестная команда
+      PublishSingleton.Text = UNKNOWN_COMMAND;
     } // else
     
   } // if
  
  // отвечаем на команду
-    SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    mainController->Publish(this);
+    mainController->Publish(this,command);
     
-  return answerStatus;
+  return PublishSingleton.Status;
 }
 

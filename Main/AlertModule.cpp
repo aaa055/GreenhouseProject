@@ -11,6 +11,7 @@ AlertRule::AlertRule()
   linkedRulesCnt = 0;
   canWork = true;
   dataAlertLong = 0;
+  bFirstCall = true;
   
 }
 void AlertRule::Update(uint16_t dt
@@ -76,12 +77,12 @@ bool AlertRule::HasAlert()
     {
      if(!linkedModule->State.HasState(StateTemperature))  // не поддерживаем температуру
         return false;
-/*
-     if(!linkedModule->State.IsStateChanged(StateTemperature,sensorIdx)) // ничего не изменилось
-      {
+
+     if(!linkedModule->State.IsStateChanged(StateTemperature,sensorIdx) && !bFirstCall) // ничего не изменилось
         return false;
-      }
-*/      
+      
+       bFirstCall = false;
+            
        OneState* os = linkedModule->State.GetState(StateTemperature,sensorIdx);
        if(!os)
         return false;
@@ -128,12 +129,11 @@ bool AlertRule::HasAlert()
       
      if(!linkedModule->State.HasState(StateLuminosity))  // не поддерживаем освещенность
         return false;
-/*
-     if(!linkedModule->State.IsStateChanged(StateLuminosity,sensorIdx)) // ничего не изменилось
-      {
+
+     if(!linkedModule->State.IsStateChanged(StateLuminosity,sensorIdx) && !bFirstCall) // ничего не изменилось
         return false;
-      }
-*/      
+
+       bFirstCall = false;
        OneState* os = linkedModule->State.GetState(StateLuminosity,sensorIdx);
        if(!os)
         return false;
@@ -161,12 +161,11 @@ bool AlertRule::HasAlert()
     {
      if(!linkedModule->State.HasState(StateHumidity))  // не поддерживаем влажность
         return false;
-/*
-     if(!linkedModule->State.IsStateChanged(StateHumidity,sensorIdx)) // ничего не изменилось
-      {
+
+     if(!linkedModule->State.IsStateChanged(StateHumidity,sensorIdx) && !bFirstCall) // ничего не изменилось
         return false;
-      }
-*/      
+
+       bFirstCall = false;
        OneState* os = linkedModule->State.GetState(StateHumidity,sensorIdx);
        if(!os)
         return false;
@@ -757,7 +756,7 @@ void AlertModule::Update(uint16_t dt)
 
         // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
         //cmd.SetIncomingStream(pStream);
-        mainController->ProcessModuleCommand(cmd,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой
+        mainController->ProcessModuleCommand(cmd,NULL,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой
 
         // дёргаем функцию обновления других вещей - типа, кооперативная работа
         yield();
@@ -869,22 +868,19 @@ void AlertModule::AddAlert(const String& strAlert)
 }
 #endif
 
-bool  AlertModule::ExecCommand(const Command& command)
+bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = UNKNOWN_COMMAND;
-  bool answerStatus = false; 
-  
+  if(wantAnswer) PublishSingleton.Text = UNKNOWN_COMMAND;
+    
   if(command.GetType() == ctSET) 
   {
-    answer = NOT_SUPPORTED;
+    PublishSingleton.Text = NOT_SUPPORTED;
     String t = command.GetRawArguments();
     t.toUpperCase();
    
     if(t == GetID()) // нет аргументов
     {
-      answerStatus = false;
-      answer = PARAMS_MISSED;
+      PublishSingleton.Text = PARAMS_MISSED;
     }
     else
     {
@@ -901,23 +897,23 @@ bool  AlertModule::ExecCommand(const Command& command)
             AbstractModule* m = mainController->GetModuleByID(t);
             if(m && m != this && AddRule(m,command))
             {
-              answerStatus = true;
-              answer = REG_SUCC;
+              PublishSingleton.Status = true;
+              PublishSingleton.Text = REG_SUCC;
             }
           } // ADD_RULE
           else 
           if(t == SAVE_RULES) // запросили сохранение правил
           {
             SaveRules();
-            answerStatus = true;
-            answer = SAVE_RULES;
+            PublishSingleton.Status = true;
+            PublishSingleton.Text = SAVE_RULES;
           }
           else 
           if(t == RULE_STATE) // установить состояние правила - включено или выключено
           {
             if(cnt < 2)
             {
-              answer = PARAMS_MISSED;
+              PublishSingleton.Text = PARAMS_MISSED;
             } // if
             else
             {
@@ -936,8 +932,8 @@ bool  AlertModule::ExecCommand(const Command& command)
                          rule->SetEnabled(bEnabled);
                    } // for
 
-                   answerStatus = true;
-                   answer = RULE_STATE; answer += PARAM_DELIMITER; answer +=  sParam + PARAM_DELIMITER + state;
+                   PublishSingleton.Status = true;
+                   PublishSingleton.Text = RULE_STATE; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  sParam + PARAM_DELIMITER + state;
                  } // if all
                  else // одно правило
                  {
@@ -949,8 +945,8 @@ bool  AlertModule::ExecCommand(const Command& command)
                          if(rule && rule->GetName() == rName)
                          {
                           rule->SetEnabled(bEnabled);
-                          answerStatus = true;
-                          answer = RULE_STATE; answer += PARAM_DELIMITER; answer +=  sParam + PARAM_DELIMITER + state;
+                          PublishSingleton.Status = true;
+                          PublishSingleton.Text = RULE_STATE; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  sParam + PARAM_DELIMITER + state;
                           break;
                          }
                       } // for
@@ -963,7 +959,7 @@ bool  AlertModule::ExecCommand(const Command& command)
           {
             if(cnt < 2)
             {
-              answer = PARAMS_MISSED;
+             PublishSingleton.Text = PARAMS_MISSED;
             } // if
             else
             {
@@ -983,8 +979,8 @@ bool  AlertModule::ExecCommand(const Command& command)
 
                   rulesCnt = 0;
                   
-                  answerStatus = true;
-                  answer = RULE_DELETE; answer += PARAM_DELIMITER; answer +=  sParam + PARAM_DELIMITER + REG_DEL;
+                  PublishSingleton.Status = true;
+                  PublishSingleton.Text = RULE_DELETE; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  sParam + PARAM_DELIMITER + REG_DEL;
 
                 }
                 else // только одно правило, удаляем по имени правила
@@ -1011,8 +1007,8 @@ bool  AlertModule::ExecCommand(const Command& command)
 
                     rulesCnt--;
  
-                    answerStatus = true;
-                    answer = RULE_DELETE; answer += PARAM_DELIMITER; answer +=  sParam + PARAM_DELIMITER + REG_DEL;
+                    PublishSingleton.Status = true;
+                    PublishSingleton.Text = RULE_DELETE; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  sParam + PARAM_DELIMITER + REG_DEL;
                    } // if(bDeleted)
                 } // else not ALL
             } // else
@@ -1029,22 +1025,21 @@ bool  AlertModule::ExecCommand(const Command& command)
     t.toUpperCase();
     if(t == GetID()) // нет аргументов
     {
-      answerStatus = false;
-      answer = PARAMS_MISSED;
+      PublishSingleton.Text = PARAMS_MISSED;
     }
     #if MAX_STORED_ALERTS > 0
     else
     if(t == CNT_COMMAND) // запросили данные о  кол-ве алертов
     {
-      answerStatus = true;
-      answer = CNT_COMMAND; answer += PARAM_DELIMITER; answer += String(cntAlerts);
+      PublishSingleton.Status = true;
+      PublishSingleton.Text = CNT_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += String(cntAlerts);
     }
     #endif
     else
     if(t == RULE_CNT) // запросили данные о количестве правил
     {
-      answerStatus = true;
-      answer = RULE_CNT; answer += PARAM_DELIMITER; answer += String(rulesCnt);
+      PublishSingleton.Status = true;
+      PublishSingleton.Text = RULE_CNT; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += String(rulesCnt);
     }
     else
     {
@@ -1060,15 +1055,15 @@ bool  AlertModule::ExecCommand(const Command& command)
                     
                     if(cnt < 2)
                     {
-                        answerStatus = false;
-                        answer = PARAMS_MISSED;
+                        PublishSingleton.Status = false;
+                        PublishSingleton.Text = PARAMS_MISSED;
                     }
                     else
                     {
                         uint8_t idx = command.GetArg(1).toInt();
                           
-                        answerStatus = true;
-                        answer = VIEW_ALERT_COMMAND; answer += PARAM_DELIMITER; answer +=  command.GetArg(1) + PARAM_DELIMITER + GetAlert(idx);
+                        PublishSingleton.Status = true;
+                        PublishSingleton.Text = VIEW_ALERT_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  command.GetArg(1) + PARAM_DELIMITER + GetAlert(idx);
                     }
               }
               else
@@ -1078,8 +1073,7 @@ bool  AlertModule::ExecCommand(const Command& command)
               {
                     if(cnt < 2)
                     {
-                        answerStatus = false;
-                        answer = PARAMS_MISSED;
+                        PublishSingleton.Text = PARAMS_MISSED;
                     }
                     else
                     {
@@ -1094,8 +1088,8 @@ bool  AlertModule::ExecCommand(const Command& command)
                             if(tc.length())
                               ar += PARAM_DELIMITER;
                               
-                            answerStatus = true;
-                            answer = RULE_VIEW; answer += PARAM_DELIMITER; answer +=  command.GetArg(1) + PARAM_DELIMITER + ar + tc;
+                            PublishSingleton.Status = true;
+                            PublishSingleton.Text = RULE_VIEW; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  command.GetArg(1) + PARAM_DELIMITER + ar + tc;
                           }
                         } // if
                     } // else
@@ -1105,8 +1099,7 @@ bool  AlertModule::ExecCommand(const Command& command)
               {
                     if(cnt < 2)
                     {
-                        answerStatus = false;
-                        answer = PARAMS_MISSED;
+                        PublishSingleton.Text = PARAMS_MISSED;
                     }
                     else
                     {
@@ -1116,9 +1109,10 @@ bool  AlertModule::ExecCommand(const Command& command)
                           AlertRule* rule = alertRules[idx];
                           if(rule) // нашли правило
                           {
-                            String ar = rule->GetEnabled() ? STATE_ON : STATE_OFF;
-                            answerStatus = true;
-                            answer = RULE_STATE; answer += PARAM_DELIMITER; answer +=  command.GetArg(1) + PARAM_DELIMITER + ar;
+                            
+                            PublishSingleton.Status = true;
+                            PublishSingleton.Text = RULE_STATE; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  command.GetArg(1) + PARAM_DELIMITER;
+                            PublishSingleton.Text += rule->GetEnabled() ? STATE_ON : STATE_OFF;
                           }
                         } // if
                     } // else
@@ -1135,9 +1129,7 @@ bool  AlertModule::ExecCommand(const Command& command)
   } // if
  
  // отвечаем на команду
-    SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    mainController->Publish(this);
-    
-  return answerStatus;
+  mainController->Publish(this,command);
+  return true;
 }
 

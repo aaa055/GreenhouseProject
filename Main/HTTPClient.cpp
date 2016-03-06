@@ -168,18 +168,16 @@ bool HTTPClient::Prepare(bool SDAvailable, const HTTPQuery& query)
  if(cType != ctUNKNOWN) // надо получить данные с контроллера
  {
     ajaxQueryFound = true;
-    InteropStream streamI;
-    streamI.SetController(controller);
-  
+     
     String command = uriRequested.substring(6);
-    if(streamI.QueryCommand(cType,command,false))
+    if(ModuleInterop.QueryCommand(cType,command,false))
     {
       // можем формировать AJAX-ответ
       dataToSend = F("{");
       dataToSend += F("\"query\": \"");
       dataToSend += uriRequested;
       dataToSend += F("\",\"answer\": \"");
-      String dt = streamI.GetData();
+      String dt = ModuleInterop.GetData();         
       dt.trim(); // убираем перевод строки в конце
       dataToSend += dt;
       dataToSend += F("\"};");      

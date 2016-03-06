@@ -3,7 +3,11 @@
 <head>
 <meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251"/>
 <style type="text/css">
-BODY, TD, DIV, SPAN, P, FONT {
+body {
+  width: 100%;
+	height: 100%;
+	margin: 0% 0% 0% 0%;
+	padding: 0% 0% 0% 0% ;
 	font-weight:normal;
 	font-family:Arial;
 	color:#000000;
@@ -57,14 +61,16 @@ font-size:10px;
 .menu {
 float:left;
 width:20%;
-padding-top:0px;
 }
 .content {
+border: 2px solid #B5CFCE;
+border-radius: 0px 10px 10px 0px;
 float:left;
 width:75%;
 clear:right;
 padding:5px;
 padding-left:15px;
+margin-left: 2%;
 }
 .mi {
 text-align:right;
@@ -521,23 +527,23 @@ function selectmenu(elem){
 <title>Контроллер теплицы на базе Arduino Mega</title>
 
 </head>
-<body leftmargin='40' topmargin='20' marginwidth='40' marginheight='20' bgcolor='#FFFFFF' onload='init();'>
+<body onload='init();'>
+<div style="margin:2%;">
+<div style="width:100%; color:#27408B; font-size: 20px;"><center><b>Arduino Mega. Контроллер теплицы.</b></center></div>
 <div class='hdn' id='temp_template'><table border='0'width='100%'><tr class='{0}'><td width='50'>#{1}</td><td width='*'>{2}</td></tr></table></div>
 <div class='hdn' id='humidity_template'><table border='0'width='100%'><tr class='{0}'><td width='50'>#{1}</td><td width='*'>{2}</td><td width='*'>{3}</td></tr></table></div>
 <div class='hdn' id='light_template'><table border='0'width='100%'><tr class='{0}'><td width='50%'>{1}</td><td width='50%'>{2}</td></tr></table></div>
-<div class='menu'>&nbsp;</div>
+
+<div style="width:90%; margin-left: 5%; margin-top: 3%;">
+<div class='menu'>
+<div class='mi mis' id='temp' onclick="selectmenu(this);"><center>Температура</center></div>
+<div class='mi' id='windows' onclick="selectmenu(this);"><center>Фрамуги</center></div>
+<div class='mi' id='water' onclick="selectmenu(this);"><center>Полив</center></div>
+<div class='mi' id='light' onclick="selectmenu(this);"><center>Досветка</center></div>
+<div class='mi' id='humidity' onclick="selectmenu(this);"><center>Влажность</center></div>
+</div>
 <div class='content'>
 <h1 id='ttl'></h1>
-</div>
-<div class='menu'>
-<div class='mi mis' id='temp' onclick="selectmenu(this);">Температура</div>
-<div class='mi' id='windows' onclick="selectmenu(this);">Фрамуги</div>
-<div class='mi' id='water' onclick="selectmenu(this);">Полив</div>
-<div class='mi' id='light' onclick="selectmenu(this);">Досветка</div>
-<div class='mi' id='humidity' onclick="selectmenu(this);">Влажность</div>
-</div>
-<div class='content'>
-
 <div id='c_temp' class='hdn'>
 <h2>Показания датчиков температуры</h2>
 <div id='temp_sensors_data'><p>Для получения значения с датчиков температуры нажмите кнопку ниже.</div>
@@ -562,8 +568,12 @@ function selectmenu(elem){
 
 
 </div>
+</div>
+
+
 <div class='cpy'>
 &copy;2016, Контроллер теплицы. Автор: Порохня Дмитрий, <a href='mailto:spywarrior@gmail.com' class='sml'>spywarrior@gmail.com</a>.
+</div>
 </div>
 </body>
 </html>

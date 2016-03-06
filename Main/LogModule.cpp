@@ -12,13 +12,20 @@
 void LogModule::Setup()
 {
    lastUpdateCall = 0;
+   #ifdef USE_DS3231_REALTIME_CLOCK
    rtc = mainController->GetClock();
+   #endif
+
    lastDOW = -1;
+   
 #ifdef LOG_ACTIONS_ENABLED   
    lastActionsDOW = -1;
 #endif   
+#ifdef USE_LOG_MODULE
    hasSD = mainController->HasSDCard();
-
+#else
+   hasSD = false;  
+#endif
    loggingInterval = LOGGING_INTERVAL; // по умолчанию, берём из Globals.h. Позже - будет из настроек.
   // настройка модуля тут
  }
@@ -96,6 +103,8 @@ void LogModule::WriteAction(const LogAction& action)
   String comma = COMMA_DELIMITER;
   String rn = NEWLINE;
 
+#ifdef USE_DS3231_REALTIME_CLOCK
+
   DS3231Time tm = rtc.getTime();
   
   String hhmm;
@@ -109,7 +118,7 @@ void LogModule::WriteAction(const LogAction& action)
     hhmm += F("0");
   hhmm += String(tm.minute);
 
-  WRITE_TO_ACTION_LOG(hhmm);
+  WRITE_TO_ACTION_LOG(hhmm); 
   WRITE_TO_ACTION_LOG(comma);
   WRITE_TO_ACTION_LOG(action.RaisedModule->GetID());
   WRITE_TO_ACTION_LOG(comma);
@@ -117,6 +126,10 @@ void LogModule::WriteAction(const LogAction& action)
   WRITE_TO_ACTION_LOG(rn);
 
   actionFile.flush(); // сливаем данные на диск
+#else
+  UNUSED(action);  
+#endif
+  
   yield(); // даём поработать другим модулям
 #else
 UNUSED(action);
@@ -126,6 +139,8 @@ UNUSED(action);
 #ifdef LOG_ACTIONS_ENABLED
 void LogModule::EnsureActionsFileCreated()
 {
+#ifdef USE_DS3231_REALTIME_CLOCK
+  
   DS3231Time tm = rtc.getTime();
 
   if(tm.dayOfWeek != lastActionsDOW)
@@ -138,7 +153,7 @@ void LogModule::EnsureActionsFileCreated()
       
     CreateActionsFile(tm); // создаём новый файл
   }
- 
+#endif 
 }
 #endif
 void LogModule::CreateNewLogFile(const DS3231Time& tm)
@@ -556,7 +571,7 @@ void LogModule::Update(uint16_t dt)
     #endif
     return;
   }
-
+#ifdef USE_DS3231_REALTIME_CLOCK
   DS3231Time tm = rtc.getTime();
   if(lastDOW != tm.dayOfWeek) // наступил следующий день недели, надо создать новый лог-файл
   {
@@ -568,16 +583,15 @@ void LogModule::Update(uint16_t dt)
   }
 
   GatherLogInfo(tm); // собираем информацию в лог
-
-    
+#endif    
   // обновление модуля тут
 
 }
 
-bool LogModule::ExecCommand(const Command& command)
+bool LogModule::ExecCommand(const Command& command, bool wantAnswer)
 {
 UNUSED(command);
- 
+UNUSED(wantAnswer); 
 
   return true;
 }

@@ -30,7 +30,7 @@ class PinModule : public AbstractModule
   public:
     PinModule() : AbstractModule(F("PIN")) {}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 };

@@ -63,7 +63,7 @@ class WiFiModule : public AbstractModule // модуль поддержки WI-F
   public:
     WiFiModule() : AbstractModule(F("WIFI")) {}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 

@@ -42,6 +42,7 @@ class AlertRule
     
     //String alertRule; // строка с правилом, самая тяжёлая часть для хранения в оперативке!
     bool bEnabled; // включено или нет
+    bool bFirstCall; // первый ли вызов правила?
 
     RuleDataSource dataSource; // источник, с которого получаем установку значения для правила
 
@@ -120,7 +121,7 @@ class AlertModule : public AbstractModule
       InitRules();
     }
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 };

@@ -16,24 +16,19 @@ void ZeroStreamListener::Update(uint16_t dt)
 
 }
 
-bool  ZeroStreamListener::ExecCommand(const Command& command)
+bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
 {
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = UNKNOWN_COMMAND;
-  bool answerStatus = false;
-  bool shouldAddModuleID = false; 
+  if(wantAnswer) PublishSingleton.Text = UNKNOWN_COMMAND;
   
   if(command.GetType() == ctGET) 
   {
-      answerStatus = false;
-      answer = NOT_SUPPORTED;
+     PublishSingleton.Text = NOT_SUPPORTED;
       
     String t = command.GetRawArguments();
     t.toUpperCase();
     if(t == GetID()) // нет аргументов
     {
-      answerStatus = false;
-      answer = PARAMS_MISSED;
+      PublishSingleton.Text = PARAMS_MISSED;
     }
     else
     {
@@ -41,8 +36,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
       if(argsCnt < 1)
       {
         // мало параметров
-       answerStatus = false;
-        answer = PARAMS_MISSED;
+        PublishSingleton.Text = PARAMS_MISSED;
         
       } // if
       else
@@ -51,16 +45,16 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
         t.toUpperCase();
         if(t == PING_COMMAND) // пинг
         {
-          answerStatus = true;
-          answer = PONG;
-          shouldAddModuleID = false;
+          PublishSingleton.Status = true;
+          PublishSingleton.Text = PONG;
+          PublishSingleton.AddModuleIDToAnswer = false;
         } // if
         else
         if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по СМС
         {
-          answerStatus = true;
-          shouldAddModuleID = false;
-          answer = SMS_NUMBER_COMMAND; answer += PARAM_DELIMITER; answer += mainController->GetSettings()->GetSmsPhoneNumber();
+          PublishSingleton.Status = true;
+          PublishSingleton.AddModuleIDToAnswer = false;
+          PublishSingleton.Text = SMS_NUMBER_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += mainController->GetSettings()->GetSmsPhoneNumber();
         }
         else if(t == HAS_CHANGES_COMMAND) // есть ли изменения в состоянии модулей?
         {
@@ -101,9 +95,9 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                 } // if(m != this)
             } // for
 
-             shouldAddModuleID = false;
-             answerStatus = true;
-             answer = hasChanges ? STATE_ON_ALT : STATE_OFF_ALT;
+             PublishSingleton.AddModuleIDToAnswer = false;
+             PublishSingleton.Status = true;
+             PublishSingleton.Text = hasChanges ? STATE_ON_ALT : STATE_OFF_ALT;
         }
         else if(t == LIST_CHANGES_COMMAND) // какие изменения в состоянии модулей?
         {
@@ -112,9 +106,9 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           //TODO: ПОТЕНЦИАЛЬНАЯ ДЫРА - ЕСЛИ КОЛ-ВО ИЗМЕНЕНИЙ БОЛЬШОЕ - ТО И СТРОКА С ИЗМЕНЕНИЯМИ БУДЕТ БОЛЬШЕ,
           // ЧЕМ ОБЪЁМ ОПЕРАТИВКИ !!! НАДО ПЕРЕПИСАТЬ, ЧТОБЫ РАБОТАЛО С ПОСЛЕДОВАТЕЛЬНЫМИ ОБРАЩЕНИЯМИ, ЛИБО
           // ПО ОЧЕРЕДИ ПИСАЛО СТРОКИ В ПОТОК !!!
+          PublishSingleton.Text = F("");
           
             size_t cnt = mainController->GetModulesCount();
-            answer = F("");
            
             for(size_t i=0;i<cnt;i++)
             {
@@ -138,7 +132,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                         Temperature* tCurrent = (Temperature*) os->Data;
                         Temperature* tPrev = (Temperature*) os->PreviousData;
                       
-                        answer += mName + PARAM_DELIMITER + PROP_TEMP + PARAM_DELIMITER + String(i) 
+                        PublishSingleton.Text += mName + PARAM_DELIMITER + PROP_TEMP + PARAM_DELIMITER + String(i) 
                         + PARAM_DELIMITER + *tPrev + PARAM_DELIMITER + *tCurrent + NEWLINE;
                       } // if
                     } // if
@@ -148,15 +142,15 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                 } // if
             } // for
 
-             shouldAddModuleID = false;
-             answerStatus = true;
+             PublishSingleton.AddModuleIDToAnswer = false;
+             PublishSingleton.Status = true;
             
         }        
         else if(t == REGISTERED_MODULES_COMMAND) // пролистать зарегистрированные модули
         {
-          shouldAddModuleID = false;
-          answerStatus = true;
-          answer = F("");
+          PublishSingleton.AddModuleIDToAnswer = false;
+          PublishSingleton.Status = true;
+          PublishSingleton.Text = F("");
           size_t cnt = mainController->GetModulesCount();
           for(size_t i=0;i<cnt;i++)
           {
@@ -164,10 +158,10 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
 
             if(mod != this)
             {
-              if(answer.length())
-                answer += PARAM_DELIMITER;
+              if(PublishSingleton.Text.length())
+                PublishSingleton.Text += PARAM_DELIMITER;
               
-              answer += mod->GetID();
+              PublishSingleton.Text += mod->GetID();
              
             }// if
               
@@ -184,8 +178,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                   if(argsCnt < 3)
                   {
                     // мало параметров
-                    answerStatus = false;
-                    answer = PARAMS_MISSED;
+                    PublishSingleton.Text = PARAMS_MISSED;
         
                   } // if
                   else
@@ -199,8 +192,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                       // CTGET=0|PROP|M|TEMP_CNT
                       uint8_t tempCnt = mod->State.GetStateCount(StateTemperature);
 
-                      answerStatus = true;
-                      answer = String(PROP_TEMP_CNT) + PARAM_DELIMITER + String(tempCnt);
+                      PublishSingleton.Status = true;
+                      PublishSingleton.Text = String(PROP_TEMP_CNT) + PARAM_DELIMITER + String(tempCnt);
                     }
                     else if(propName == PROP_RELAY_CNT) // кол-во каналов реле - в каждом канале - 8 реле
                     {
@@ -209,11 +202,10 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                       // CTGET=0|PROP|M|RELAY_CNT
                       uint8_t relayCnt = mod->State.GetStateCount(StateRelay);
                       
-                      answerStatus = true;
-                      answer = String(PROP_RELAY_CNT) + PARAM_DELIMITER + String(relayCnt);
+                      PublishSingleton.Status = true;
+                      PublishSingleton.Text = String(PROP_RELAY_CNT) + PARAM_DELIMITER + String(relayCnt);
                       #else
-                      answerStatus = false;
-                      answer = NOT_SUPPORTED;
+                      PublishSingleton.Text = NOT_SUPPORTED;
                       #endif
                       
                     } // else if
@@ -222,10 +214,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                       // CTGET=0|PROP|M|TEMP|0 - пример
                          if(argsCnt < 4)
                          {
-                          
                             // мало параметров
-                            answerStatus = false;
-                            answer = PARAMS_MISSED;
+                            PublishSingleton.Text = PARAMS_MISSED;
                          }
                          else
                          {
@@ -241,8 +231,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                               {
                                 Temperature* t = (Temperature*) os->Data;
                                 String curTemp = *t;//mod->State.GetTemp(sensorIdx);
-                                answerStatus = true;
-                                answer = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + curTemp;
+                                PublishSingleton.Status = true;
+                                PublishSingleton.Text = String(PROP_TEMP) + PARAM_DELIMITER + String(sensorIdx) + PARAM_DELIMITER + curTemp;
                               } // if(os)
                             }
  
@@ -255,10 +245,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                       // CTGET=0|PROP|M|RELAY|0 - пример
                          if(argsCnt < 4)
                          {
-                          
                             // мало параметров
-                            answerStatus = false;
-                            answer = PARAMS_MISSED;
+                            PublishSingleton.Text = PARAMS_MISSED;
                          }
                          else
                          {
@@ -280,35 +268,31 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                                   bool bOn = bitRead(*((uint8_t*)os->Data),bitNum);
                                 
                                   String curRelayState = bOn ? STATE_ON : STATE_OFF;
-                                  answerStatus = true;
-                                  answer = String(PROP_RELAY) + PARAM_DELIMITER + String(relayIdx) +  PARAM_DELIMITER + curRelayState;
+                                  PublishSingleton.Status = true;
+                                  PublishSingleton.Text = String(PROP_RELAY) + PARAM_DELIMITER + String(relayIdx) +  PARAM_DELIMITER + curRelayState;
                                 } // if(os)
                               }
                              
                             } // if has relay
                             else
                             {
-                              answerStatus = false;
-                              answer = NOT_SUPPORTED;  
+                              PublishSingleton.Text = NOT_SUPPORTED;  
                             }
                            #else
-                            answerStatus = false;
-                            answer = NOT_SUPPORTED; 
+                            PublishSingleton.Text = NOT_SUPPORTED; 
                            #endif
                          } // else
                     } // else if
                     else
                     {
-                    answerStatus = false;
-                    answer = UNKNOWN_PROPERTY;
+                    PublishSingleton.Text = UNKNOWN_PROPERTY;
                     }
                   }
           } // if mod
           else
           {
             // модуль неизвестен
-            answerStatus = false;
-            answer = UNKNOWN_MODULE;
+            PublishSingleton.Text = UNKNOWN_MODULE;
           } // else
           
         } // PROPERTIES_COMMAND
@@ -330,8 +314,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
     t.toUpperCase();
     if(t == GetID()) // нет аргументов
     {
-      answerStatus = false;
-      answer = PARAMS_MISSED;
+      PublishSingleton.Text = PARAMS_MISSED;
     }
     else
     {
@@ -339,9 +322,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
       if(argsCnt < 2)
       {
         // мало параметров
-       answerStatus = false;
-        answer = PARAMS_MISSED;
-        
+        PublishSingleton.Text = PARAMS_MISSED;        
       } // if
       else
       {
@@ -357,16 +338,15 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           if(mod)
           {
             // модуль уже зарегистрирован
-            answerStatus = false;
-            answer = REG_ERR; answer += PARAM_DELIMITER; answer += reqID;
+            PublishSingleton.Text = REG_ERR; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += reqID;
           } // if
           else
           {
             // регистрируем новый модуль
             RemoteModule* remMod = new RemoteModule(reqID); 
             c->RegisterModule(remMod);
-            answerStatus = true;
-            answer = REG_SUCC; answer += PARAM_DELIMITER; answer += reqID;
+            PublishSingleton.Status = true;
+            PublishSingleton.Text = REG_SUCC; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += reqID;
 
           } // else
        }
@@ -378,8 +358,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
           GlobalSettings* sett = mainController->GetSettings();
           sett->SetSmsPhoneNumber(command.GetArg(1));
           sett->Save();
-          answerStatus = true;
-          answer = SMS_NUMBER_COMMAND; answer += PARAM_DELIMITER; answer += REG_SUCC;
+          PublishSingleton.Status = true;
+          PublishSingleton.Text = SMS_NUMBER_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += REG_SUCC;
           
        }
        #ifdef USE_DS3231_REALTIME_CLOCK
@@ -447,8 +427,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
              DS3231Clock cl = mainController->GetClock();
              cl.setTime(sec.toInt(),minute.toInt(),hour.toInt(),dow,dayint,monthint,yearint);
 
-             answerStatus = true;
-             answer = REG_SUCC;
+             PublishSingleton.Status = true;
+             PublishSingleton.Text = REG_SUCC;
          } // if
        }
        #endif
@@ -464,8 +444,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                   if(argsCnt < 4)
                   {
                     // мало параметров
-                    answerStatus = false;
-                    answer = PARAMS_MISSED;
+                    PublishSingleton.Text = PARAMS_MISSED;
         
                   } // if
                   else
@@ -483,8 +462,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                       for(uint8_t toAdd = 0; toAdd < tempCnt; toAdd++)
                         mod->State.AddState(StateTemperature,toAdd);
                       
-                      answerStatus = true;
-                      answer = REG_SUCC;
+                      PublishSingleton.Status = true;
+                      PublishSingleton.Text = REG_SUCC;
                     }
                     else if(propName == PROP_RELAY_CNT) // кол-во каналов реле
                     {
@@ -508,8 +487,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
 
                       #endif
 
-                      answerStatus = true;
-                      answer = REG_SUCC;
+                      PublishSingleton.Status = true;
+                      PublishSingleton.Text = REG_SUCC;
                       
                     } // else if
                     else if(propName == PROP_TEMP) // передали температуру
@@ -519,8 +498,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                          {
                           
                             // мало параметров
-                            answerStatus = false;
-                            answer = PARAMS_MISSED;
+                            PublishSingleton.Text = PARAMS_MISSED;
                          }
                          else
                          {
@@ -540,8 +518,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                            //mod->State.SetTemp(sensorIdx,t);
                            mod->State.UpdateState(StateTemperature,sensorIdx,(void*)&t);
  
-                            answerStatus = true;
-                            answer = REG_SUCC;
+                            PublishSingleton.Status = true;
+                            PublishSingleton.Text = REG_SUCC;
                            
                          } // else
                     } // else if
@@ -552,8 +530,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                          {
                           
                             // мало параметров
-                            answerStatus = false;
-                            answer = PARAMS_MISSED;
+                            PublishSingleton.Text = PARAMS_MISSED;
                          }
                          else
                          {
@@ -574,23 +551,21 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
                            } 
                            #endif
                            
-                            answerStatus = true;
-                            answer = REG_SUCC;
+                            PublishSingleton.Status = true;
+                            PublishSingleton.Text = REG_SUCC;
                            
                          } // else
                     } // else if
                     else
                     {
-                    answerStatus = false;
-                    answer = UNKNOWN_PROPERTY;
+                    PublishSingleton.Text = UNKNOWN_PROPERTY;
                     }
                   }
           } // if mod
           else
           {
             // модуль неизвестен
-            answerStatus = false;
-            answer = UNKNOWN_MODULE;
+            PublishSingleton.Text = UNKNOWN_MODULE;
           } // else
         
        } // PROPERTIES_COMMAND
@@ -604,9 +579,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command)
   } // if
  
  // отвечаем на команду
-    SetPublishData(&command,answerStatus,answer,shouldAddModuleID); // готовим данные для публикации
-    mainController->Publish(this);
+    mainController->Publish(this,command);
     
-  return answerStatus;
+  return PublishSingleton.Status;
 }
 

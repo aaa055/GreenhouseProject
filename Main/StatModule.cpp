@@ -22,15 +22,14 @@ void StatModule::Update(uint16_t dt)
   uptime += dt;
 }
 
-bool  StatModule::ExecCommand(const Command& command)
+bool  StatModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = UNKNOWN_COMMAND;
-  bool answerStatus = false; 
+  if(wantAnswer) PublishSingleton.Text = UNKNOWN_COMMAND;
+  PublishSingleton.AddModuleIDToAnswer = false;
+  
   if(command.GetType() == ctSET) 
   {
-      answerStatus = false;
-      answer = NOT_SUPPORTED;
+      if(wantAnswer) PublishSingleton.Text = NOT_SUPPORTED;
   }
   else
   if(command.GetType() == ctGET) //получить статистику
@@ -40,33 +39,40 @@ bool  StatModule::ExecCommand(const Command& command)
     t.toUpperCase();
     if(t == GetID()) // нет аргументов
     {
-      answerStatus = false;
-      answer = PARAMS_MISSED;
+      if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED;
     }
     else
     if(t == FREERAM_COMMAND) // запросили данные о свободной памяти
     {
-      answerStatus = true;
-      answer = FREERAM_COMMAND; answer += PARAM_DELIMITER; answer += freeRam();
+     PublishSingleton.Status = true;
+      if(wantAnswer) 
+      {
+        PublishSingleton.Text = FREERAM_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += freeRam();
+      }
     }
     else
     if(t == UPTIME_COMMAND) // запросили данные об аптайме
     {
-      answerStatus = true;
-      answer = UPTIME_COMMAND; answer += PARAM_DELIMITER; answer +=  (unsigned long) uptime/1000;
+      PublishSingleton.Status = true;
+      if(wantAnswer) 
+      {
+        PublishSingleton.Text = UPTIME_COMMAND; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text +=  (unsigned long) uptime/1000;
+      }
     }
  #ifdef USE_DS3231_REALTIME_CLOCK   
     else if(t == CURDATETIME_COMMAND)
     {
        DS3231Clock rtc = mainController->GetClock();
        DS3231Time tm = rtc.getTime();
-       String s = rtc.getDayOfWeekStr(tm);
-       s += F(" ");
-       s += rtc.getDateStr(tm);
-       s += F(" ");
-       s += rtc.getTimeStr(tm);
-       answerStatus = true;
-       answer = s;     
+       if(wantAnswer) 
+       {
+         PublishSingleton.Text = rtc.getDayOfWeekStr(tm);
+         PublishSingleton.Text += F(" ");
+         PublishSingleton.Text += rtc.getDateStr(tm);
+         PublishSingleton.Text += F(" ");
+         PublishSingleton.Text += rtc.getTimeStr(tm);
+       }
+      PublishSingleton.Status = true;
     }
   #endif  
     else
@@ -77,9 +83,8 @@ bool  StatModule::ExecCommand(const Command& command)
   } // if
  
  // отвечаем на команду
-    SetPublishData(&command,answerStatus,answer,false); // готовим данные для публикации
-    mainController->Publish(this);
+    mainController->Publish(this,command);
     
-  return answerStatus;
+  return PublishSingleton.Status;
 }
 

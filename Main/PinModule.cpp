@@ -79,11 +79,12 @@ void PinModule::Update(uint16_t dt)
   UpdatePinStates(); // обновляем состояние пинов
 }
 
-bool  PinModule::ExecCommand(const Command& command)
+bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = PARAMS_MISSED;
-  bool answerStatus = false;  
+ 
+  if(wantAnswer)
+    PublishSingleton.Text = PARAMS_MISSED;
+    
   if(command.GetType() == ctGET) //получить состояние пина
   {
     if(command.GetArgsCount() > 0)
@@ -91,15 +92,17 @@ bool  PinModule::ExecCommand(const Command& command)
        String strNum = command.GetArg(0);
        uint8_t pinNumber = strNum.toInt();
        uint8_t currentState = GetPinState(pinNumber);
-       answer = strNum + PARAM_DELIMITER + (currentState == HIGH ? STATE_ON : STATE_OFF);
-       answerStatus = true;
+       
+       if(wantAnswer) // чтобы не работать с памятью, когда от нас не ждут ответа
+        PublishSingleton.Text = strNum + PARAM_DELIMITER + (currentState == HIGH ? STATE_ON : STATE_OFF);
+        
+       PublishSingleton.Status = true;
     }
     
 
   // отвечаем на команду
-    SetPublishData(&command,true,answer,answerStatus); // готовим данные для публикации
-    mainController->Publish(this);
-    return answerStatus;
+    mainController->Publish(this,command);
+    return PublishSingleton.Status;
     
   } // if ctGET
   else
@@ -156,9 +159,12 @@ bool  PinModule::ExecCommand(const Command& command)
        PIN_STATE* s = AddPin(pinNumber,pinLevel);
        if(s)
        {
-            answerStatus = true;
-            answer = strNum + PARAM_DELIMITER;
-            answer +=  (s->pinState == HIGH ? STATE_ON : STATE_OFF);
+            PublishSingleton.Status = true;
+            if(wantAnswer)
+            {
+              PublishSingleton.Text = strNum + PARAM_DELIMITER;
+              PublishSingleton.Text +=  (s->pinState == HIGH ? STATE_ON : STATE_OFF);
+            }
        }
 
        // добавляем все пины, которые нам передали в параметрах через запятую
@@ -182,12 +188,11 @@ bool  PinModule::ExecCommand(const Command& command)
        }
       
     } // if
-    SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    mainController->Publish(this);
-    return answerStatus;
+    mainController->Publish(this,command);
+    return PublishSingleton.Status;
 
   } // if ctSET
 
-  return false;
+  return true;
 }
 

@@ -115,7 +115,9 @@ void LuminosityModule::Setup()
  }
 void LuminosityModule::Update(uint16_t dt)
 { 
-  // обновление модуля тут  
+  // обновление модуля тут
+
+    blinker.update();
 
  // обновляем состояние всех реле управления досветкой
   for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
@@ -157,20 +159,15 @@ void LuminosityModule::Update(uint16_t dt)
 
 }
 
-bool  LuminosityModule::ExecCommand(const Command& command)
+bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = UNKNOWN_COMMAND;
-  
-  bool answerStatus = false; 
+  if(wantAnswer) PublishSingleton.Text = UNKNOWN_COMMAND;
   
   uint8_t argsCnt = command.GetArgsCount();
   
   if(command.GetType() == ctSET) 
   {
-      answerStatus = false;
-      answer = PARAMS_MISSED;
+      if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED;
 
       if(argsCnt > 0)
       {
@@ -201,8 +198,8 @@ bool  LuminosityModule::ExecCommand(const Command& command)
 
             bRelaysIsOn = true; // включаем реле досветки
             
-            answerStatus = true;
-            answer = STATE_ON;
+            PublishSingleton.Status = true;
+            if(wantAnswer) PublishSingleton.Text = STATE_ON;
             
            } // else
  
@@ -234,8 +231,8 @@ bool  LuminosityModule::ExecCommand(const Command& command)
 
             bRelaysIsOn = false; // выключаем реле досветки
             
-            answerStatus = true;
-            answer = STATE_OFF;
+            PublishSingleton.Status = true;
+            if(wantAnswer) PublishSingleton.Text = STATE_OFF;
             
            } // else
          } // STATE_OFF
@@ -262,9 +259,12 @@ bool  LuminosityModule::ExecCommand(const Command& command)
                 blinker.blink();
               }
 
-              answerStatus = true;
-              answer = WORK_MODE; answer += PARAM_DELIMITER;
-              answer += workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+              PublishSingleton.Status = true;
+              if(wantAnswer)
+              {
+                PublishSingleton.Text = WORK_MODE; PublishSingleton.Text += PARAM_DELIMITER;
+                PublishSingleton.Text += workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+              }
               
            } // if (argsCnt > 1)
          } // WORK_MODE
@@ -280,21 +280,24 @@ bool  LuminosityModule::ExecCommand(const Command& command)
     if(t == GetID()) // нет аргументов, попросили дать показания с датчика
     {
       
-      answerStatus = true;
-      answer = 
+      PublishSingleton.Status = true;
+      if(wantAnswer) 
+      {
+        PublishSingleton.Text = 
      #if LIGHT_SENSORS_COUNT > 0
       String(lightMeter.GetCurrentLuminosity());
       #else
         String(NO_LUMINOSITY_DATA);
       #endif
       
-      answer += PARAM_DELIMITER;
-      answer += 
+     PublishSingleton.Text += PARAM_DELIMITER;
+     PublishSingleton.Text += 
       #if LIGHT_SENSORS_COUNT > 1
         String(lightMeter2.GetCurrentLuminosity());
       #else
         String(NO_LUMINOSITY_DATA);
       #endif
+      }
     }
     else
     if(argsCnt > 0)
@@ -303,20 +306,23 @@ bool  LuminosityModule::ExecCommand(const Command& command)
        if(s == WORK_MODE) // запросили режим работы
        {
           String wm = workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
-          answerStatus = true;
-          answer = String(WORK_MODE) + PARAM_DELIMITER + wm;
+          PublishSingleton.Status = true;
+          if(wantAnswer) PublishSingleton.Text = String(WORK_MODE) + PARAM_DELIMITER + wm;
           
        } // if(s == WORK_MODE)
        else
        if(s == LIGHT_STATE_COMMAND) // CTGET=LIGHT|STATE
        {
-          answer = LIGHT_STATE_COMMAND;
-          answer += PARAM_DELIMITER;
-          answer += bRelaysIsOn ? STATE_ON : STATE_OFF;
-          answer += PARAM_DELIMITER;
-          answer += workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+          if(wantAnswer)
+          {
+            PublishSingleton.Text = LIGHT_STATE_COMMAND;
+            PublishSingleton.Text += PARAM_DELIMITER;
+            PublishSingleton.Text += bRelaysIsOn ? STATE_ON : STATE_OFF;
+            PublishSingleton.Text += PARAM_DELIMITER;
+            PublishSingleton.Text += workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL;
+          }
           
-          answerStatus = true;
+          PublishSingleton.Status = true;
              
        } // LIGHT_STATE_COMMAND
         
@@ -328,9 +334,8 @@ bool  LuminosityModule::ExecCommand(const Command& command)
   } // if
  
  // отвечаем на команду
-    SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-    mainController->Publish(this);
+    mainController->Publish(this,command);
     
-  return answerStatus;
+  return true;
 }
 

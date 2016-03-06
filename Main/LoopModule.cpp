@@ -37,14 +37,11 @@ void LoopModule::Update(uint16_t dt)
 
           // конструируем команду
           Command com;
-          com.SetIncomingStream(lnk->IncomingCtream); // не забываем сохранить вызвавший команду поток
           com.Construct(lnk->linkedModule->GetID(),lnk->paramsToPass,lnk->typeOfCommand,mainController->GetWorkMode());
 
-          com.SetInternal(true); // говорим, что команда - от одного модуля к другому
 
-          // ПРОСИМ МОДУЛЬ ВЫПОЛНИТЬ КОМАНДУ, КОТОРУЮ ЕМУ НАДО ВЫПОЛНЯТЬ ВРЕМЯ ОТ ВРЕМЕНИ
-          // ОБНОВИТ СОСТОЯНИЕ ПЕРИФЕРИИ ДЛЯ ЭТОГО МОДУЛЯ САМ КОНТРОЛЛЕР, ВЫЗВАВ МЕТОД UPDATE МОДУЛЯ
-          lnk->linkedModule->ExecCommand(com);
+          com.SetInternal(true); // говорим, что команда - от одного модуля к другому
+          mainController->ProcessModuleCommand(com,lnk->linkedModule);
 
      } // if
       
@@ -52,14 +49,14 @@ void LoopModule::Update(uint16_t dt)
   } // for
 }
 
-LoopLink* LoopModule::AddLink(const Command& command)
+LoopLink* LoopModule::AddLink(const Command& command, bool wantAnswer)
 {
-
+  
 uint8_t paramsCount = command.GetArgsCount(); // сколько параметров пришло?
   if(paramsCount < MIN_LOOP_PARAMS) // мало параметров передано
   {
-     SetPublishData(&command,false,PARAMS_MISSED); // сохраняем данные для публикации
-     mainController->Publish(this); // публикуем их от своего имени
+    if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED;
+    mainController->Publish(this,command); // публикуем их от своего имени
     return NULL;
   }
 
@@ -72,8 +69,8 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
     AbstractModule* regModule = GetRegisteredModule(moduleID);
     if(!regModule)
     {
-      SetPublishData(&command,false,UNKNOWN_MODULE); // сохраняем данные для публикации
-      mainController->Publish(this); // публикуем
+      if(wantAnswer) PublishSingleton.Text = UNKNOWN_MODULE;
+      mainController->Publish(this,command); // публикуем
       return false;
     }
     // добавляем новую связь
@@ -87,7 +84,6 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
   } // if
 
     lnk->loopName = loopName; // сохраняем имя команды
-    lnk->IncomingCtream = command.GetIncomingStream();
     lnk->typeOfCommand = command.GetArg(COMMAND_TYPE_IDX);
     lnk->interval = command.GetArg(INTERVAL_IDX).toInt();
     lnk->bActive = (lnk->interval > 0 ? true : false);
@@ -104,6 +100,10 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
         
       lnk->paramsToPass += command.GetArg(i);
     } // for
+
+     if(wantAnswer) PublishSingleton.Text = REG_SUCC;
+     PublishSingleton.Status = true;
+     mainController->Publish(this,command); // публикуем их от своего имени
 
     return lnk;
 
@@ -127,20 +127,20 @@ LoopLink* LoopModule::GetLink(const String& loopName)
   return NULL;
 }
 
-bool  LoopModule::ExecCommand(const Command& command)
+bool  LoopModule::ExecCommand(const Command& command, bool wantAnswer)
 {
   
   if(command.GetType() == ctGET) // получить состояние связанного модуля
   {
 
-      return AddLink(command) ? true : false;
+      return AddLink(command,wantAnswer) ? true : false;
   } // if
   else
   if(command.GetType() == ctSET) // установить состояние связанного модуля
   {
-      return AddLink(command) ? true : false;
+      return AddLink(command,wantAnswer) ? true : false;
   } // if
 
-  return false;
+  return true;
 }
 

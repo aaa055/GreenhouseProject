@@ -2,6 +2,7 @@
 #define _GLOBALS_H
 
 // директивы условной компиляции 
+//#define _DEBUG // отладочный режим
 #define AS_CONTROLLER // закомментировать для дочерних модулей
 #define USE_DS3231_REALTIME_CLOCK // закомментировать, если не хотим использовать модуль реального времени
 #define USE_PIN_MODULE // закомментировать, если не нужен модуль управления пинами
@@ -14,7 +15,6 @@
 #define USE_HUMIDITY_MODULE // закомментировать, если не нужен модуль работы с датчиками влажности DHT
 #define USE_WIFI_MODULE // закомментировать, если не нужна поддержка управления через Wi-Fi (ESP8266)
 #define USE_LOG_MODULE // закомментировать, если не нужен модуль логгирования информации. Внимание: модуль работает только с модулем реального времени (USE_DS3231_REALTIME_CLOCK должна быть определена!)
-//#define USE_PUBLISHERS // раскомментировать, если используется парадигма паблишеров (пока я не понял, нужна ли она в реале)
 //#define SAVE_RELAY_STATES // раскомментировать, если для модуля надо хранить актуальное состояние каналов реле (ещё не понял - надо ли показывать это в реале)
 
 // ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ, СДЕЛАННОГО В ЖЕЛЕЗЕ!
@@ -29,12 +29,13 @@
 #define SERIAL_BAUD_RATE 9600 // скорость работы с портом, бод
 #define READY F("READY") // будет напечатано в Serial после загрузки
 
-// настройки информационных диодов
+// настройки информационных диодов и других пинов 
 #define DIODE_READY_PIN 6 // пин, на котором будет диод, мигающий при старте и горящий в режиме работы
 #define DIODE_MANUAL_MODE_PIN 7 // пин, на котором будет диод, мигающий, когда мы в ручном режиме управления окнами
 #define DIODE_WATERING_MANUAL_MODE_PIN 8 // пин, на котором висит диод индикации ручного режима управления поливом
 #define DIODE_LIGHT_MANUAL_MODE_PIN 9 // пин, на котором висит диод индикации ручного режима управления досветкой
 #define WORK_MODE_BLINK_INTERVAL 500 // с какой частотой мигать на пинах индикации ручного режима работы, мс
+#define SDCARD_CS_PIN 53 // номер пина Chip Select для SD-модуля 
 
 // настройки железных модулей реле 
 #define RELAY_ON LOW // уровень для включения реле
@@ -235,7 +236,6 @@
 
 // настройки модуля WI-FI
 //#define WIFI_DEBUG // закомментировать, если не нужен режим отладки (режим отладки не работаем совместно с конфигуратором!) 
-#define SDCARD_CS_PIN 53 // номер пина Chip Select для SD-модуля 
 #define WIFI_SERIAL Serial2 // какой хардварный сериал использовать для WI-FI?
 #define WIFI_EVENT_FUNC serialEvent2 // функция для обработки событий входящего трафика от модуля
 #define WIFI_BAUDRATE 115200 // скорость работы с UART для WI-FI
@@ -321,8 +321,14 @@
  * 
  */
 
+ #define SHARED_BUFFER_LENGTH 500 // сколько байт резервировать для общего буфера обмена
+
+ #ifdef _DEBUG
+  #define CHECK_PUBLISH_CONSISTENCY { if(PublishSingleton.Busy && PublishSingleton.Text.length() > 0) {Serial.print(F("[ERROR] Attempt to writing to unclear PublishSingleton: ")); Serial.println(PublishSingleton.Text);} }
+ #else
+  #define CHECK_PUBLISH_CONSISTENCY (void) 0;
+ #endif
+
 #define UNUSED(expr) do { (void)(expr); } while (0)
-#define MAX_PUBLISHERS 2 // максимальное количество паблишеров для модуля
-#define RESERVE_STR_LENGTH 32 // сколько байт резервировать для строки ответа при выполнении ExecCommand
 
 #endif

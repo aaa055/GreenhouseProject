@@ -7,21 +7,26 @@ class ModuleController; // forward declaration
 
 #include "Globals.h"
 #include "CommandParser.h"
-#ifdef USE_PUBLISHERS
-#include "Publishers.h"
-#endif
 #include "TinyVector.h"
 
 // структура для публикации
-class AbstractModule; // forward declaration
 struct PublishStruct
 {
-  const Command* SourceCommand; // исходная команда, ответ на которую надо публиковать
-  AbstractModule* Module; // модуль, который опубликовал ответ или событие
   bool Status; // Статус ответа на запрос: false - ошибка, true - нет ошибки
-  String Text; // текстовое сообщение о публикации
+  String Text; // текстовое сообщение о публикации, общий для всех буфер
   bool AddModuleIDToAnswer; // добавлять ли имя модуля в ответ?
   void* Data; // любая информация, в зависимости от типа модуля
+  bool Busy; // флаг, что структура занята для записи
+
+  void Reset()
+  {
+    Status = false;
+    Text = F("");
+    AddModuleIDToAnswer = true;
+    Data = NULL;
+    Busy = false;
+  }
+  
 };
 
 struct Temperature // структура показаний с датчика температуры
@@ -98,56 +103,26 @@ class AbstractModule
   private:
     String moduleID;    
     
-    #ifdef USE_PUBLISHERS
-    AbstractPublisher* publishers[MAX_PUBLISHERS];
-    
-    void InitPublishers()
-    {
-      for(uint8_t i=0;i<MAX_PUBLISHERS;i++)
-        publishers[i] = NULL;
-    }
-    #endif
-
 protected:
 
   ModuleController* mainController;
-
-  PublishStruct toPublish; // структура для публикации данных от модуля
-  void SetPublishData(const Command* srcCommand, bool stat, const String& text,bool addModuleID = true, void* data = NULL)
-  {
-    toPublish.SourceCommand = srcCommand;
-    toPublish.Module = this;
-    toPublish.Status = stat;
-    toPublish.Text = text;
-    toPublish.AddModuleIDToAnswer = addModuleID;
-    toPublish.Data = data;
-  }
     
 public:
 
   AbstractModule(const String& id) : moduleID(id),mainController(NULL)
   { 
-    #ifdef USE_PUBLISHERS
-    InitPublishers();
-    #endif 
+
   }
 
   ModuleState State; // текущее состояние модуля
-#ifdef USE_PUBLISHERS
-  bool AddPublisher(AbstractPublisher* p);
-#endif
-
-  // публикуем изменения на всех подписчиков
-  void Publish();
-
-  
+ 
   void SetController(ModuleController* c) {mainController = c;}
   ModuleController* GetController() {return mainController;}
   String GetID() {return moduleID;}
   void SetID(const String& id) {moduleID = id;}
 
   // функции, перегружаемые наследниками
-  virtual bool ExecCommand(const Command& command) = 0; // вызывается при приходе текстовой команды для модуля 
+  virtual bool ExecCommand(const Command& command, bool wantAnswer) = 0; // вызывается при приходе текстовой команды для модуля (wantAnswer - ждут ли от нас текстового ответа) 
   virtual void Setup() = 0; // вызывается для настроек модуля
   virtual void Update(uint16_t dt) = 0; // обновляет состояние модуля (для поддержки состояния периферии, например, включение диода)
   

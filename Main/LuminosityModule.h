@@ -79,7 +79,7 @@ class LuminosityModule : public AbstractModule // модуль управлен�
     , lastUpdateCall(678) // разнесём опросы датчиков по времени
     {}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 

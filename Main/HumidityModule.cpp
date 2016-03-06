@@ -77,12 +77,10 @@ void HumidityModule::Update(uint16_t dt)
 
 }
 
-bool  HumidityModule::ExecCommand(const Command& command)
+bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
 {
 
-  String answer; answer.reserve(RESERVE_STR_LENGTH);
-  answer = NOT_SUPPORTED;
-  bool answerStatus = false;
+  if(wantAnswer) PublishSingleton.Text = NOT_SUPPORTED;
 
   if(command.GetType() == ctSET) // установка свойств
   {
@@ -94,7 +92,7 @@ bool  HumidityModule::ExecCommand(const Command& command)
       uint8_t argsCnt = command.GetArgsCount();
       if(argsCnt < 1)
       {
-        answer = PARAMS_MISSED; // не хватает параметров
+        if(wantAnswer) PublishSingleton.Text = PARAMS_MISSED; // не хватает параметров
         
       } // argsCnt < 1
       else
@@ -103,14 +101,17 @@ bool  HumidityModule::ExecCommand(const Command& command)
         String param = command.GetArg(0);
         if(param == PROP_CNT) // запросили данные о кол-ве датчиков: GTGET=HUMIDITY|CNT
         {
-          answerStatus = true;
-          answer = PROP_CNT; answer += PARAM_DELIMITER; answer += String(SUPPORTED_HUMIDITY_SENSORS);
+          PublishSingleton.Status = true;
+          if(wantAnswer) 
+          {
+            PublishSingleton.Text = PROP_CNT; PublishSingleton.Text += PARAM_DELIMITER; PublishSingleton.Text += String(SUPPORTED_HUMIDITY_SENSORS);
+          }
         } // PROP_CNT
         else
         if(param == ALL) // запросили показания со всех датчиков
         {
-          answerStatus = true;
-          answer = String(SUPPORTED_HUMIDITY_SENSORS);
+          PublishSingleton.Status = true;
+          if(wantAnswer) PublishSingleton.Text = String(SUPPORTED_HUMIDITY_SENSORS);
           
           for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
           {
@@ -119,12 +120,15 @@ bool  HumidityModule::ExecCommand(const Command& command)
              OneState* stateHumidity = State.GetState(StateHumidity,i);
              if(stateTemp && stateHumidity)
              {
-                answer += PARAM_DELIMITER;
                 Temperature* t = (Temperature*) stateTemp->Data;
                 Humidity* h = (Humidity*) stateHumidity->Data;
-                answer += *h;
-                answer += PARAM_DELIMITER;
-                answer += *t;
+                if(wantAnswer) 
+                {
+                  PublishSingleton.Text += PARAM_DELIMITER;
+                  PublishSingleton.Text += *h;
+                  PublishSingleton.Text += PARAM_DELIMITER;
+                  PublishSingleton.Text += *t;
+                }
              } // if
           } // for
                     
@@ -137,22 +141,26 @@ bool  HumidityModule::ExecCommand(const Command& command)
           if(idx >= SUPPORTED_HUMIDITY_SENSORS)
           {
             // плохой индекс
-            answer = NOT_SUPPORTED;
+            if(wantAnswer) PublishSingleton.Text = NOT_SUPPORTED;
           } // плохой индекс
           else
           {
-             answer = param;
+             if(wantAnswer) PublishSingleton.Text = param;
              OneState* stateTemp = State.GetState(StateTemperature,idx);
              OneState* stateHumidity = State.GetState(StateHumidity,idx);
              if(stateTemp && stateHumidity)
              {
-                answerStatus = true;
-                answer += PARAM_DELIMITER;
+                PublishSingleton.Status = true;
+                
                 Temperature* t = (Temperature*) stateTemp->Data;
                 Humidity* h = (Humidity*) stateHumidity->Data;
-                answer += *h;
-                answer += PARAM_DELIMITER;
-                answer += *t;
+                if(wantAnswer)
+                {
+                  PublishSingleton.Text += PARAM_DELIMITER;
+                  PublishSingleton.Text += *h;
+                  PublishSingleton.Text += PARAM_DELIMITER;
+                  PublishSingleton.Text += *t;
+                }
              } // if
             
           } // else нормальный индекс
@@ -164,9 +172,7 @@ bool  HumidityModule::ExecCommand(const Command& command)
   } // ctGET
   
 
-  SetPublishData(&command,answerStatus,answer); // готовим данные для публикации
-  mainController->Publish(this);
-    
-  return answerStatus;
+  mainController->Publish(this,command);    
+  return true;
 }
 

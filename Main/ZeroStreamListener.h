@@ -88,7 +88,7 @@ class ZeroStreamListener : public AbstractModule
   public:
     ZeroStreamListener() : AbstractModule(F("0")) {}
 
-    bool ExecCommand(const Command& command);
+    bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
 };

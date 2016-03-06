@@ -87,13 +87,6 @@ ModuleController controller(
     
   ,OUR_ID);
 
-#ifdef USE_PUBLISHERS
-// паблишер для вывода ответов в сериал
-//SerialPublisher serialPublisher;
-
-// паблишер вывода на экран
-//DisplayPublisher displayPublisher;
-#endif
 
 #ifdef USE_PIN_MODULE
 //  Модуль управления цифровыми пинами
@@ -238,6 +231,7 @@ void ProcessInitCommands()
   {
     const char* c = (const char*) pgm_read_word(&(INIT_COMMANDS[curIdx]));
     String command = ReadProgmemString(c);
+
     if(!command.length())
       break;
 
@@ -264,50 +258,6 @@ void setup()
 
   Serial.begin(SERIAL_BAUD_RATE); // запускаем Serial на нужной скорости
 
-  // назначаем поток вывода по умолчанию для контроллера
-  controller.SetCurrentStream(commandsFromSerial.GetStream());
-
-  /*
-   * ЛОГИКА РАБОТЫ ПУБЛИКАТОРОВ: ОНИ МОГУТ ВЫВОДИТЬ ОТВЕТ ТУДА, КУДА ХОТЯТ.
-   * ПО УМОЛЧАНИЮ ОТВЕТ НА ЗАПРОС ПРИХОДИТ В ТОТ ПОТОК, С КОТОРОГО БЫЛ ПОСЛАН ЗАПРОС.
-   * НАПРИМЕР, ЕСЛИ ЗАПРОС БЫЛ ИЗ SERIAL, ТО ТУДА И УЙДЁТ ОТВЕТ.
-   * ЕСЛИ МЫ ПОДПИШЕМ МОДУЛЬ, ПРИПИСАВ ЕМУ ПОДПИСЧИКА НА ОТВЕТ, И ЭТОТ ПОДПИСЧИК
-   * ВЫВОДИТ ДАННЫЕ В ЭТОТ ЖЕ ПОТОК - ВЫВОД ПО УМОЛЧАНИЮ ПРОИГНОРИРУЕТСЯ,
-   * ВМЕСТО ЭТОГО БУДЕТ ВЫЗВАН МЕТОД ПОДПИСЧИКА.
-   * 
-   * ТО ЕСТЬ - ОДИН И ТОТ ЖЕ ОТВЕТ НЕ ПОПАДЁТ НЕСКОЛЬКО РАЗ В ПОТОК ДЛЯ ВЫВОДА ОТВЕТА.
-   */
-#ifdef USE_PIN_MODULE   
-  #ifdef USE_PUBLISHERS
-// подписываем ответы от модуля на сериал
-  //pinModule.AddPublisher(&serialPublisher);
-  // для модуля управления диодом дублируем надпись на дисплей 
-  //pinModule.AddPublisher(&displayPublisher);
-  #endif
-#endif
-
-#ifdef USE_STAT_MODULE
-  #ifdef USE_PUBLISHERS
-  // подписываем ответы от модуля статистики на дисплей
-  // statModule.AddPublisher(&serialPublisher);
- #endif
-#endif
-
- // подписываем ответы от регистратора сторонних модулей на сериал
- #ifdef AS_CONTROLLER
- 
-  #ifdef USE_PUBLISHERS
-    //remoteRegistrator.AddPublisher(&serialPublisher);
-  #endif
-  
- #endif
- /*
-  * Как видно - строчка выше закомментирована. Это значит, что при отсутствии
-  * подписчиков на вывод куда-либо информации от модуля - возвращаемая модулем
-  * информация публикуется в текущий поток контроллера, т.е. в поток, от которого
-  * и пришёл запрос на выполнение команды. В нашем случае - это Serial.
-  */
-  
   // регистрируем модули
   #ifdef USE_WIFI_MODULE
   wiFiReceiveBuff.reserve(100);
@@ -426,8 +376,6 @@ void loop()
        Stream* answerStream = commandsFromSerial.GetStream();
       // разобрали, назначили поток, с которого пришла команда
         cmd.SetIncomingStream(answerStream);
-        // сохранили поток и для контроллера
-        controller.SetCurrentStream(answerStream);
         
       // запустили команду в обработку
        controller.ProcessModuleCommand(cmd);

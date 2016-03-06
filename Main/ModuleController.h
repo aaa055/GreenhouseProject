@@ -29,7 +29,7 @@ class ModuleController
 {
  private:
   ModulesVec modules; // список зарегистрированных модулей
-  Stream* pStream; // текущий поток вывода по умолчанию
+  //Stream* pStream; // текущий поток вывода по умолчанию
   COMMAND_DESTINATION workAs; // как работаем - как контроллер или дочерний модуль?
   
   String ourID; // ID контроллера
@@ -49,6 +49,8 @@ class ModuleController
 #if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
   bool sdCardInitFlag;
 #endif
+
+  void PublishToCommandStream(AbstractModule* module,const Command& sourceCommand); // публикация в поток команды
 
 public:
   ModuleController(COMMAND_DESTINATION wAs, const String& id);
@@ -74,17 +76,17 @@ public:
   GlobalSettings* GetSettings() {return &settings;}
 
   // устанавливает текущий поток, в который надо выводить ответы
-  void SetCurrentStream(Stream* s) {pStream = s;}
+ // void SetCurrentStream(Stream* s) {pStream = s;}
 
   // возвращает текущий поток
-  Stream* GetCurrentStream() {return pStream;}
+ // Stream* GetCurrentStream() {return pStream;}
  
   size_t GetModulesCount() {return modules.size(); }
   AbstractModule* GetModule(size_t idx) {return modules[idx]; }
   AbstractModule* GetModuleByID(const String& id);
 
   void RegisterModule(AbstractModule* mod);
-  void ProcessModuleCommand(const Command& c, bool checkDestination=true);
+  void ProcessModuleCommand(const Command& c, AbstractModule* thisModule=NULL, bool checkDestination=true);
   
   void UpdateModules(uint16_t dt, CallbackUpdateFunc func);
   
@@ -93,12 +95,13 @@ public:
 
   void CallRemoteModuleCommand(AbstractModule* mod, const String& command); // вызывает команду с другой коробочки
 
-  void Publish(AbstractModule* module); // каждый модуль по необходимости дергает этот метод для публикации событий/ответов на запрос
-  void PublishToStream(Stream* pStream,bool bOk, const String& Answer); // публикация в Serial
+  void Publish(AbstractModule* module,const Command& sourceCommand); // каждый модуль по необходимости дергает этот метод для публикации событий/ответов на запрос
 
   void SetCommandParser(CommandParser* c) {cParser = c;};
   CommandParser* GetCommandParser() {return cParser;}
   
 };
+
+extern PublishStruct PublishSingleton; // сюда публикуем все ответы от всех модудей
 
 #endif
