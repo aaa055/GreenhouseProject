@@ -29,7 +29,7 @@ class WindowState
   bool OnMyWay; // флаг того, что фрамуга в процессе открытия/закрытия
   unsigned long TimerInterval; // сколько работать фрамуге?
   unsigned long TimerTicks; // сколько проработали уже?
-  DIRECTION Direction;
+  uint8_t Direction; // направление, которое задали
 
   void SwitchRelays(uint8_t rel1State = SHORT_CIRQUIT_STATE, uint8_t rel2State = SHORT_CIRQUIT_STATE);
 
@@ -43,11 +43,11 @@ public:
 
   bool IsBusy() {return OnMyWay;} // заняты или нет?
   
-  bool ChangePosition(DIRECTION dir, unsigned long newPos); // меняет позицию
+  bool ChangePosition(uint8_t dir, unsigned long newPos); // меняет позицию
   
   unsigned long GetCurrentPosition() {return CurrentPosition;}
   unsigned long GetRequestedPosition() {return RequestedPosition;}
-  DIRECTION GetDirection() {return Direction;}
+  uint8_t GetDirection() {return Direction;}
 
   void UpdateState(uint16_t dt); // обновляет состояние фрамуги
   
@@ -64,6 +64,7 @@ public:
     RelayChannel1 = 0;
     RelayChannel2 = 0;
     RelayStateHolder = NULL;
+    Direction = dirNOTHING;
   }  
   
   
@@ -79,7 +80,7 @@ class TempSensors : public AbstractModule // модуль опроса темп�
     void SetupWindows();
 
 
-    WindowWorkMode workMode; // текущий режим работы (автоматический или ручной)
+    uint8_t workMode; // текущий режим работы (автоматический или ручной)
 
     BlinkModeInterop blinker;
 
@@ -93,8 +94,8 @@ class TempSensors : public AbstractModule // модуль опроса темп�
     void Setup();
     void Update(uint16_t dt);
 
-    WindowWorkMode GetWorkMode() {return workMode;}
-    void SetWorkMode(WindowWorkMode m) {workMode = m;}
+    uint8_t GetWorkMode() {return workMode;}
+    void SetWorkMode(uint8_t m) {workMode = m;}
 
 };
 

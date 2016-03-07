@@ -1,5 +1,9 @@
 #include "Globals.h"
 
+#ifdef _DEBUG
+#include "PDUClasses.h"
+#endif
+
 #include "CommandBuffer.h"
 #include "CommandParser.h"
 #include "ModuleController.h"
@@ -249,6 +253,7 @@ void ProcessInitCommands()
 
 void setup() 
 { 
+  Serial.begin(SERIAL_BAUD_RATE); // запускаем Serial на нужной скорости
 
   // настраиваем все железки
   controller.Setup();
@@ -256,7 +261,6 @@ void setup()
   // устанавливаем провайдера команд для контроллера
   controller.SetCommandParser(&commandParser);
 
-  Serial.begin(SERIAL_BAUD_RATE); // запускаем Serial на нужной скорости
 
   // регистрируем модули
   #ifdef USE_WIFI_MODULE
@@ -331,7 +335,34 @@ void setup()
    
   #endif 
 
+    Serial.println(F(""));
+
+#ifdef _DEBUG
+  Serial.println("Command: \t " + String(sizeof(Command)));
+  Serial.println("AlertRule: \t " + String(sizeof(AlertRule)));
+  Serial.println("AlertModule: \t " + String(sizeof(AlertModule)));
+  Serial.println("HumidityModule: \t " + String(sizeof(HumidityModule)));
+  Serial.println("InteropStream: \t " + String(sizeof(InteropStream)));
+  Serial.println("LogModule: \t " + String(sizeof(LogModule)));
+  Serial.println("LoopModule: \t " + String(sizeof(LoopModule)));
+  Serial.println("LuminosityModule: \t " + String(sizeof(LuminosityModule)));
+  Serial.println("ModuleController: \t " + String(sizeof(ModuleController)));
+  Serial.println("PinModule: \t " + String(sizeof(PinModule)));
+  Serial.println("GlobalSettings: \t " + String(sizeof(GlobalSettings)));
+  Serial.println("SMSModule: \t " + String(sizeof(SMSModule)));
+  Serial.println("StatModule: \t " + String(sizeof(StatModule)));
+  Serial.println("TempSensors: \t " + String(sizeof(TempSensors)));
+  Serial.println("WindowState: \t " + String(sizeof(WindowState)));
+  Serial.println("WateringModule: \t " + String(sizeof(WateringModule)));
+  Serial.println("WiFiModule: \t " + String(sizeof(WiFiModule)));
+  Serial.println("ZeroStreamListener: \t " + String(sizeof(ZeroStreamListener)));
+  Serial.println("HTTPClient: \t " + String(sizeof(HTTPClient)));
+  Serial.println("File: \t " + String(sizeof(File)));
   Serial.println(F(""));
+  Serial.print(F("FREERAM HERE: "));
+  Serial.println(freeRam());
+#endif
+
 }
 // эта функция вызывается после обновления состояния каждого модуля.
 // передаваемый параметр - указатель на обновлённый модуль.

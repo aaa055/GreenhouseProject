@@ -728,7 +728,7 @@ bool  WiFiModule::ExecCommand(const Command& command, bool wantAnswer)
       {
         if(argsCnt > 5)
         {
-          int shouldConnectToRouter = command.GetArg(1).toInt();
+          int shouldConnectToRouter = String(command.GetArg(1)).toInt();
           String routerID = command.GetArg(2);
           String routerPassword = command.GetArg(3);
           String stationID = command.GetArg(4);

@@ -81,10 +81,9 @@ void PinModule::Update(uint16_t dt)
 
 bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
 {
- 
   if(wantAnswer)
     PublishSingleton = PARAMS_MISSED;
-    
+      
   if(command.GetType() == ctGET) //получить состояние пина
   {
     if(command.GetArgsCount() > 0)
@@ -115,8 +114,7 @@ bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
     if(command.GetArgsCount() > 1)
     {
       String strNum = command.GetArg(0); // номер пина
-
-      String state = command.GetArg(1); // статус пина
+      String state = command.GetArg(1); // статус пина      
       state.toUpperCase();
       
       // берём номер первого пина, на который будем опираться
@@ -191,6 +189,7 @@ bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
        }
       
     } // if
+
     mainController->Publish(this,command);
     return PublishSingleton.Status;
 

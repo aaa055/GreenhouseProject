@@ -33,7 +33,7 @@ class GlobalSettings
 
   String smsPhoneNumber; // номер телефона для управления по SMS
 
-  WateringOption wateringOption; // какая опция управления выбрана?
+  uint8_t wateringOption; // какая опция управления выбрана?
   uint8_t wateringWeekDays; // в какие дни недели управляем поливом на всех каналах?
   uint16_t wateringTime; // время полива на всех каналах
   uint8_t startWateringTime; // время начала полива для всех каналов
@@ -55,8 +55,8 @@ class GlobalSettings
     void Save();
     void ResetToDefault();
 
-    WateringOption GetWateringOption() {return wateringOption; }
-    void SetWateringOption(WateringOption val) {wateringOption = val; }
+    uint8_t GetWateringOption() {return wateringOption; }
+    void SetWateringOption(uint8_t val) {wateringOption = val; }
 
     uint8_t GetChannelWateringWeekDays(uint8_t idx) {return wateringChannelsOptions[idx].wateringWeekDays;};
     void SetChannelWateringWeekDays(uint8_t idx, uint8_t val) {wateringChannelsOptions[idx].wateringWeekDays = val;};

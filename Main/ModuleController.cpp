@@ -3,7 +3,7 @@
 
 PublishStruct PublishSingleton;
 
-ModuleController::ModuleController(COMMAND_DESTINATION wAs, const String& id) : workAs(wAs), ourID(id), cParser(NULL)
+ModuleController::ModuleController(uint8_t wAs, const String& id) : workAs(wAs), ourID(id), cParser(NULL)
 #ifdef USE_LOG_MODULE
 ,logWriter(NULL)
 #endif
@@ -22,6 +22,9 @@ void ModuleController::begin()
 }
 void ModuleController::Setup()
 {
+  Command::_CMD_GET = CMD_GET;
+  Command::_CMD_SET = CMD_SET;
+  
   settings.Load(); // загружаем настройки
   ModuleInterop.SetController(this); // устанавливаем контроллер для класса взаимодействия между модулями
 
@@ -148,7 +151,7 @@ void ModuleController::ProcessModuleCommand(const Command& c, AbstractModule* mo
   }
 
 #ifdef _DEBUG
-//Serial.println("called: " +  c.GetTargetModuleID() + PARAM_DELIMITER + c.GetRawArguments());
+///Serial.println("called: " +  c.GetTargetModuleID() + PARAM_DELIMITER + c.GetRawArguments());
 #endif  
   /*
    * например, контроллер работает в режиме дочернего модуля, тогда он отзывается только на команды
@@ -185,11 +188,12 @@ CHECK_PUBLISH_CONSISTENCY;
 }
 
 void ModuleController::UpdateModules(uint16_t dt, CallbackUpdateFunc func)
-{
+{  
   size_t sz = modules.size();
   for(size_t i=0;i<sz;i++)
   { 
     AbstractModule* mod = modules[i];
+   
       // ОБНОВЛЯЕМ СОСТОЯНИЕ МОДУЛЕЙ
       mod->Update(dt);
 

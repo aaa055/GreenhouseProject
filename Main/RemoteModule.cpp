@@ -16,13 +16,15 @@ void RemoteModule::Update(uint16_t dt)
 bool  RemoteModule::ExecCommand(const Command& command, bool wantAnswer)
 {
   UNUSED(wantAnswer);
+  UNUSED(command);
+  /*
   // конструируем команду
   String tp = command.GetStringType();
   String textCommand = String(CHILD_PREFIX) + tp + COMMAND_DELIMITER + GetID() + PARAM_DELIMITER + command.GetRawArguments();
 
    // просим контроллер послать команду другой коробочке
     mainController->CallRemoteModuleCommand(this,textCommand);
-  
+  */
 
   return true;
 }

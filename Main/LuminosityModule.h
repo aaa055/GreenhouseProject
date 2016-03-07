@@ -70,7 +70,7 @@ class LuminosityModule : public AbstractModule // модуль управлен�
   BH1750Support lightMeter2; // второй датчик освещенности
   #endif
 
-  LightWorkMode workMode;
+  uint8_t workMode;
   bool bRelaysIsOn; // включены ли реле досветки?
   uint16_t lastUpdateCall;
     

@@ -28,14 +28,20 @@ typedef enum
   roGreaterOrEqual // >=
   
 } RuleOperand; // какой операнд использовать
+class AlertModule; // forward declaration
+
+typedef Vector<size_t> LinkedRulesToIdxVector;
 
 class AlertRule
 {
   private:
-    RuleTarget target; // за чем следит правило
+  
+    AlertModule* parent; // родитель, который нас создал
+    
+    uint8_t target; // за чем следит правило
     int8_t dataAlert; // установка, за которой следим
     uint8_t sensorIdx; // индекс датчика, за которым следим
-    RuleOperand operand; // операнд, которым проверяем
+    uint8_t operand; // операнд, которым проверяем
     String targetCommand; // команда, которую надо выполнить при срабатывании правила
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
     long dataAlertLong; // настройка, за которой следим (4 байта)
@@ -43,31 +49,30 @@ class AlertRule
     bool bEnabled; // включено или нет
     bool bFirstCall; // первый ли вызов правила?
 
-    RuleDataSource dataSource; // источник, с которого получаем установку значения для правила
+    uint8_t dataSource; // источник, с которого получаем установку значения для правила
 
-    String ruleName; // имя правила
+    size_t ruleNameIdx; // индекс имени правила у родителя
     uint8_t whichTime; // когда работает?
     unsigned long workTime; // продолжительность работы, мс
 
-    String linkedRuleNames[MAX_ALERT_RULES]; // с какими правилами связано наше?
-    uint8_t linkedRulesCnt; // кол-во связанных правил
+   LinkedRulesToIdxVector linkedRulesIndices; // привязка имён связанных правил к их индексу у родителя
 
     bool canWork; // можем ли мы работать?
     
     
   public:
-    AlertRule();
+    AlertRule(AlertModule* am);
 
     bool GetEnabled() {return bEnabled;}
     void SetEnabled(bool e) {bEnabled = e;}
-    String GetName() {return ruleName;}
+    const char* GetName();
     bool Construct(AbstractModule* linkedModule, const Command& command);
-    String& GetTargetCommand() {return targetCommand;}
-    String GetAlertRule();// {return alertRule;}
+    String GetTargetCommand() {return targetCommand;}
+    String GetAlertRule();
     AbstractModule* GetModule() {return linkedModule;}
 
-    uint8_t GetLinkedRulesCount() {return linkedRulesCnt;}
-    String GetLinkedRuleName(uint8_t idx);
+    size_t GetLinkedRulesCount();
+    const char* GetLinkedRuleName(uint8_t idx);
 
     uint8_t Save(uint16_t writeAddr); // сохраняем себя в EEPROM, возвращаем кол-во записанных байт
     uint8_t Load(uint16_t readAddr, ModuleController* c); // читаем себя из EEPROM, возвращаем кол-во прочитанных байт
@@ -81,7 +86,9 @@ class AlertRule
 
     bool HasAlert(); // проверяем, есть ли алерт?
 };
+
 typedef Vector<AlertRule*> RulesVector;
+typedef Vector<char*> NamesVector;
 
 class AlertModule : public AbstractModule
 {
@@ -95,6 +102,8 @@ class AlertModule : public AbstractModule
     void AddAlert(const String& strAlert);
 #endif
 
+    NamesVector paramsArray; // всякие общие имена храним здесь
+
     unsigned long lastUpdateCall;
     String controllerID;
     CommandParser* cParser;
@@ -106,7 +115,7 @@ class AlertModule : public AbstractModule
 
     void SolveConflicts(RulesVector& raisedAlerts,RulesVector& workRules);
     bool CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule,RulesVector& raisedAlerts);
-    AlertRule* GetLinkedRule(const String& linkedRuleName,RulesVector& raisedAlerts);
+    AlertRule* GetLinkedRule(const char* linkedRuleName,RulesVector& raisedAlerts);
 
     void LoadRules();
     void SaveRules();
@@ -119,6 +128,9 @@ class AlertModule : public AbstractModule
       #endif 
       InitRules();
     }
+
+    size_t AddParam(char* nm, bool& added); // добавляем строку в общий массив
+    char* GetParam(size_t idx); // возвращает строку из массива по индексу
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

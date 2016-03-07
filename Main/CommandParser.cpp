@@ -1,28 +1,63 @@
 #include <Arduino.h>
 #include "CommandParser.h"
 
+String Command::_CMD_GET;
+String Command::_CMD_SET;
 
-COMMAND_TYPE Command::GetCommandType(const String& command)
+Command::Command()
 {
-  if(command == CMD_SET)
+
+  Clear();  
+}
+Command::~Command()
+{
+  Clear();
+}
+uint8_t Command::GetCommandType(const String& command)
+{
+  if(command == Command::_CMD_SET)
   return ctSET;
-  else if(command == CMD_GET)
+  else if(command == Command::_CMD_GET)
     return ctGET;
 
   return ctUNKNOWN;
 }
-void Command::Construct(const String& id,const String& arg, COMMAND_TYPE ct,COMMAND_DESTINATION dest)
+String Command::GetStringType() const
+{
+  switch(Type)
+  {
+    case ctGET:
+      return Command::_CMD_GET;
+    case ctSET:
+      return Command::_CMD_SET;
+    default:
+    case ctUNKNOWN:
+      return F("");
+  }
+}
+size_t Command::GetArgsCount() const
+{ 
+  return arguments.size();
+}
+ const char* Command::GetArg(size_t idx) const
+{
+  if(idx < arguments.size())
+    return arguments[idx];
+
+ return NULL;
+}
+void Command::Construct(const String& id,const String& arg, uint8_t ct,uint8_t dest)
 {
   Clear(); // сбрасываем все настройки
-    
+  
     Type = ct;
-    Arg = arg;
+   // Arg = arg;
     ModuleID = id;
     Destination = dest;
 
     // разбиваем на аргументы
         int curIdx = 0;
-        String tmpStr = Arg;
+        String tmpStr = arg;
         String param;
         
         while(curIdx != -1)
@@ -32,7 +67,10 @@ void Command::Construct(const String& id,const String& arg, COMMAND_TYPE ct,COMM
           {
            if(tmpStr.length() > 0)
            {
-              ArgsSplitted[ArgsCount++] = tmpStr;
+              char* newArg = new char[tmpStr.length() + 1];
+              strcpy(newArg,tmpStr.c_str());
+    
+              arguments.push_back(newArg);
            }
               
             break;
@@ -41,34 +79,46 @@ void Command::Construct(const String& id,const String& arg, COMMAND_TYPE ct,COMM
           tmpStr = tmpStr.substring(curIdx+1,tmpStr.length());
           if(param.length() > 0)
           {
-             ArgsSplitted[ArgsCount++] = param;
+              char* newArg = new char[param.length() + 1];
+              strcpy(newArg,param.c_str());
+
+              arguments.push_back(newArg);
           }
 
-         if( ArgsCount >= MAX_ARGS_IN_LIST)
+         if( arguments.size() >= MAX_ARGS_IN_LIST)
           break;
             
         } // while
 
 }
-void Command::Construct(const String& id,const String& arg, const String& ct,COMMAND_DESTINATION dest)
+void Command::Construct(const String& id,const String& arg, const String& ct,uint8_t dest)
 {
-   StringType = ct;
+ //  StringType = ct;
    Construct(id, arg,GetCommandType(ct),dest);
 }
 
 void Command::Clear()
 {
-  ArgsCount = 0;
+ // ArgsCount = 0;
   Type = ctUNKNOWN;
   ModuleID = F("");
-  Arg = F("");
+//  Arg = F("");
   IncomingStream = NULL;
   bIsInternal = false;
   Destination = cdUNKNOWN;
+
+  size_t sz = arguments.size();
+  for(size_t i=0;i<sz;i++)
+  {
+    char* ch = arguments[i];
+    delete[] ch;
+  } // for
+  arguments.Clear();
+
 }
   
 CommandParser::CommandParser()
-{
+{  
   Clear();
 }
 
@@ -94,11 +144,11 @@ bool CommandParser::ParseCommand(const String& command,const String& ourID,Comma
   if(!(tmpBuf == CMD_PREFIX || tmpBuf == CHILD_PREFIX) ) // not right command
     return false;
 
-  COMMAND_DESTINATION dest = tmpBuf == CMD_PREFIX ? cdCONTROLLER : cdCHILDMODULE;
+  uint8_t dest = tmpBuf == CMD_PREFIX ? cdCONTROLLER : cdCHILDMODULE;
 
   tmpBuf = commandBuf.substring(CMD_PREFIX_LEN,CMD_PREFIX_LEN+CMD_TYPE_LEN);
 
-  if(!(tmpBuf == CMD_SET || tmpBuf == CMD_GET))
+  if(!(tmpBuf == Command::_CMD_SET || tmpBuf == Command::_CMD_GET))
     return false;
 
     commandType = tmpBuf;
@@ -139,6 +189,8 @@ bool CommandParser::ParseCommand(const String& command,const String& ourID,Comma
       {
         // Не нашли ID модуля, считаем, что весь переданный аргумент - это ID модуля
         commandModuleId = commandArg;
+        // сбрасываем аргументы, потому что нам передали команду без аргументов
+        commandArg = F("");
         
         if(dest == cdCHILDMODULE && commandModuleId != ourID) // не нам пришла команда, игнорируем!
           return false;

@@ -4,6 +4,8 @@
 #include "AbstractModule.h"
 #include "Globals.h"
 
+int freeRam();
+
 class StatModule : public AbstractModule
 {
   private:

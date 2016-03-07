@@ -279,9 +279,7 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
   if(command.GetType() == ctGET) //получить данные
   {
 
-    String t = command.GetRawArguments();
-    t.toUpperCase();
-    if(t == GetID()) // нет аргументов, попросили дать показания с датчика
+    if(!argsCnt) // нет аргументов, попросили дать показания с датчика
     {
       
       PublishSingleton.Status = true;
@@ -303,8 +301,7 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
       #endif
       }
     }
-    else
-    if(argsCnt > 0)
+    else // есть аргументы
     {
        String s = command.GetArg(0);
        if(s == WORK_MODE) // запросили режим работы

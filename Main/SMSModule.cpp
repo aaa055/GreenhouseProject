@@ -831,6 +831,8 @@ void SMSModule::SendSMS(const String& sms)
 bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
 {
   UNUSED(wantAnswer);
+
+  size_t argsCount = command.GetArgsCount();
   
   if(command.GetType() == ctSET) 
   {
@@ -840,26 +842,28 @@ bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
   if(command.GetType() == ctGET) //получить статистику
   {
 
-    String t = command.GetRawArguments();
-    t.toUpperCase();
-    if(t == GetID()) // нет аргументов
+    if(!argsCount) // нет аргументов
     {
       PublishSingleton = PARAMS_MISSED;
     }
     else
-    if(t == STAT_COMMAND) // запросили данные статистики
     {
-      SendStatToCaller(Settings->GetSmsPhoneNumber()); // посылаем статистику на указанный номер телефона
-    
-      PublishSingleton.Status = true;
-      PublishSingleton = STAT_COMMAND; 
-      PublishSingleton << PARAM_DELIMITER << REG_SUCC;
-    }
-    else
-    {
-      // неизвестная команда
-      PublishSingleton = UNKNOWN_COMMAND;
-    } // else
+      String t = command.GetArg(0);
+
+        if(t == STAT_COMMAND) // запросили данные статистики
+        {
+          SendStatToCaller(Settings->GetSmsPhoneNumber()); // посылаем статистику на указанный номер телефона
+        
+          PublishSingleton.Status = true;
+          PublishSingleton = STAT_COMMAND; 
+          PublishSingleton << PARAM_DELIMITER << REG_SUCC;
+        }
+        else
+        {
+          // неизвестная команда
+          PublishSingleton = UNKNOWN_COMMAND;
+        } // else
+    } // else have arguments
     
   } // if
  

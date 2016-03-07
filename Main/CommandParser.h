@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <WString.h>
 #include "Globals.h"
+#include "TinyVector.h"
 
 
 /*
@@ -39,26 +40,29 @@ typedef enum
   
 } COMMAND_DESTINATION; // кому адресована команда
 
+typedef Vector<char*> CommandArgsVec;
+
 class Command
 {
   private:
 
-    Stream* IncomingStream; // поток, из которого пришла команда
-    String ArgsSplitted[MAX_ARGS_IN_LIST];
-    uint8_t ArgsCount; // кол-во аргументов, максимально - 255
 
+    Stream* IncomingStream; // поток, из которого пришла команда
+    CommandArgsVec arguments; // аргументы команды
+    
     bool bIsInternal; // флаг того, что команда получена от другого зарегистрированного модуля
-    String StringType;
-    COMMAND_TYPE Type; // тип команды
-    COMMAND_DESTINATION Destination; // кому команда
+    uint8_t Type; // тип команды
+    uint8_t Destination; // кому команда
     String ModuleID; // ID модуля
-    String Arg; // аргументы команды
-    COMMAND_TYPE GetCommandType(const String& command);
+    uint8_t GetCommandType(const String& command);
 
     void Clear();
-    void Construct(const String& moduleID,const String& rawArgs, COMMAND_TYPE ct,COMMAND_DESTINATION dest); // конструирует команду из переданных аргументов
+    void Construct(const String& moduleID,const String& rawArgs, uint8_t ct,uint8_t dest); // конструирует команду из переданных аргументов
 
  public:
+
+    static String _CMD_GET;
+    static String _CMD_SET;
 
     // устанавливает/возвращает поток для работы с командой
     void SetIncomingStream(Stream* s) {IncomingStream = s;}
@@ -68,29 +72,30 @@ class Command
     bool IsInternal() const {return bIsInternal;}
     void SetInternal(bool i) {bIsInternal = i;}
     
-    void Construct(const String& moduleID,const String& rawArgs, const String& commandType,COMMAND_DESTINATION dest); // конструирует команду из переданных аргументов
+    void Construct(const String& moduleID,const String& rawArgs, const String& commandType,uint8_t dest); // конструирует команду из переданных аргументов
 
     // возвращает тип адресации команды: контроллеру или дочернему модулю (отдельной железной коробочке со своим МК)
-    COMMAND_DESTINATION GetDestination() const { return Destination;}
+    uint8_t GetDestination() const { return Destination;}
 
     // возвращает тип команды
-    COMMAND_TYPE GetType() const {return Type;}
+    uint8_t GetType() const {return Type;}
     // возвращает тип команды в виде строки
-    String GetStringType() const {return StringType;};
+    String GetStringType() const;
 
     // возвращает все аргументы в виде строки
-    String GetRawArguments() const  {return Arg;}
+   // String GetRawArguments() const  {return Arg;}
 
     // возвращает ID программного модуля, которому адресована команда
     String GetTargetModuleID() const {return ModuleID;}
 
     // возвращает количество переданных аргументов
-    uint8_t GetArgsCount() const {return ArgsCount;}
+    size_t GetArgsCount() const;
 
     // возвращает аргумент по индексу
-    String GetArg(uint16_t idx) const {return idx >= ArgsCount ? F("") : ArgsSplitted[idx];}
+    const char* GetArg(size_t idx) const;
     
-    Command() { Clear(); }
+    Command();
+    ~Command();
 };
 
 

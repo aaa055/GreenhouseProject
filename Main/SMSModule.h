@@ -28,7 +28,7 @@ class SMSModule : public AbstractModule // модуль поддержки уп�
   private:
     GlobalSettings* Settings;
 
-    SMSActions currentAction; // текущая операция, завершения которой мы ждём
+    uint8_t currentAction; // текущая операция, завершения которой мы ждём
     SMSActionsVector actionsQueue; // что надо сделать, шаг за шагом 
     bool IsKnownAnswer(const String& line); // если ответ нам известный, то возвращает true
     void SendCommand(const String& command, bool addNewLine=true); // посылает команды модулю GSM

@@ -50,10 +50,12 @@ public:
 
     void Clear() //here
     {
-        memset(d_data, 0, d_size);
+        if(d_data)
+          memset(d_data, 0, d_size);
         d_capacity = 0;
         d_size = 0;
         free(d_data);
+        d_data = NULL;
     }
 
     size_t size() const { return d_size; }; // Size getter

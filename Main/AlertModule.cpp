@@ -2,17 +2,21 @@
 #include "ModuleController.h"
 #include <EEPROM.h>
 
-AlertRule::AlertRule()
+AlertRule::AlertRule(AlertModule* am)
 {
+  parent = am;
   linkedModule = NULL;
   bEnabled = true;
   whichTime = 0;
   workTime = 0;
-  linkedRulesCnt = 0;
   canWork = true;
   dataAlertLong = 0;
   bFirstCall = true;
   
+}
+const char* AlertRule::GetName()
+{
+  return parent->GetParam(ruleNameIdx);
 }
 void AlertRule::Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK 
@@ -143,7 +147,7 @@ bool AlertRule::HasAlert()
        if(*lum == NO_LUMINOSITY_DATA) // нет датчика на линии
         return false;
 
-       long mappedLum = dataAlertLong;//map(dataAlert,0,0xFF,0,0xFFFF);
+       long mappedLum = dataAlertLong;
 
        switch(operand)
        {
@@ -199,7 +203,8 @@ bool AlertRule::HasAlert()
 String AlertRule::GetAlertRule() // конструируем правило, когда запрашивают его просмотр
 {
     String result; 
-    result = ruleName + PARAM_DELIMITER;
+    result = GetName();
+    result += PARAM_DELIMITER;
     result += (linkedModule ? linkedModule->GetID() : F("") ) + PARAM_DELIMITER;
       
     switch(target)
@@ -258,16 +263,18 @@ String AlertRule::GetAlertRule() // конструируем правило, к�
   result += String(whichTime) + PARAM_DELIMITER;
   result += String((uint16_t)workTime) + PARAM_DELIMITER;
 
-  if(!linkedRulesCnt)
+  size_t sz = linkedRulesIndices.size();
+    
+  if(!sz)
     result += F("_");
   else
   {
-    for(uint8_t i=0;i<linkedRulesCnt;i++)
+    for(size_t i=0;i<sz;i++)
     {
       if(i > 0)
         result += F(",");
         
-      result += linkedRuleNames[i];
+      result += parent->GetParam(linkedRulesIndices[i]);
       
     } // for
   } // else
@@ -295,8 +302,8 @@ uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EE
   EEPROM.write(curWriteAddr++,*readAddr++); written++;
 
   // записали имя нашего правила
-  uint8_t namelen = ruleName.length();
-  const char* nameptr = ruleName.c_str();
+  const char* nameptr = GetName();
+  uint8_t namelen = strlen(nameptr);
   EEPROM.write(curWriteAddr++,namelen); written++;// записали длину имени нашего правила
   for(uint8_t i=0;i<namelen;i++)
   {
@@ -325,14 +332,18 @@ uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EE
   }
 
   // записываем кол-во связанных правил
-   EEPROM.write(curWriteAddr++,linkedRulesCnt); written++;
+   size_t sz = linkedRulesIndices.size();
+   EEPROM.write(curWriteAddr++,sz); written++;
+
 
    // записываем имена связанных правил, одно за другим
-   for(uint8_t i=0;i<linkedRulesCnt;i++)
+   for(size_t i=0;i<sz;i++)
    {
       // записываем длину имени
-      namelen = linkedRuleNames[i].length();
-      nameptr = linkedRuleNames[i].c_str();
+      const char* lrnm = parent->GetParam(linkedRulesIndices[i]);
+
+      namelen = strlen(lrnm);
+      nameptr = lrnm;
       EEPROM.write(curWriteAddr++,namelen); written++;
 
       // записываем имя посимвольно
@@ -359,6 +370,8 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
   uint8_t readed = 0;
   uint16_t curReadAddr = readAddr;
 
+  linkedRulesIndices.Clear();
+
 
   target = (RuleTarget) EEPROM.read(curReadAddr++); readed++;// прочитали, за чем следим
   dataAlert = EEPROM.read(curReadAddr++); readed++;// прочитали установку, за которой следим
@@ -377,12 +390,19 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
 
   // прочитали имя нашего правила
   uint8_t namelen = EEPROM.read(curReadAddr++); readed++;// прочитали длину имени нашего правила
-  ruleName = F("");
+  //ruleName = F("");
+  char* ruleName = new char[namelen+1];
+  char* wrPtr = ruleName;
   
   for(uint8_t i=0;i<namelen;i++)
   {
-    ruleName += (char) EEPROM.read(curReadAddr++); readed++; // читаем имя посимвольно
+    *wrPtr++ = (char) EEPROM.read(curReadAddr++); readed++; // читаем имя посимвольно
   }
+  *wrPtr = '\0';
+  bool added;
+  ruleNameIdx = parent->AddParam(ruleName,added);
+  if(!added) // такое правило уже было у родителя
+    delete[] ruleName;
   
  
   // читаем имя связанного модуля, за показаниями которого мы следим
@@ -410,24 +430,31 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
 
 
   // читаем кол-во связанных правил
-   linkedRulesCnt = EEPROM.read(curReadAddr++); readed++;
+   uint8_t lrCnt = EEPROM.read(curReadAddr++); readed++;
+
 
    // читаем имена связанных правил, одно за другим
-   for(uint8_t i=0;i<linkedRulesCnt;i++)
+   for(uint8_t i=0;i<lrCnt;i++)
    {
       // читаем длину имени
       namelen = EEPROM.read(curReadAddr++); readed++;
-      strReaded = F("");
+
+     char* nm = new char[namelen+1];
+     char* nmPtr = nm;
         
 
       // читаем имя посимвольно
       for(uint8_t j=0;j<namelen;j++)
       {
-       strReaded += (char) EEPROM.read(curReadAddr++); readed++; // читаем посимвольно
+       *nmPtr++ = (char) EEPROM.read(curReadAddr++); readed++; // читаем посимвольно
       }
+      *nmPtr = '\0';
 
-      linkedRuleNames[i] = strReaded;
+      bool added;
+      linkedRulesIndices.push_back(parent->AddParam(nm,added)); // привязываем имя связанного правила к его индексу
       
+      if(!added) // такое имя уже существовало, освобождаем память
+        delete [] nm;
      
    } // for
    
@@ -443,18 +470,26 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
   
   return (readed+6); // оставляем в хвосте 6 свободных байт на будущее
 }
-String AlertRule::GetLinkedRuleName(uint8_t idx)
+const char* AlertRule::GetLinkedRuleName(uint8_t idx)
 {
-    if(idx >= linkedRulesCnt)
-      idx = linkedRulesCnt-1;
 
-   return linkedRuleNames[idx];
+ if(idx < linkedRulesIndices.size())
+  return parent->GetParam(linkedRulesIndices[idx]);
+
+ return NULL;
   
+}
+size_t AlertRule::GetLinkedRulesCount()
+{
+  return linkedRulesIndices.size();
 }
 bool AlertRule::Construct(AbstractModule* lm, const Command& command)
 {
   // конструируем команду
   linkedModule = lm;
+
+  // чистим имена связанных правил, об удалении памяти имён заботится родитель
+  linkedRulesIndices.Clear();
 
   uint8_t argsCnt = command.GetArgsCount();
   if(argsCnt < 10) // мало аргументов
@@ -462,13 +497,20 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
 
   uint8_t curArgIdx = 1;
   
-  // ищем имя
-  ruleName = command.GetArg(curArgIdx++);
+  // ищем имя правила
+  String curArg = command.GetArg(curArgIdx++);
+  // сохраняем имя у родителя
+  char* rName = new char[curArg.length()+1];
+  strcpy(rName,curArg.c_str());
+  bool added;
+  ruleNameIdx = parent->AddParam(rName,added);
+  if(!added) // имя уже было у родителя
+    delete[] rName;
  
   // записываем имя связанного модуля
   curArgIdx++; // пропускаем имя связанного модуля, нам его уже дали в параметрах функции
   
-  String curArg = command.GetArg(curArgIdx++);
+  curArg = command.GetArg(curArgIdx++);
 
   target = rtUnknown; // да ни за чем не следим
   
@@ -481,7 +523,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   if(curArg == PROP_HUMIDITY) // следим за влажностью
     target = rtHumidity;
 
-  sensorIdx = command.GetArg(curArgIdx++).toInt();
+  sensorIdx = String(command.GetArg(curArgIdx++)).toInt();
   curArg = command.GetArg(curArgIdx++);
   
   if(curArg == GREATER_THAN)
@@ -511,11 +553,11 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   // дошли до температуры, после неё - настройки срабатывания
 
   // следом идёт час начала работы
-  whichTime = command.GetArg(curArgIdx++).toInt();
+  whichTime = String(command.GetArg(curArgIdx++)).toInt();
 
   
-  // дальше идёт продолжительность работы, в минутах
-  workTime = command.GetArg(curArgIdx++).toInt(); // переводим в миллисекунды
+  // дальше идёт продолжительность работы
+  workTime = String(command.GetArg(curArgIdx++)).toInt();
 
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
@@ -524,9 +566,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   // парсим имена связанных правил
   if(curArg != F("_")) // есть связанные правила
   {
-
         int curNameIdx = 0;
-        linkedRulesCnt = 0;
  
         while(curNameIdx != -1)
         {
@@ -535,7 +575,12 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
           {
            if(curArg.length() > 0)
            {
-              linkedRuleNames[linkedRulesCnt++] = curArg;
+              char* lrnm = new char[curArg.length()+1];
+              strcpy(lrnm,curArg.c_str());
+              bool added;
+              linkedRulesIndices.push_back(parent->AddParam(lrnm,added));
+              if(!added) // имя правила уже существовало
+                delete[] lrnm;
            }
               
             break;
@@ -544,7 +589,12 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
           curArg = curArg.substring(curNameIdx+1,curArg.length());
           if(param.length() > 0)
           {
-             linkedRuleNames[linkedRulesCnt++] = param;
+              char* lrnm = new char[param.length()+1];
+              strcpy(lrnm,param.c_str());
+              bool added;
+              linkedRulesIndices.push_back(parent->AddParam(lrnm,added));
+              if(!added) // имя правила уже существовало
+                delete[] lrnm;
           }
           
         } // while
@@ -593,7 +643,7 @@ void AlertModule::LoadRules() // читаем настройки из EEPROM
   // потом читаем правила
   for(uint8_t i=0;i<rulesCnt;i++)
   {
-    AlertRule* r = new AlertRule;
+    AlertRule* r = new AlertRule(this);
     alertRules[i] = r;
     readAddr += r->Load(readAddr,mainController); // просим правило прочитать своё внутреннее состояние
   } // for
@@ -619,6 +669,13 @@ void AlertModule::SaveRules() // сохраняем настройки в EEPROM
   } // for
 
 }
+char* AlertModule::GetParam(size_t idx)
+{
+  if(idx < paramsArray.size())
+    return paramsArray[idx];
+
+  return NULL;
+}
 bool AlertModule::AddRule(AbstractModule* m, const Command& c)
 {
 
@@ -627,7 +684,7 @@ bool AlertModule::AddRule(AbstractModule* m, const Command& c)
  for(uint8_t i= 0;i<rulesCnt;i++)
  {
   AlertRule* r = alertRules[i];
-  if(r && r->GetName() == rName)
+  if(r && !strcmp(r->GetName(),rName.c_str()))
   {
      // нашли такое правило, просто модифицируем его
      return r->Construct(m,c);
@@ -637,7 +694,7 @@ bool AlertModule::AddRule(AbstractModule* m, const Command& c)
   if(rulesCnt >=  MAX_ALERT_RULES)
     return false;
 
-   AlertRule* ar = new AlertRule;
+   AlertRule* ar = new AlertRule(this);
    if(!ar)
     return false;
 
@@ -773,7 +830,7 @@ bool AlertModule::CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule, Ru
 
   yield(); // дёргаем многозадачность за хвост
   
-  uint8_t cnt = rule->GetLinkedRulesCount();
+  size_t cnt = rule->GetLinkedRulesCount();
   if(!cnt)
     return true; // нет связанных правил, при срабатывании которых мы должны игнорировать текущее
 
@@ -792,7 +849,7 @@ bool AlertModule::CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule, Ru
   for(uint8_t i=0;i<cnt;i++)
   {
     // проходимся по всем именам связанных с нашим правил, и разрешаем конфликты по цепочке
-    String linkedRuleName = rule->GetLinkedRuleName(i);
+    const char* linkedRuleName = rule->GetLinkedRuleName(i);
     AlertRule* linkedRule = GetLinkedRule(linkedRuleName,raisedAlerts);
         
       if(linkedRule) // нашли сработавшее правило, от которого мы зависим
@@ -815,13 +872,27 @@ bool AlertModule::CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule, Ru
 return true;
   
 }
-AlertRule* AlertModule::GetLinkedRule(const String& linkedRuleName,RulesVector& raisedAlerts)
+size_t AlertModule::AddParam(char* nm, bool& added)
+{
+  added = false;
+  size_t sz = paramsArray.size();
+  for(size_t i=0;i<sz;i++)
+  {
+    if(!strcmp(nm,paramsArray[i]))
+      return i;
+  } // for
+
+  added = true;
+  paramsArray.push_back(nm);
+  return (paramsArray.size()-1);
+}
+AlertRule* AlertModule::GetLinkedRule(const char* linkedRuleName,RulesVector& raisedAlerts)
 {
   size_t sz = raisedAlerts.size();
   for(size_t i=0;i<sz;i++)
   {
       AlertRule* r = raisedAlerts[i];
-      if(r->GetName() == linkedRuleName)
+      if(!strcmp(r->GetName(),linkedRuleName))
         return r;
   }
   return NULL;
@@ -868,25 +939,22 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
 {
   if(wantAnswer) 
     PublishSingleton = UNKNOWN_COMMAND;
+
+  size_t argsCount = command.GetArgsCount();
     
   if(command.GetType() == ctSET) 
   {
     PublishSingleton = NOT_SUPPORTED;
-    String t = command.GetRawArguments();
-    t.toUpperCase();
    
-    if(t == GetID()) // нет аргументов
+    if(!argsCount) // нет аргументов
     {
       PublishSingleton = PARAMS_MISSED;
     }
     else
     {
-        uint8_t cnt = command.GetArgsCount();
-        if(cnt > 0)
-        {
-          t = command.GetArg(0);
-          t.toUpperCase();
-
+      String t = command.GetArg(0);
+      t.toUpperCase();
+ 
           if(t == ADD_RULE)
           {
 
@@ -908,7 +976,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
           else 
           if(t == RULE_STATE) // установить состояние правила - включено или выключено
           {
-            if(cnt < 2)
+            if(argsCount < 2)
             {
               PublishSingleton = PARAMS_MISSED;
             } // if
@@ -940,7 +1008,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                       for(uint8_t i=0;i<rulesCnt;i++)
                       {
                          AlertRule* rule = alertRules[i];
-                         if(rule && rule->GetName() == rName)
+                         if(rule && !strcmp(rule->GetName(),rName.c_str()))
                          {
                           rule->SetEnabled(bEnabled);
                           PublishSingleton.Status = true;
@@ -956,7 +1024,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
           else
          if(t == RULE_DELETE) // удалить правило по индексу
           {
-            if(cnt < 2)
+            if(argsCount < 2)
             {
              PublishSingleton = PARAMS_MISSED;
             } // if
@@ -990,7 +1058,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                    for(uint8_t i=0;i<rulesCnt;i++)
                    {
                       AlertRule* rule = alertRules[i];
-                      if(rule && rule->GetName() == sParam) // нашли правило
+                      if(rule && !strcmp(rule->GetName(),sParam.c_str())) // нашли правило
                       {
                         delete rule;
                         bDeleted = true;
@@ -1015,48 +1083,42 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
             } // else
           } // else RULE_DELETE
            
-        } // if
+
     } // else
   }
   else
   if(command.GetType() == ctGET) //получить алерты
   {
-
-    String t = command.GetRawArguments();
-    t.toUpperCase();
-    if(t == GetID()) // нет аргументов
+    if(!argsCount) // нет аргументов
     {
       PublishSingleton = PARAMS_MISSED;
     }
-    #if MAX_STORED_ALERTS > 0
-    else
-    if(t == CNT_COMMAND) // запросили данные о  кол-ве алертов
-    {
-      PublishSingleton.Status = true;
-      PublishSingleton = CNT_COMMAND; 
-      PublishSingleton << PARAM_DELIMITER << cntAlerts;
-    }
-    #endif
-    else
-    if(t == RULE_CNT) // запросили данные о количестве правил
-    {
-      PublishSingleton.Status = true;
-      PublishSingleton = RULE_CNT; 
-      PublishSingleton << PARAM_DELIMITER << rulesCnt;
-    }
     else
     {
-      uint8_t cnt = command.GetArgsCount();
-        if(cnt > 0)
+        String t = command.GetArg(0);
+        
+        #if MAX_STORED_ALERTS > 0
+        if(t == CNT_COMMAND) // запросили данные о  кол-ве алертов
         {
-          t = command.GetArg(0);
-          t.toUpperCase();
-
+          PublishSingleton.Status = true;
+          PublishSingleton = CNT_COMMAND; 
+          PublishSingleton << PARAM_DELIMITER << cntAlerts;
+        }
+        else
+        #endif
+        if(t == RULE_CNT) // запросили данные о количестве правил
+        {
+          PublishSingleton.Status = true;
+          PublishSingleton = RULE_CNT; 
+          PublishSingleton << PARAM_DELIMITER << rulesCnt;
+        }
+        else
+        {
               #if MAX_STORED_ALERTS > 0
               if(t == VIEW_ALERT_COMMAND) // запросили данные об алерте
               {
                     
-                    if(cnt < 2)
+                    if(argsCount < 2)
                     {
                         PublishSingleton.Status = false;
                         PublishSingleton = PARAMS_MISSED;
@@ -1075,13 +1137,13 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                
               if(t == RULE_VIEW) // просмотр правила
               {
-                    if(cnt < 2)
+                    if(argsCount < 2)
                     {
                         PublishSingleton = PARAMS_MISSED;
                     }
                     else
                     {
-                        uint8_t idx = command.GetArg(1).toInt();
+                        uint8_t idx = String(command.GetArg(1)).toInt();
                         if(idx < rulesCnt) // норм индекс
                         {
                           AlertRule* rule = alertRules[idx];
@@ -1102,13 +1164,13 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
               }
               else if(t == RULE_STATE) // запросили состояние правила
               {
-                    if(cnt < 2)
+                    if(argsCount < 2)
                     {
                         PublishSingleton = PARAMS_MISSED;
                     }
                     else
                     {
-                        uint8_t idx = command.GetArg(1).toInt();
+                        uint8_t idx = String(command.GetArg(1)).toInt();
                         if(idx <= rulesCnt) // норм индекс
                         {
                           AlertRule* rule = alertRules[idx];
@@ -1128,11 +1190,12 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
               {
                 // неизвестная команда
               } // else
-        } // if(cnt > 0)
+  
+        } 
 
-    }
+    } // else have args
               
-  } // if
+  } // if ctGET
  
  // отвечаем на команду
   mainController->Publish(this,command);

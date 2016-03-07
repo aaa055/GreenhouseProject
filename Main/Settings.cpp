@@ -60,7 +60,7 @@ void GlobalSettings::Load()
   uint8_t bOpt = EEPROM.read(readPtr++);
   if(bOpt != 0xFF) // есть настройка контроля за поливом
   {
-    wateringOption = (WateringOption) bOpt;
+    wateringOption = bOpt;
   } // if
   
  // читаем установку дней недели полива

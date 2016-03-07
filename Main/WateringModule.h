@@ -29,7 +29,7 @@ class WateringModule : public AbstractModule // модуль управлени�
 
   GlobalSettings* settings; // настройки
 
-  WateringWorkMode workMode; // текущий режим работы
+  uint8_t workMode; // текущий режим работы
 
   int8_t lastAnyChannelActiveFlag; // флаг последнего состояния активности каналов
 
@@ -38,17 +38,17 @@ class WateringModule : public AbstractModule // модуль управлени�
   int8_t currentHour; // текущий час
   bool bIsRTClockPresent; // флаг наличия модуля часов реального времени
 
-   BlinkModeInterop blinker;
+  BlinkModeInterop blinker;
 
-   void UpdateChannel(int8_t channelIdx, WateringChannel* channel, uint16_t dt); // обновляем состояние канала
+  void UpdateChannel(int8_t channelIdx, WateringChannel* channel, uint16_t dt); // обновляем состояние канала
 
-   void HoldChannelState(int8_t channelIdx, WateringChannel* channel);  // поддерживаем состояние реле для канала.
+  void HoldChannelState(int8_t channelIdx, WateringChannel* channel);  // поддерживаем состояние реле для канала.
 
 #ifdef USE_PUMP_RELAY   
-   void HoldPumpState(WateringOption wateringOption); // поддерживаем состояние реле насоса
+   void HoldPumpState(uint8_t wateringOption); // поддерживаем состояние реле насоса
 #endif
 
-   bool IsAnyChannelActive(WateringOption wateringOption); // возвращает true, если хотя бы один из каналов активен
+   bool IsAnyChannelActive(uint8_t wateringOption); // возвращает true, если хотя бы один из каналов активен
     
   public:
     WateringModule() : AbstractModule(F("WATER")) {}

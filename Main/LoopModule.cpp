@@ -10,6 +10,7 @@ void LoopModule::Setup()
 
 void LoopModule::Update(uint16_t dt)
 {
+
   size_t sz = vec.size();
   for(size_t i=0;i<sz;i++)
   {
@@ -28,11 +29,13 @@ void LoopModule::Update(uint16_t dt)
         
 
           // конструируем команду
+       
           Command com;
           com.Construct(lnk->linkedModule->GetID(),lnk->paramsToPass,lnk->typeOfCommand,mainController->GetWorkMode());
 
 
           com.SetInternal(true); // говорим, что команда - от одного модуля к другому
+
           mainController->ProcessModuleCommand(com,lnk->linkedModule);
 
         if(lnk->countPasses > 0)
@@ -91,10 +94,10 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
 
     lnk->loopName = loopName; // сохраняем имя команды
     lnk->typeOfCommand = command.GetArg(COMMAND_TYPE_IDX);
-    lnk->interval = command.GetArg(INTERVAL_IDX).toInt();
+    lnk->interval = String(command.GetArg(INTERVAL_IDX)).toInt();
     lnk->bActive = (lnk->interval > 0 ? true : false);
     lnk->lastTimerVal = 0;
-    lnk->countPasses = command.GetArg(COUNT_PASSES_IDX).toInt();
+    lnk->countPasses = String(command.GetArg(COUNT_PASSES_IDX)).toInt();
     lnk->currPass = 0; // ноль проходов
 
     lnk->paramsToPass = F(""); // чистим параметры

@@ -69,7 +69,7 @@ void WateringModule::Setup()
 #endif
 
     // настраиваем режим работы перед стартом
-    WateringOption currentWateringOption = settings->GetWateringOption();
+    uint8_t currentWateringOption = settings->GetWateringOption();
     
     if(currentWateringOption == wateringOFF) // если выключено автоуправление поливом
     {
@@ -184,7 +184,7 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
     
 }
 
-bool WateringModule::IsAnyChannelActive(WateringOption wateringOption)
+bool WateringModule::IsAnyChannelActive(uint8_t wateringOption)
 {  
    if(workMode == wwmManual) // в ручном режиме мы управляем только всеми каналами сразу
     return dummyAllChannels.IsChannelRelayOn; // поэтому смотрим состояние реле на всех каналах
@@ -206,7 +206,7 @@ bool WateringModule::IsAnyChannelActive(WateringOption wateringOption)
     return false;
 }
 #ifdef USE_PUMP_RELAY
-void WateringModule::HoldPumpState(WateringOption wateringOption)
+void WateringModule::HoldPumpState(uint8_t wateringOption)
 {
   // поддерживаем состояние реле насоса
     bool bPumpIsOn = false;
@@ -225,7 +225,7 @@ void WateringModule::Update(uint16_t dt)
 
    blinker.update();
   
-   WateringOption wateringOption = settings->GetWateringOption(); // получаем опцию управления поливом
+   uint8_t wateringOption = settings->GetWateringOption(); // получаем опцию управления поливом
 
 #ifdef USE_PUMP_RELAY
   // держим состояние реле для насоса
@@ -343,11 +343,11 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
 {
   UNUSED(wantAnswer);
   PublishSingleton = UNKNOWN_COMMAND;
+
+  size_t argsCount = command.GetArgsCount();
     
   if(command.GetType() == ctSET) 
-  {
-      uint8_t argsCount = command.GetArgsCount();
-      
+  {   
       if(argsCount < 1) // не хватает параметров
       {
         PublishSingleton = PARAMS_MISSED;
@@ -362,11 +362,11 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
           if(argsCount > 5)
           {
               // парсим параметры
-              WateringOption wateringOption = (WateringOption) command.GetArg(1).toInt();
-              uint8_t wateringWeekDays = command.GetArg(2).toInt();
-              uint16_t wateringTime = command.GetArg(3).toInt();
-              uint8_t startWateringTime = command.GetArg(4).toInt();
-              uint8_t turnOnPump = command.GetArg(5).toInt();
+              uint8_t wateringOption = String(command.GetArg(1)).toInt();
+              uint8_t wateringWeekDays = String(command.GetArg(2)).toInt();
+              uint16_t wateringTime = String(command.GetArg(3)).toInt();
+              uint8_t startWateringTime = String(command.GetArg(4)).toInt();
+              uint8_t turnOnPump = String(command.GetArg(5)).toInt();
       
               // пишем в настройки
               settings->SetWateringOption(wateringOption);
@@ -407,13 +407,13 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
         {
            if(argsCount > 4)
            {
-                uint8_t channelIdx = command.GetArg(1).toInt();
+                uint8_t channelIdx = String(command.GetArg(1)).toInt();
                 if(channelIdx < WATER_RELAYS_COUNT)
                 {
                   // нормальный индекс
-                  uint8_t wDays = command.GetArg(2).toInt();
-                  uint16_t wTime = command.GetArg(3).toInt();
-                  uint8_t sTime = command.GetArg(4).toInt();
+                  uint8_t wDays = String(command.GetArg(2)).toInt();
+                  uint16_t wTime = String(command.GetArg(3)).toInt();
+                  uint8_t sTime = String(command.GetArg(4)).toInt();
                   
                   settings->SetChannelWateringWeekDays(channelIdx,wDays);
                   settings->SetChannelWateringTime(channelIdx,wTime);
@@ -504,79 +504,76 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
   }
   else
   if(command.GetType() == ctGET) //получить данные
-  {
-
-    String t = command.GetRawArguments();
-    t.toUpperCase();
-    
-    if(t == GetID()) // нет аргументов, попросили вернуть статус полива
+  {    
+    if(!argsCount) // нет аргументов, попросили вернуть статус полива
     {
       PublishSingleton.Status = true;
       PublishSingleton = (IsAnyChannelActive(settings->GetWateringOption()) ? STATE_ON : STATE_OFF);
       PublishSingleton << PARAM_DELIMITER << (workMode == wwmAutomatic ? WM_AUTOMATIC : WM_MANUAL);
     }
     else
-    if(t == WATER_SETTINGS_COMMAND) // запросили данные о настройках полива
     {
-      PublishSingleton.Status = true;
-      PublishSingleton = WATER_SETTINGS_COMMAND; 
-      PublishSingleton << PARAM_DELIMITER; 
-      PublishSingleton << (settings->GetWateringOption()) << PARAM_DELIMITER;
-      PublishSingleton << (settings->GetWateringWeekDays()) << PARAM_DELIMITER;
-      PublishSingleton << (settings->GetWateringTime()) << PARAM_DELIMITER;
-      PublishSingleton << (settings->GetStartWateringTime()) << PARAM_DELIMITER;
-      PublishSingleton << (settings->GetTurnOnPump());
-    }
-    else
-    if(t == WATER_CHANNELS_COUNT_COMMAND)
-    {
-      PublishSingleton.Status = true;
-      PublishSingleton = WATER_CHANNELS_COUNT_COMMAND; 
-      PublishSingleton << PARAM_DELIMITER << WATER_RELAYS_COUNT;
+      String t = command.GetArg(0);
       
-    }
-    else
-    if(t == WORK_MODE) // получить режим работы
-    {
-      PublishSingleton.Status = true;
-      PublishSingleton = WORK_MODE; 
-      PublishSingleton << PARAM_DELIMITER << (workMode == wwmAutomatic ? WM_AUTOMATIC : WM_MANUAL);
-    }
-    else
-    {
-       // команда с аргументами
-       uint8_t argsCnt = command.GetArgsCount();
-       if(argsCnt > 1)
-       {
-            t = command.GetArg(0);
-            t.toUpperCase();
-
-            if(t == WATER_CHANNEL_SETTINGS)
-            {
-              // запросили настройки канала
-              uint8_t idx = command.GetArg(1).toInt();
-              
-              if(idx < WATER_RELAYS_COUNT)
-              {
-                PublishSingleton.Status = true;
-             
-                PublishSingleton = WATER_CHANNEL_SETTINGS; 
-                PublishSingleton << PARAM_DELIMITER << (command.GetArg(1)) << PARAM_DELIMITER 
-                << (settings->GetChannelWateringWeekDays(idx)) << PARAM_DELIMITER
-                << (settings->GetChannelWateringTime(idx)) << PARAM_DELIMITER
-                << (settings->GetChannelStartWateringTime(idx));
-              }
-              else
-              {
-                // плохой индекс
-                PublishSingleton = UNKNOWN_COMMAND;
-              }
-                      
-            } // if
-       } // if
-    } // else
+        if(t == WATER_SETTINGS_COMMAND) // запросили данные о настройках полива
+        {
+          PublishSingleton.Status = true;
+          PublishSingleton = WATER_SETTINGS_COMMAND; 
+          PublishSingleton << PARAM_DELIMITER; 
+          PublishSingleton << (settings->GetWateringOption()) << PARAM_DELIMITER;
+          PublishSingleton << (settings->GetWateringWeekDays()) << PARAM_DELIMITER;
+          PublishSingleton << (settings->GetWateringTime()) << PARAM_DELIMITER;
+          PublishSingleton << (settings->GetStartWateringTime()) << PARAM_DELIMITER;
+          PublishSingleton << (settings->GetTurnOnPump());
+        }
+        else
+        if(t == WATER_CHANNELS_COUNT_COMMAND)
+        {
+          PublishSingleton.Status = true;
+          PublishSingleton = WATER_CHANNELS_COUNT_COMMAND; 
+          PublishSingleton << PARAM_DELIMITER << WATER_RELAYS_COUNT;
+          
+        }
+        else
+        if(t == WORK_MODE) // получить режим работы
+        {
+          PublishSingleton.Status = true;
+          PublishSingleton = WORK_MODE; 
+          PublishSingleton << PARAM_DELIMITER << (workMode == wwmAutomatic ? WM_AUTOMATIC : WM_MANUAL);
+        }
+        else
+        {
+           // команда с аргументами
+           if(argsCount > 1)
+           {
+                t = command.GetArg(0);
     
-  } // if
+                if(t == WATER_CHANNEL_SETTINGS)
+                {
+                  // запросили настройки канала
+                  uint8_t idx = String(command.GetArg(1)).toInt();
+                  
+                  if(idx < WATER_RELAYS_COUNT)
+                  {
+                    PublishSingleton.Status = true;
+                 
+                    PublishSingleton = WATER_CHANNEL_SETTINGS; 
+                    PublishSingleton << PARAM_DELIMITER << (command.GetArg(1)) << PARAM_DELIMITER 
+                    << (settings->GetChannelWateringWeekDays(idx)) << PARAM_DELIMITER
+                    << (settings->GetChannelWateringTime(idx)) << PARAM_DELIMITER
+                    << (settings->GetChannelStartWateringTime(idx));
+                  }
+                  else
+                  {
+                    // плохой индекс
+                    PublishSingleton = UNKNOWN_COMMAND;
+                  }
+                          
+                } // if
+           } // if
+        } // else
+    } // else have arguments
+  } // if ctGET
  
  // отвечаем на команду
     mainController->Publish(this,command);

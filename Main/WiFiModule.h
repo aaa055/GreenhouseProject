@@ -45,7 +45,7 @@ class WiFiModule : public AbstractModule // модуль поддержки WI-F
     void ProcessURIRequest(int clientID, const HTTPQuery& query);
     void UpdateClients();
     
-    WIFIActions currentAction; // текущая операция, завершения которой мы ждём
+    uint8_t currentAction; // текущая операция, завершения которой мы ждём
     ActionsVector actionsQueue; // что надо сделать, шаг за шагом 
     
     String httpQuery;

@@ -19,20 +19,18 @@ void ZeroStreamListener::Update(uint16_t dt)
 bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
 {
   if(wantAnswer) PublishSingleton = UNKNOWN_COMMAND;
+
+   size_t argsCnt = command.GetArgsCount();
   
   if(command.GetType() == ctGET) 
   {
-     PublishSingleton = NOT_SUPPORTED;
-      
-    String t = command.GetRawArguments();
-    t.toUpperCase();
-    if(t == GetID()) // нет аргументов
+     PublishSingleton = NOT_SUPPORTED;      
+    if(!argsCnt) // нет аргументов
     {
       PublishSingleton = PARAMS_MISSED;
     }
     else
     {
-        uint8_t argsCnt = command.GetArgsCount();
       if(argsCnt < 1)
       {
         // мало параметров
@@ -41,7 +39,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
       } // if
       else
       {
-        t = command.GetArg(0); // получили команду
+        String t = command.GetArg(0); // получили команду
         t.toUpperCase();
         if(t == PING_COMMAND) // пинг
         {
@@ -134,7 +132,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                         Temperature* tPrev = (Temperature*) os->PreviousData;
                       
                         PublishSingleton << mName << PARAM_DELIMITER << PROP_TEMP << PARAM_DELIMITER << i 
-                        << PARAM_DELIMITER << *tPrev << PARAM_DELIMITER << *tCurrent << NEWLINE;
+                        << PARAM_DELIMITER << (*tPrev) << PARAM_DELIMITER << (*tCurrent) << NEWLINE;
                       } // if
                     } // if
                       
@@ -175,7 +173,6 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           AbstractModule* mod = mainController->GetModuleByID(reqID);
           if(mod)
           {
-                  uint8_t argsCnt = command.GetArgsCount();
                   if(argsCnt < 3)
                   {
                     // мало параметров
@@ -226,7 +223,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                            // получаем сохраненную температуру от датчика
                            if(mod->State.HasState(StateTemperature)) // если поддерживаем температуру
                            {
-                            uint8_t sensorIdx = command.GetArg(3).toInt();
+                            uint8_t sensorIdx = String(command.GetArg(3)).toInt();
 
                             if(sensorIdx < mod->State.GetStateCount(StateTemperature))
                             {
@@ -316,15 +313,12 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
   if(command.GetType() == ctSET) //ЗАРЕГИСТРИРОВАТЬ МОДУЛИ
   {
 
-    String t = command.GetRawArguments();
-    t.toUpperCase();
-    if(t == GetID()) // нет аргументов
+    if(!argsCnt) // нет аргументов
     {
       PublishSingleton = PARAMS_MISSED;
     }
     else
     {
-      uint8_t argsCnt = command.GetArgsCount();
       if(argsCnt < 2)
       {
         // мало параметров
@@ -332,7 +326,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
       } // if
       else
       {
-        t = command.GetArg(0); // получили команду
+        String t = command.GetArg(0); // получили команду
         t.toUpperCase();
         
       #ifdef USE_REMOTE_MODULES 
@@ -449,7 +443,6 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           AbstractModule* mod = mainController->GetModuleByID(reqID);
           if(mod)
           {
-                  uint8_t argsCnt = command.GetArgsCount();
                   if(argsCnt < 4)
                   {
                     // мало параметров
@@ -465,7 +458,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                     {
                        // ПРИМЕР:
                       // CTSET=0|PROP|M|TEMP_CNT|2
-                      uint8_t tempCnt = command.GetArg(3).toInt();
+                      uint8_t tempCnt = String(command.GetArg(3)).toInt();
 
                       //mod->State.SetTempSensors(tempCnt);
                       for(uint8_t toAdd = 0; toAdd < tempCnt; toAdd++)
@@ -480,9 +473,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                       
                        // ПРИМЕР:
                       // CTSET=0|PROP|M|RELAY_CNT|5
-                      uint8_t relayCnt = command.GetArg(3).toInt();
+                      uint8_t relayCnt = String(command.GetArg(3)).toInt();
 
-                      //mod->State.SetRelayChannels(relayCnt);
                       uint8_t channelsCnt = relayCnt/8;
                       if(relayCnt > 8 && relayCnt % 8)
                         channelsCnt++;
@@ -513,7 +505,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                          {
                            // сохраняем температуру от датчика
                            String curTemp = command.GetArg(4);
-                           uint8_t sensorIdx = command.GetArg(3).toInt();
+                           uint8_t sensorIdx = String(command.GetArg(3)).toInt();
 
                            Temperature t;
                            t.Value = curTemp.toInt();
@@ -524,7 +516,6 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                               t.Fract = curTemp.toInt();
                            }
 
-                           //mod->State.SetTemp(sensorIdx,t);
                            mod->State.UpdateState(StateTemperature,sensorIdx,(void*)&t);
  
                             PublishSingleton.Status = true;
