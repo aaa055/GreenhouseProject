@@ -52,7 +52,7 @@ void LogModule::CreateActionsFile(const DS3231Time& tm)
     logFileName += F("0");
    logFileName += String(tm.dayOfMonth);
 
-   logFileName += F(".log");
+   logFileName += F(".LOG");
 
    String logDirectory = ACTIONS_DIRECTORY; // папка с логами действий
 
@@ -181,7 +181,7 @@ void LogModule::CreateNewLogFile(const DS3231Time& tm)
     currentLogFileName += F("0");
    currentLogFileName += String(tm.dayOfMonth);
 
-   currentLogFileName += F(".log");
+   currentLogFileName += F(".LOG");
 
    String logDirectory = LOGS_DIRECTORY; // папка с логами
    if(!SD.exists(logDirectory)) // нет папки LOGS_DIRECTORY
@@ -590,8 +590,97 @@ void LogModule::Update(uint16_t dt)
 
 bool LogModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-UNUSED(command);
-UNUSED(wantAnswer); 
+  UNUSED(wantAnswer);
+
+  PublishSingleton = UNKNOWN_COMMAND;
+  size_t argsCnt = command.GetArgsCount();
+
+if(hasSD)
+{
+  if(command.GetType() == ctSET) 
+  {
+    PublishSingleton = NOT_SUPPORTED;
+  }
+  else
+  {
+    if(argsCnt > 0)
+    {
+      String cmd = command.GetArg(0);
+      if(cmd == FILE_COMMAND)
+      {
+        // надо отдать файл
+        if(argsCnt > 1)
+        {
+          // получаем полное имя файла
+          String fileNameRequested = command.GetArg(1);
+          String fullFilePath = LOGS_DIRECTORY;
+          fullFilePath += F("/");
+          fullFilePath += fileNameRequested;
+
+          if(SD.exists(fullFilePath.c_str()))
+          {
+            // такой файл существует, можно отдавать
+            if(logFile)
+              logFile.close(); // сперва закрываем текущий лог-файл
+
+            // теперь можно открывать файл на чтение
+            File fRead = SD.open(fullFilePath,FILE_READ);
+            if(fRead)
+            {
+              // файл открыли, можно читать
+              // сперва отправим в потом строчку OK=FOLLOW
+              Stream* writeStream = command.GetIncomingStream();
+              writeStream->print(OK_ANSWER);
+              writeStream->print(COMMAND_DELIMITER);
+              writeStream->println(FOLLOW);
+
+              //теперь читаем из файла посимвольно, делая паузы для вызова yield через несколько десятков байт
+              const int DELAY_AFTER = 32;
+              int delayCntr = 0;
+
+               while(fRead.available())
+               {
+                writeStream->write(fRead.read()); // пишем в поток
+                delayCntr++;
+                if(delayCntr > DELAY_AFTER)
+                {
+                  delayCntr = 0;
+                  yield(); // даём поработать другим модулям
+                }
+               } // while
+              
+              
+              fRead.close(); // закрыли файл
+              PublishSingleton.Status = true;
+              PublishSingleton = END_OF_FILE; // выдаём OK=END_OF_FILE
+            } // if(fRead)
+
+            #ifdef USE_DS3231_REALTIME_CLOCK
+                DS3231Time tm = rtc.getTime();
+                CreateNewLogFile(tm); // создаём новый файл
+            #endif
+            
+          } // SD.exists
+          
+        }
+        else
+        {
+          PublishSingleton = PARAMS_MISSED;
+        }
+        
+      } // FILE_COMMAND
+      else
+      {
+        PublishSingleton = UNKNOWN_COMMAND;
+      }
+       
+    } // argsCnt > 0
+  } // ctGET
+  
+} // hasSD
+  
+  // отвечаем на команду
+  mainController->Publish(this,command);
 
   return true;
 }
