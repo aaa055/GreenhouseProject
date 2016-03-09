@@ -15,6 +15,7 @@
 #define USE_HUMIDITY_MODULE // закомментировать, если не нужен модуль работы с датчиками влажности DHT
 #define USE_WIFI_MODULE // закомментировать, если не нужна поддержка управления через Wi-Fi (ESP8266)
 #define USE_LOG_MODULE // закомментировать, если не нужен модуль логгирования информации. Внимание: модуль работает только с модулем реального времени (USE_DS3231_REALTIME_CLOCK должна быть определена!)
+#define USE_DELTA_MODULE // закомментировать, если не нужно собирать показания дельт с датчиков
 //#define SAVE_RELAY_STATES // раскомментировать, если для модуля надо хранить актуальное состояние каналов реле (ещё не понял - надо ли показывать это в реале)
 
 // ПОМЕНЯТЬ НА УНИКАЛЬНОЕ ДЛЯ КАЖДОГО МОДУЛЯ, СДЕЛАННОГО В ЖЕЛЕЗЕ!
@@ -257,6 +258,15 @@
 #define SERIAL_BAUD_RATE WIFI_BAUDRATE
 #warning Serial BAUD RATE IS CHANGED TO WIFI_SERIAL BAUD RATE DUE TO WIFI_DEBUG MODE!
 #endif
+
+// настройки модуля дельт
+#define DELTA_SETTINGS_EEPROM_ADDR 512 // с какого адреса в EEPROM начинаются настройки дельт
+#define DELTA_UPDATE_INTERVAL 5000 // через сколько миллисекунд обновлять показания дельт?
+#define DELTA_ADD_COMMAND F("ADD") // добавить дельту, CTSET=DELTA|ADD|SensorType|ModuleName1|SensorIndex1|ModuleName2|SensorIndex2
+#define DELTA_SAVE_COMMAND F("SAVE") // сохранить все настройки дельт в EEPROM, CTSET=DELTA|SAVE
+#define DELTA_DELETE_COMMAND F("DEL") // удалить все дельты, CTSET=DELTA|DEL
+#define DELTA_VIEW_COMMAND F("VIEW") // просмотр дельты по индексу, CTGET=DELTA|VIEW|0
+#define DELTA_COUNT_COMMAND F("CNT") // получить кол-во сохранённых дельт, CTGET=DELTA|CNT
 
 // настройки модуля LOOP
 #define MIN_LOOP_PARAMS 5 // минимальное количество параметров, которые надо передать

@@ -90,8 +90,9 @@ bool AlertRule::HasAlert()
        OneState* os = linkedModule->State.GetState(StateTemperature,sensorIdx);
        if(!os)
         return false;
-        
-       Temperature* t = (Temperature*) os->Data;
+
+       TemperaturePair tp = *os; 
+       Temperature* t = tp.Current;
        int8_t curTemp = t->Value;
 
        if(curTemp == NO_TEMPERATURE_DATA) // нет датчика на линии
@@ -141,20 +142,19 @@ bool AlertRule::HasAlert()
        OneState* os = linkedModule->State.GetState(StateLuminosity,sensorIdx);
        if(!os)
         return false;
-        
-       long* lum = (long*) os->Data;
 
-       if(*lum == NO_LUMINOSITY_DATA) // нет датчика на линии
+       LuminosityPair lp = *os; 
+       long lum = lp.Current;
+
+       if(lum == NO_LUMINOSITY_DATA) // нет датчика на линии
         return false;
-
-       long mappedLum = dataAlertLong;
 
        switch(operand)
        {
-          case roLessThan: return *lum < mappedLum;
-          case roLessOrEqual: return *lum <= mappedLum;
-          case roGreaterThan: return *lum > mappedLum;
-          case roGreaterOrEqual: return *lum >= mappedLum;
+          case roLessThan: return lum < dataAlertLong;
+          case roLessOrEqual: return lum <= dataAlertLong;
+          case roGreaterThan: return lum > dataAlertLong;
+          case roGreaterOrEqual: return lum >= dataAlertLong;
           default: return false;
        } // switch
       
@@ -173,8 +173,9 @@ bool AlertRule::HasAlert()
        OneState* os = linkedModule->State.GetState(StateHumidity,sensorIdx);
        if(!os)
         return false;
-        
-       Humidity* h = (Humidity*) os->Data;
+
+       HumidityPair hp = *os;
+       Humidity* h = hp.Current;
        int8_t curHumidity = h->Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии

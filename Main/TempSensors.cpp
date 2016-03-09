@@ -185,6 +185,7 @@ void TempSensors::Setup()
 
   blinker.begin(DIODE_MANUAL_MODE_PIN,F("SM"));  // настраиваем блинкер на нужный пин
   lastUpdateCall = 0;
+  smallSensorsChange = 0;
   
 
    // добавляем датчики температуры
@@ -247,10 +248,13 @@ void TempSensors::Update(uint16_t dt)
       if(tempData.Negative)
         t.Value = -t.Value;
 
-      t.Fract = tempData.Fract;
+      t.Fract = tempData.Fract + smallSensorsChange;
+      
     }
     State.UpdateState(StateTemperature,i,(void*)&t);
   } // for
+
+  smallSensorsChange = 0;
 
 
 }
@@ -436,7 +440,8 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
             PublishSingleton << PARAM_DELIMITER << commandRequested;
           }
           workMode = wmAutomatic;
-
+          smallSensorsChange = 1;
+/*
           // говорим, что температура изменилась, чтобы форсировать обработку 
           // через модуль ALERT, иначе он проигнорирует смену состояния.
           // достаточно изменить буквально на чуть-чуть.
@@ -453,7 +458,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                 t->Fract = t->Fract + 1;
             }
             } // for
-          
+*/          
           blinker.blink();
         }
         else if(commandRequested == WM_MANUAL)
@@ -465,6 +470,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
             PublishSingleton << PARAM_DELIMITER << commandRequested;
           }
           workMode = wmManual;
+          smallSensorsChange = 1;
           blinker.blink(WORK_MODE_BLINK_INTERVAL);
         }
         
@@ -531,7 +537,8 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                        OneState* os = State.GetState(StateTemperature,i);
                        if(os)
                        {
-                          Temperature* t = (Temperature*) os->Data;
+                          TemperaturePair tp = *os;
+                          Temperature* t = tp.Current;
                           PublishSingleton << PARAM_DELIMITER << (*t);
                        } // if(os)
                     } // for
@@ -557,7 +564,8 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                         OneState* os = State.GetState(StateTemperature,sensorIdx);
                         if(os)
                         {
-                          Temperature* t = (Temperature*) os->Data;
+                          TemperaturePair tp = *os;
+                          Temperature* t = tp.Current;
                           PublishSingleton = PROP_TEMP;
                           PublishSingleton << PARAM_DELIMITER  << sensorIdx << PARAM_DELIMITER << (*t);
                         }

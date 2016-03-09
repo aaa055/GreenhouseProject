@@ -429,8 +429,9 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
           for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
           {
             OneState* os = m->State.GetState(StateTemperature,stateIdx);
-            String sensorIdx = String(os->Index);
-            Temperature* t = (Temperature*) os->Data;
+            String sensorIdx = String(os->GetIndex());
+            TemperaturePair tp = *os;
+            Temperature* t = tp.Current;
             String sensorData = *t;
             if(
               #ifdef WRITE_ABSENT_SENSORS_DATA
@@ -457,8 +458,9 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
           for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
           {
             OneState* os = m->State.GetState(StateHumidity,stateIdx);
-            String sensorIdx = String(os->Index);
-            Humidity* h = (Humidity*) os->Data;
+            String sensorIdx = String(os->GetIndex());
+            HumidityPair hp = *os;
+            Humidity* h = hp.Current;
             String sensorData = *h;
             if(
               #ifdef WRITE_ABSENT_SENSORS_DATA
@@ -485,9 +487,10 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
           for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
           {
             OneState* os = m->State.GetState(StateLuminosity,stateIdx);
-            String sensorIdx = String(os->Index);
-            long* l = (long*) os->Data;
-            long dt = *l;
+            String sensorIdx = String(os->GetIndex());
+            LuminosityPair lp = *os;
+            long dt = lp.Current;
+            
             String sensorData = String(dt);
             if(
               #ifdef WRITE_ABSENT_SENSORS_DATA

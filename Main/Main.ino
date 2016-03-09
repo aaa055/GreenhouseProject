@@ -54,9 +54,13 @@
 #include "LogModule.h"
 #endif
 
+#ifdef USE_DELTA_MODULE
+#include "DeltaModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
-const char init_1[] PROGMEM = "CTSET=LOOP|SD|SET|100|11|PIN|6|T";// помигаем 5 раз диодом для проверки
+const char init_1[] PROGMEM = "CTSET=LOOP|SD|SET|80|7|PIN|6|T";// помигаем 5 раз диодом для проверки
 
 const char init_STUB[] PROGMEM = ""; // ЗАГЛУШКА, НЕ ТРОГАТЬ!
 
@@ -168,6 +172,11 @@ HumidityModule humidityModule;
 #ifdef USE_LOG_MODULE
 // модуль логгирования информации
 LogModule logModule;
+#endif
+
+#ifdef USE_DELTA_MODULE
+// модуль сбора дельт с датчиков
+DeltaModule deltaModule;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -301,6 +310,10 @@ void setup()
   controller.RegisterModule(&humidityModule);
   #endif
 
+  #ifdef USE_DELTA_MODULE
+  controller.RegisterModule(&deltaModule);
+  #endif
+
   #ifdef USE_LOG_MODULE
   controller.RegisterModule(&logModule);
   controller.SetLogWriter(&logModule); // задаём этот модуль как модуль, который записывает события в лог
@@ -357,6 +370,7 @@ void setup()
   Serial.println("WiFiModule: \t " + String(sizeof(WiFiModule)));
   Serial.println("ZeroStreamListener: \t " + String(sizeof(ZeroStreamListener)));
   Serial.println("HTTPClient: \t " + String(sizeof(HTTPClient)));
+  Serial.println("DeltaModule: \t " + String(sizeof(DeltaModule)));
   Serial.println("File: \t " + String(sizeof(File)));
   Serial.println(F(""));
   Serial.print(F("FREERAM HERE: "));

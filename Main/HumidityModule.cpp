@@ -123,8 +123,11 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
              OneState* stateHumidity = State.GetState(StateHumidity,i);
              if(stateTemp && stateHumidity)
              {
-                Temperature* t = (Temperature*) stateTemp->Data;
-                Humidity* h = (Humidity*) stateHumidity->Data;
+                TemperaturePair tp = *stateTemp;
+                HumidityPair hp = *stateHumidity;
+              
+                Temperature* t = tp.Current;
+                Humidity* h = hp.Current;
                 if(wantAnswer) 
                 {
                   PublishSingleton << PARAM_DELIMITER << (*h) << PARAM_DELIMITER << (*t);
@@ -154,9 +157,12 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
              if(stateTemp && stateHumidity)
              {
                 PublishSingleton.Status = true;
+
+                TemperaturePair tp = *stateTemp;
+                HumidityPair hp = *stateHumidity;
                 
-                Temperature* t = (Temperature*) stateTemp->Data;
-                Humidity* h = (Humidity*) stateHumidity->Data;
+                Temperature* t = tp.Current;
+                Humidity* h = hp.Current;
                 if(wantAnswer)
                 {
                   PublishSingleton << PARAM_DELIMITER << (*h) << PARAM_DELIMITER << (*t);

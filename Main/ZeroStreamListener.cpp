@@ -128,8 +128,9 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                       OneState* os =  m->State.GetState(StateTemperature,i);
                       if(os)
                       {
-                        Temperature* tCurrent = (Temperature*) os->Data;
-                        Temperature* tPrev = (Temperature*) os->PreviousData;
+                        TemperaturePair tp = *os;
+                        Temperature* tCurrent = tp.Current;
+                        Temperature* tPrev = tp.Prev;
                       
                         PublishSingleton << mName << PARAM_DELIMITER << PROP_TEMP << PARAM_DELIMITER << i 
                         << PARAM_DELIMITER << (*tPrev) << PARAM_DELIMITER << (*tCurrent) << NEWLINE;
@@ -230,7 +231,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                               OneState* os = mod->State.GetState(StateTemperature,sensorIdx);
                               if(os)
                               {
-                                Temperature* t = (Temperature*) os->Data;
+                                TemperaturePair tp = *os;
+                                Temperature* t = tp.Current;
                                 String curTemp = *t;
                                 PublishSingleton.Status = true;
                                 PublishSingleton.AddModuleIDToAnswer = false;

@@ -65,6 +65,21 @@ struct Temperature // структура показаний с датчика т
   {
     return String(Value) + F(",") + (Fract < 10 ? F("0") : F("")) + String(Fract);
   }
+
+  Temperature& operator=(const Temperature& rhs)
+  {
+    if(this == &rhs)
+      return *this;
+      
+    Value = rhs.Value;
+    Fract = rhs.Fract;
+    return *this;
+  }
+
+  friend Temperature operator-(const Temperature& left, const Temperature& right); // оператор получения дельты температур
+
+  Temperature();
+  Temperature(int8_t v,uint8_t f) : Value(v), Fract(f) {}
 };
 
 // влажность у нас может храниться так же, как и температура, поэтому
@@ -83,12 +98,81 @@ StateHumidity = 8 // есть датчики влажности
 
 } ModuleStates; // вид состояния
 
-struct OneState
+struct TemperaturePair
+{
+  Temperature* Prev;
+  Temperature* Current;
+  
+  TemperaturePair() : Prev(NULL), Current(NULL) {}
+  TemperaturePair(Temperature* p, Temperature* c) : Prev(p), Current(c) {}
+};
+struct HumidityPair
+{
+  Humidity* Prev;
+  Humidity* Current;
+  
+  HumidityPair() : Prev(NULL), Current(NULL) {}
+  HumidityPair(Humidity* p, Humidity* c) : Prev(p), Current(c) {}
+};
+#ifdef SAVE_RELAY_STATES
+struct RelayPair
+{
+  uint8_t Prev;
+  uint8_t Current;
+
+
+  RelayPair() : Prev(0), Current(0) {}
+  RelayPair(uint8_t p, uint8_t c) : Prev(p), Current(c) {}
+};
+#endif
+
+struct LuminosityPair
+{
+  long Prev;
+  long Current;
+
+  LuminosityPair() : Prev(0), Current(0) {}
+  LuminosityPair(long p, long c) : Prev(p), Current(c) {}
+};
+class OneState
 {
     ModuleStates Type; // тип состояния (температура, освещенность, каналы реле)
+    
     uint8_t Index; // индекс (например, датчика температуры)
     void* Data; // данные с датчика
     void* PreviousData; // предыдущие данные с датчика
+
+    public:
+
+
+    uint8_t GetIndex() {return Index;}
+    ModuleStates GetType() {return Type;}
+    
+    void Update(void* newData); // обновляет состояние
+    bool IsChanged(); // тестирует, есть ли изменения
+
+    OneState& operator=(const OneState& rhs); // копирует состояние из одной структуры в другую, если структуры одинаковых типов, индексы при этом остаются нетронутыми
+
+    friend OneState operator-(const OneState& left, const OneState& right); // оператор получения дельты состояний, индексы игнорируются, типы - должны быть одинаковыми
+
+    operator String(); // для удобства вывода информации
+    operator TemperaturePair(); // получает температуру в виде пары предыдущее/текущее изменение
+    operator HumidityPair();
+    operator LuminosityPair(); // получает состояние освещенности в виде пары предыдущее/текущее изменение
+#ifdef SAVE_RELAY_STATES  
+    operator RelayPair(); // возвращает состояние реле
+#endif
+    OneState(ModuleStates s, uint8_t idx)
+    {
+      Init(s,idx);
+    }
+    ~OneState();
+
+    private:
+
+    OneState(const OneState& rhs);
+    void Init(ModuleStates type, uint8_t idx); // инициализирует состояние
+    
 };
 
 typedef Vector<OneState*> StateVec;
@@ -98,18 +182,18 @@ class ModuleState
  uint8_t supportedStates; // какие состояния поддерживаем?
  StateVec states; // какие состояния поддерживаем?
 
- bool IsStateChanged(OneState* s);
-
 public:
   ModuleState();
 
   bool HasState(ModuleStates state); // проверяет, поддерживаются ли такие состояния?
   bool HasChanges(); // проверяет, есть ли изменения во внутреннем состоянии модуля?
-  void AddState(ModuleStates state, uint8_t idx); // добавляем состояние и привязываем его к индексу
+  OneState* AddState(ModuleStates state, uint8_t idx); // добавляем состояние и привязываем его к индексу
   void UpdateState(ModuleStates state, uint8_t idx, void* newData); // обновляем состояние модуля (например, показания с температурных датчиков);
   uint8_t GetStateCount(ModuleStates state); // возвращает кол-во состояний определённого вида (например, кол-во датчиков температуры)
   OneState* GetState(ModuleStates state, uint8_t idx); // возвращает состояние определённого вида по индексу
   bool IsStateChanged(ModuleStates state, uint8_t idx); // проверяет, не изменилось ли состояние по индексу?
+
+  void RemoveState(ModuleStates state, uint8_t idx); // удаляет состояние
 
  
 };

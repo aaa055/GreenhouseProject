@@ -22,12 +22,20 @@ typedef struct
   
 } WateringChannelOptions; // настройки для отдельного канала полива
 
+// функция, которая вызывается при чтении/записи установок дельт - чтобы не хранить их в классе настроек.
+// При чтении настроек класс настроек вызывает функцию OnDeltaRead, передавая прочитанные значения вовне.
+// При записи настроек класс настроек вызывает функцию OnDeltaWrite.
+typedef void (*DeltaReadWriteFunction)(uint8_t& sensorType, String& moduleName1,uint8_t& sensorIdx1, String& moduleName2, uint8_t& sensorIdx2);
+
+// функция, которая вызывается при чтении/записи установок дельт. Класс настроек вызывает OnDeltaGetCount, чтобы получить кол-во записей, которые следует сохранить,
+// и OnDeltaSetCount - чтобы сообщить подписчику - сколько записей он передаст в вызове OnDeltaRead.
+typedef void (*DeltaCountFunction)(uint8_t& count);
+
 class GlobalSettings
 {
   private:
 
-
-  uint8_t tempOpen; // температура открытия
+   uint8_t tempOpen; // температура открытия
   uint8_t tempClose; // температура закрытия
   unsigned long openInterval; // интервал для открытия окон
 
@@ -54,6 +62,9 @@ class GlobalSettings
     void Load();
     void Save();
     void ResetToDefault();
+
+    void ReadDeltaSettings(DeltaCountFunction OnDeltaSetCount, DeltaReadWriteFunction OnDeltaRead); // читаем настройки дельт 
+    void WriteDeltaSettings(DeltaCountFunction OnDeltaGetCount, DeltaReadWriteFunction OnDeltaWrite); // пишем настройки дельт 
 
     uint8_t GetWateringOption() {return wateringOption; }
     void SetWateringOption(uint8_t val) {wateringOption = val; }
