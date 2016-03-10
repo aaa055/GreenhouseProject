@@ -10,6 +10,7 @@ typedef enum
   smaIdle, // ничего не делаем, просто ждём
   smaCheckReady, // проверяем готовность (AT+CPAS)
   smaEchoOff, // выключаем эхо (ATE0)
+  smaDisableCellBroadcastMessages, // AT+CSCB=0
   smaAON, // включаем АОН (AT+CLIP=1)
   smaPDUEncoding, // включаем кодировку PDU (AT+CMGF=0)
   smaSMSSettings, // включаем вывод входящих смс сразу в порт (AT+CNMI=2,2)

@@ -73,7 +73,7 @@ void DeltaModule::OnDeltaRead(uint8_t& _sensorType, String& moduleName1,uint8_t&
  ds.SensorIndex2 = sensorIdx2;
 
  // теперь не забываем добавить своё внутреннее состояние, которое будет дёргать модуль ALERT, получая показания
- DeltaModule::_thisDeltaModule->State.AddState(sensorType,_thisDeltaModule->deltas.size()); // индексом виртуального датчика будет размер массива, т.е. автоматически увеличиваться с каждой новой настройкой.
+ DeltaModule::_thisDeltaModule->State.AddState(sensorType,DeltaModule::_thisDeltaModule->deltas.size()); // индексом виртуального датчика будет размер массива, т.е. автоматически увеличиваться с каждой новой настройкой.
 
  // записывать в состояние пока ничего не надо, поскольку State сам инициализирует всё значениями по умолчанию.
 
@@ -214,7 +214,7 @@ void DeltaModule::UpdateDeltas()
     #endif
     // и сохраняем в него дельту, индекс при этом должен остаться нетронутым
     if(deltaState && os1 && os2)
-      *deltaState = *os1 - *os2;
+      *deltaState = (*os1 - *os2);
 
     #ifdef _DEBUG
 

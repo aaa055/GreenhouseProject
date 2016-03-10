@@ -467,7 +467,7 @@ OneState operator-(const OneState& left, const OneState& right)
         case StateLuminosity:
         {
           long*  ui1 = (long*) left.Data;
-          long*  ui2 = (long*) left.Data;
+          long*  ui2 = (long*) right.Data;
 
           long* thisLong = (long*) result.Data;
 
@@ -476,7 +476,7 @@ OneState operator-(const OneState& left, const OneState& right)
             *thisLong = abs(*ui1 - *ui2);
 
           ui1 = (long*) left.PreviousData;
-          ui2 = (long*) left.PreviousData;
+          ui2 = (long*) right.PreviousData;
 
           thisLong = (long*) result.PreviousData;
 

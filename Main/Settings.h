@@ -35,7 +35,7 @@ class GlobalSettings
 {
   private:
 
-   uint8_t tempOpen; // температура открытия
+  uint8_t tempOpen; // температура открытия
   uint8_t tempClose; // температура закрытия
   unsigned long openInterval; // интервал для открытия окон
 

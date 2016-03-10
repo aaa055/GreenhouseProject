@@ -39,6 +39,7 @@ void SMSModule::InitQueue()
   actionsQueue.push_back(smaSMSSettings); // настройки вывода SMS
   actionsQueue.push_back(smaPDUEncoding); // формат сообщений
   actionsQueue.push_back(smaAON); // включение АОН
+  actionsQueue.push_back(smaDisableCellBroadcastMessages); // выключение броадкастовых SMS
   actionsQueue.push_back(smaEchoOff); // выключение эха
   actionsQueue.push_back(smaCheckReady); // проверка готовности
   
@@ -87,6 +88,20 @@ void SMSModule::ProcessAnswerLine(const String& line)
        actionsQueue.pop(); // убираем последнюю обработанную команду     
        currentAction = smaIdle;
       }
+    }
+    break;
+
+    case smaDisableCellBroadcastMessages: // запретили получение броадкастовых SMS
+    {
+      if(IsKnownAnswer(line))
+      {
+        #ifdef NEOWAY_DEBUG_MODE
+          Serial.println(F("[OK] => Broadcast SMS disabled."));
+        #endif
+       actionsQueue.pop(); // убираем последнюю обработанную команду     
+       currentAction = smaIdle;
+      }
+      
     }
     break;
 
@@ -506,6 +521,16 @@ void SMSModule::ProcessQueue()
         Serial.println(F("Disable echo..."));
       #endif
       SendCommand(F("ATE0"));
+      }
+      break;
+
+      case smaDisableCellBroadcastMessages:
+      {
+        // выключаем эхо
+      #ifdef NEOWAY_DEBUG_MODE
+        Serial.println(F("Disable cell broadcast SMS..."));
+      #endif
+      SendCommand(F("AT+CSCB=0"));
       }
       break;
 
