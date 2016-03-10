@@ -142,11 +142,6 @@ void OneState::Init(ModuleStates state, uint8_t idx)
         Temperature* t1 = new Temperature;
         Temperature* t2 = new Temperature;
         
-        t1->Value = NO_TEMPERATURE_DATA; // нет данных о температуре
-        t2->Value = NO_TEMPERATURE_DATA;
-        t1->Fract = 0;
-        t2->Fract = 0;
-        
         Data = t1;
         PreviousData = t2;
       }
@@ -355,54 +350,48 @@ OneState::~OneState()
 }
 OneState::operator HumidityPair()
 {
-  HumidityPair result;
   if(Type != StateHumidity)
   {
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator HumidityPair() - !StateHumidity"));
   #endif
-  return result; // undefined behaviour
+  return HumidityPair(); // undefined behaviour
   }
 
     return HumidityPair((Humidity*)PreviousData,(Humidity*)Data);  
 }
 OneState::operator TemperaturePair()
 {
-  TemperaturePair result;
   if(Type != StateTemperature)
   {
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator TemperaturePair() - !StateTemperature"));
   #endif
-  return result; // undefined behaviour
+  return TemperaturePair(); // undefined behaviour
   }
 
     return TemperaturePair((Temperature*)PreviousData,(Temperature*)Data);
 }
 OneState::operator LuminosityPair()
 {
-  LuminosityPair result;
-  
   if(Type != StateLuminosity)
   {
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator LuminosityPair() - !StateLuminosity"));
   #endif
-  return result; // undefined behaviour
+  return LuminosityPair(); // undefined behaviour
   }
   return LuminosityPair(*((long*)PreviousData),*((long*)Data));   
 }
 #ifdef SAVE_RELAY_STATES
 OneState::operator RelayPair()
 {
-  RelayPair result;
-  
   if(Type != StateRelay)
   {
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator RelayPair() - !StateRelay"));
   #endif
-  return result; // undefined behaviour
+  return RelayPair(); // undefined behaviour
   }
 
   return RelayPair(*((uint8_t*)PreviousData),*((uint8_t*)Data)); 
@@ -431,14 +420,14 @@ OneState operator-(const OneState& left, const OneState& right)
 
           Temperature* thisT = (Temperature*) result.Data;
           if(t1->Value != NO_TEMPERATURE_DATA && t2->Value != NO_TEMPERATURE_DATA) // только если есть показания с датчиков
-              *thisT = *t1 - *t2; // получаем дельту текущих изменений
+              *thisT = (*t1 - *t2); // получаем дельту текущих изменений
           
           t1 = (Temperature*) left.PreviousData;
           t2 = (Temperature*) right.PreviousData;
 
           thisT = (Temperature*) result.PreviousData;
           if(t1->Value != NO_TEMPERATURE_DATA && t2->Value != NO_TEMPERATURE_DATA) // только если есть показания с датчиков
-              *thisT = *t1 - *t2; // получаем дельту предыдущих изменений
+              *thisT = (*t1 - *t2); // получаем дельту предыдущих изменений
         
         }
         break;
@@ -451,7 +440,7 @@ OneState operator-(const OneState& left, const OneState& right)
           uint8_t* thisUi = (uint8_t*) result.Data;
 
           // получаем дельту текущих изменений
-          *thisUi = abs(*ui1 - *ui2);
+          *thisUi = abs((*ui1 - *ui2));
 
           ui1 = (uint8_t*) left.PreviousData;
           ui2 = (uint8_t*) right.PreviousData;
@@ -459,7 +448,7 @@ OneState operator-(const OneState& left, const OneState& right)
           thisUi = (uint8_t*) result.PreviousData;
 
           // получаем дельту предыдущих изменений
-          *thisUi = abs(*ui1 - *ui2);
+          *thisUi = abs((*ui1 - *ui2));
   
         }  
         break;
@@ -473,7 +462,7 @@ OneState operator-(const OneState& left, const OneState& right)
 
           // получаем дельту текущих изменений
           if(*ui1 != NO_LUMINOSITY_DATA && *ui2 != NO_LUMINOSITY_DATA) // только если есть показания с датчиков
-            *thisLong = abs(*ui1 - *ui2);
+            *thisLong = abs((*ui1 - *ui2));
 
           ui1 = (long*) left.PreviousData;
           ui2 = (long*) right.PreviousData;
@@ -482,7 +471,7 @@ OneState operator-(const OneState& left, const OneState& right)
 
           // получаем дельту предыдущих изменений
           if(*ui1 != NO_LUMINOSITY_DATA && *ui2 != NO_LUMINOSITY_DATA) // только если есть показания с датчиков
-            *thisLong = abs(*ui1 - *ui2);   
+            *thisLong = abs((*ui1 - *ui2));   
         }  
         break;
       } // switch
@@ -515,7 +504,7 @@ Temperature operator-(const Temperature& left, const Temperature& right)
   long rVal = (abs(right.Value*100) + right.Fract)*sign2;
 
 
-  long res = abs(lVal - rVal);
+  long res = abs((lVal - rVal));
   
     return Temperature(res/100, res%100); // дельта у нас всегда положительная.
 }
@@ -597,7 +586,7 @@ bool ModuleState::IsStateChanged(ModuleStates state, uint8_t idx)
 void ModuleState::UpdateState(ModuleStates state, uint8_t idx, void* newData)
 {
   size_t sz = states.size();
-  for(uint8_t i=0;i<sz;i++)
+  for(size_t i=0;i<sz;i++)
   {
       OneState* s = states[i];
       if(s->GetType() == state && s->GetIndex() == idx)
@@ -612,7 +601,7 @@ uint8_t ModuleState::GetStateCount(ModuleStates state)
   uint8_t result = 0;
   size_t sz = states.size();
   
-  for(uint8_t i=0;i<sz;i++)
+  for(size_t i=0;i<sz;i++)
   {
       OneState* s = states[i];
       if(s->GetType() == state)
@@ -624,7 +613,7 @@ uint8_t ModuleState::GetStateCount(ModuleStates state)
 OneState* ModuleState::GetState(ModuleStates state, uint8_t idx)
 {
   size_t sz = states.size();
-  for(uint8_t i=0;i<sz;i++)
+  for(size_t i=0;i<sz;i++)
   {
       OneState* s = states[i];
       if(s->GetType() == state && s->GetIndex() == idx)

@@ -747,7 +747,7 @@ void AlertModule::Update(uint16_t dt)
 
   lastUpdateCall += dt;
     
-  if(lastUpdateCall < ALERT_UPD_INTERVAL) // обновляем согласно настроенному интервалу
+  if(lastUpdateCall < ALERT_UPDATE_INTERVAL) // обновляем согласно настроенному интервалу
     return;
      
 #ifdef USE_DS3231_REALTIME_CLOCK
@@ -823,7 +823,7 @@ void AlertModule::Update(uint16_t dt)
    #endif   
   } // for
 
-  lastUpdateCall = lastUpdateCall - ALERT_UPD_INTERVAL;
+  lastUpdateCall = lastUpdateCall - ALERT_UPDATE_INTERVAL;
   
 }
 bool AlertModule::CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule, RulesVector& raisedAlerts)

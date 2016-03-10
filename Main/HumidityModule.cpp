@@ -52,12 +52,13 @@ void HumidityModule::Update(uint16_t dt)
   Temperature t;
   for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
    {
+    /*
       h.Value = NO_TEMPERATURE_DATA;
       h.Fract = 0;
       
       t.Value = NO_TEMPERATURE_DATA;
       t.Fract = 0;
-
+*/
       HumidityAnswer answer = QuerySensor(HUMIDITY_SENSORS_ARRAY[i].pin,HUMIDITY_SENSORS_ARRAY[i].type);
 
       if(answer.IsOK)

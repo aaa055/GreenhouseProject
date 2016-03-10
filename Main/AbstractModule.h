@@ -170,6 +170,7 @@ class OneState
 
     private:
 
+    OneState();
     OneState(const OneState& rhs);
     void Init(ModuleStates type, uint8_t idx); // инициализирует состояние
     

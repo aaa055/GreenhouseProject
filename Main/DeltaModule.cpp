@@ -133,6 +133,7 @@ void DeltaModule::SaveDeltas()
 {
   // сохраняем дельты в EEPROM
   deltaReadIndex = 0;
+  
   #ifdef _DEBUG
   Serial.println(F("Save delta settings..."));
   #endif
@@ -209,7 +210,9 @@ void DeltaModule::UpdateDeltas()
 
       // выводим предыдущее значение.
       Serial.print(F("\r\nPrevious deltaState = "));
-      Serial.println((String)*deltaState);
+      Serial.print((String)*deltaState);
+      Serial.print(F("; index = "));
+      Serial.println(deltaState->GetIndex());
       
     #endif
     // и сохраняем в него дельту, индекс при этом должен остаться нетронутым
@@ -220,7 +223,9 @@ void DeltaModule::UpdateDeltas()
 
       // протестируем, чего он нам там в виде дельты вывел.
       Serial.print(F("Current deltaState = "));
-      Serial.println((String)*deltaState);
+      Serial.print((String)*deltaState);
+      Serial.print(F("; index = "));
+      Serial.println(deltaState->GetIndex());
 
       if(deltaState->IsChanged())
       {
@@ -254,15 +259,15 @@ void DeltaModule::InitDeltas()
   // читаем из модуля HUMIDITY температуру с DHT22.
   // индексы датчиков и там, и там - 0.
   // запоминаем в свою дельту.
-  uint8_t sensorType = StateTemperature;
-  String moduleName1 = F("STATE");
+  uint8_t sensorType = StateLuminosity;
+  String moduleName1 = F("LIGHT");
   uint8_t sensorIdx1 = 0;
-  String moduleName2 = F("HUMIDITY");
+  String moduleName2 = F("LIGHT");
   uint8_t sensorIdx2 = 0;
   
   // тупо вызываем функцию, чтобы не париться с настройками
   OnDeltaRead(sensorType, moduleName1,sensorIdx1, moduleName2, sensorIdx2);
-*/  
+  */
   Serial.println(F("Delta settings readed."));
   #endif
     
@@ -443,18 +448,27 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
             }
             else // иначе - всё зашибись, и мы можем добавлять дельту
             {
-              // можем добавлять дельту, сохранением занимается команда SAVE.
-              // добавляем своё состояние
-              State.AddState((ModuleStates)ds.SensorType,deltas.size());
-              // теперь сохраняем структуру в вектор.
-              deltas.push_back(ds);
-              
-              if(wantAnswer)
+              if(deltas.size() >= MAX_DELTAS) // превышен лимит дельт
               {
-                PublishSingleton.Status = true;
-                PublishSingleton = DELTA_ADD_COMMAND;
-                PublishSingleton << PARAM_DELIMITER << REG_SUCC << PARAM_DELIMITER << (deltas.size() - 1);
-              } // wantAnswer
+              if(wantAnswer)
+                PublishSingleton = UNKNOWN_COMMAND;
+              }
+              else
+              {
+                  // можем добавлять дельту, сохранением занимается команда SAVE.
+                  // добавляем своё состояние
+                  State.AddState((ModuleStates)ds.SensorType,deltas.size());
+                  // теперь сохраняем структуру в вектор.
+                  deltas.push_back(ds);
+                  
+                  if(wantAnswer)
+                  {
+                    PublishSingleton.Status = true;
+                    PublishSingleton = DELTA_ADD_COMMAND;
+                    PublishSingleton << PARAM_DELIMITER << REG_SUCC << PARAM_DELIMITER << (deltas.size() - 1);
+                  } // wantAnswer
+              } // else can add
+              
             } // good params
             
           } // enough args
