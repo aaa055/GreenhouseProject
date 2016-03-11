@@ -225,7 +225,7 @@ ZeroStreamListener remoteRegistrator;
 // модуль регистрации алертов тоже только в режиме контроллера
 AlertModule alerts;
 #endif
-
+   
 String ReadProgmemString(const char* c)
 {
   String s;

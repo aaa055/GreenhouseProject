@@ -52,13 +52,6 @@ void HumidityModule::Update(uint16_t dt)
   Temperature t;
   for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
    {
-    /*
-      h.Value = NO_TEMPERATURE_DATA;
-      h.Fract = 0;
-      
-      t.Value = NO_TEMPERATURE_DATA;
-      t.Fract = 0;
-*/
       HumidityAnswer answer = QuerySensor(HUMIDITY_SENSORS_ARRAY[i].pin,HUMIDITY_SENSORS_ARRAY[i].type);
 
       if(answer.IsOK)
@@ -70,7 +63,7 @@ void HumidityModule::Update(uint16_t dt)
         t.Fract = answer.TemperatureDecimal;
       } // if
 
-      // сохраняем данные в состоянии модуля
+      // сохраняем данные в состоянии модуля - индексы мы назначаем сами, последовательно, поэтому дыр в нумерации датчиков нет
       State.UpdateState(StateTemperature,i,(void*)&t);
       State.UpdateState(StateHumidity,i,(void*)&h);
    }  // for
@@ -127,11 +120,9 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
                 TemperaturePair tp = *stateTemp;
                 HumidityPair hp = *stateHumidity;
               
-                Temperature* t = tp.Current;
-                Humidity* h = hp.Current;
                 if(wantAnswer) 
                 {
-                  PublishSingleton << PARAM_DELIMITER << (*h) << PARAM_DELIMITER << (*t);
+                  PublishSingleton << PARAM_DELIMITER << (hp.Current) << PARAM_DELIMITER << (tp.Current);
                 }
              } // if
           } // for
@@ -162,11 +153,9 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
                 TemperaturePair tp = *stateTemp;
                 HumidityPair hp = *stateHumidity;
                 
-                Temperature* t = tp.Current;
-                Humidity* h = hp.Current;
                 if(wantAnswer)
                 {
-                  PublishSingleton << PARAM_DELIMITER << (*h) << PARAM_DELIMITER << (*t);
+                  PublishSingleton << PARAM_DELIMITER << (hp.Current) << PARAM_DELIMITER << (tp.Current);
                 }
              } // if
             

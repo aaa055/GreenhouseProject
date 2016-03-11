@@ -744,11 +744,10 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
    if(os1)
   {
     TemperaturePair tp = *os1;
-    Temperature* insideTemp = tp.Current;
   
     sms += T_INDOOR; // сообщение
-    if(insideTemp->Value != NO_TEMPERATURE_DATA)
-      sms += *insideTemp;
+    if(tp.Current.Value != NO_TEMPERATURE_DATA)
+      sms += tp.Current;
     else
       sms += SMS_NO_DATA;
       
@@ -759,11 +758,10 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
   if(os2)
   {
     TemperaturePair tp = *os2;
-    Temperature* outsideTemp = tp.Current;
   
     sms += T_OUTDOOR;
-    if(outsideTemp->Value != NO_TEMPERATURE_DATA)
-      sms += *outsideTemp;
+    if(tp.Current.Value != NO_TEMPERATURE_DATA)
+      sms += tp.Current;
     else
       sms += SMS_NO_DATA;
     

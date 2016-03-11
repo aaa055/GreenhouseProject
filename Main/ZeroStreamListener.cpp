@@ -65,29 +65,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                 AbstractModule* m = mainController->GetModule(i);
                 if(m != this)
                 {
-                  uint8_t tempCnt = m->State.GetStateCount(StateTemperature);
-                  
-                  #ifdef SAVE_RELAY_STATES               
-                  uint8_t relayCnt = m->State.GetStateCount(StateRelay);
-                  #endif
-
-                  for(uint8_t j=0;j<tempCnt;j++)
-                    if(m->State.IsStateChanged(StateTemperature,j))
-                    {
-                        hasChanges = true;
-                        break;
-                    }
-                  #ifdef SAVE_RELAY_STATES
-                  if(!hasChanges)
-                  {
-                    for(uint8_t j=0;j<relayCnt;j++)
-                      if(m->State.IsStateChanged(StateRelay,j))
-                      {
-                        hasChanges = true;
-                        break;
-                      }
-                  } // if(!hasChanges)
-                  #endif
+                  hasChanges = m->State.HasChanges();
                   
                   if(hasChanges)
                       break;
@@ -123,17 +101,16 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
 
                  for(uint8_t i=0;i<tempCnt;i++)
                  {
-                    if( m->State.IsStateChanged(StateTemperature,i)) // температура на датчике изменилась
+                    OneState* os = m->State.GetStateByOrder(StateTemperature,i);
+                    if( os && os->IsChanged() ) // температура на датчике изменилась
                     {
-                      OneState* os =  m->State.GetState(StateTemperature,i);
+                      OneState* os =  m->State.GetStateByOrder(StateTemperature,i);
                       if(os)
                       {
                         TemperaturePair tp = *os;
-                        Temperature* tCurrent = tp.Current;
-                        Temperature* tPrev = tp.Prev;
                       
                         PublishSingleton << mName << PARAM_DELIMITER << PROP_TEMP << PARAM_DELIMITER << i 
-                        << PARAM_DELIMITER << (*tPrev) << PARAM_DELIMITER << (*tCurrent) << NEWLINE;
+                        << PARAM_DELIMITER << (tp.Prev) << PARAM_DELIMITER << (tp.Current) << NEWLINE;
                       } // if
                     } // if
                       
@@ -226,20 +203,17 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                            {
                             uint8_t sensorIdx = String(command.GetArg(3)).toInt();
 
-                            if(sensorIdx < mod->State.GetStateCount(StateTemperature))
-                            {
                               OneState* os = mod->State.GetState(StateTemperature,sensorIdx);
                               if(os)
                               {
                                 TemperaturePair tp = *os;
-                                Temperature* t = tp.Current;
-                                String curTemp = *t;
+                                String curTemp = tp.Current;
                                 PublishSingleton.Status = true;
                                 PublishSingleton.AddModuleIDToAnswer = false;
                                 PublishSingleton = reqID;
                                 PublishSingleton << PARAM_DELIMITER << PROP_TEMP << PARAM_DELIMITER  << sensorIdx << PARAM_DELIMITER << curTemp;
                               } // if(os)
-                            }
+                            
  
                            }
                            
@@ -259,10 +233,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                            // получаем состояние реле
                            if(mod->State.HasState(StateRelay)) // если поддерживаем реле
                            {
-                            uint8_t relayIdx = command.GetArg(3).toInt();
-
-                              if(relayIdx < mod->State.GetStateCount(StateRelay)*8)
-                              {
+                            uint8_t relayIdx = String(command.GetArg(3)).toInt();
                                 
                                 uint8_t stateIdx = relayIdx/8;
                                 uint8_t bitNum = relayIdx % 8;
@@ -270,13 +241,14 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                                 OneState* os = mod->State.GetState(StateRelay,stateIdx);
                                 if(os)
                                 {
-                                  bool bOn = bitRead(*((uint8_t*)os->Data),bitNum);
+                                  RelayPair rp = *os;
+                                  bool bOn = bitRead(rp.Current,bitNum);
                                   PublishSingleton.Status = true;
                                   PublishSingleton.AddModuleIDToAnswer = false;
                                   PublishSingleton = reqID;
                                   PublishSingleton << PARAM_DELIMITER << PROP_RELAY << PARAM_DELIMITER  << relayIdx <<  PARAM_DELIMITER << (bOn ? STATE_ON : STATE_OFF);
                                 } // if(os)
-                              }
+                             
                              
                             } // if has relay
                             else
@@ -518,7 +490,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                               t.Fract = curTemp.toInt();
                            }
 
-                           mod->State.UpdateState(StateTemperature,sensorIdx,(void*)&t);
+                           mod->State.UpdateState(StateTemperature,sensorIdx,(void*)&t); // пытаемся обновить показания
  
                             PublishSingleton.Status = true;
                             PublishSingleton = REG_SUCC;
@@ -539,7 +511,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                           #ifdef SAVE_RELAY_STATES
                            // сохраняем состояние реле
                            String curRelayState = command.GetArg(4);
-                           uint8_t relayIdx = command.GetArg(3).toInt();
+                           uint8_t relayIdx = String(command.GetArg(3)).toInt();
 
                            uint8_t channelIdx = relayIdx/8;
                            uint8_t bitNum = relayIdx % 8;
@@ -547,9 +519,10 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                            OneState* os = mod->State.GetState(StateRelay,channelIdx);
                            if(os)
                            {
-                            uint8_t curRState = *((uint8_t*)os->Data);
+                            RelayPair rp = *os;
+                            uint8_t curRState = rp.Current;
                             bitWrite(curRState,bitNum,(curRelayState == STATE_ON));
-                            mod->State.UpdateState(StateRelay,channelIdx,(void*) &curRState);
+                            os->Update((void*) &curRState);
                            } 
                            #endif
                            

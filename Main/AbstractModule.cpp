@@ -355,10 +355,10 @@ OneState::operator HumidityPair()
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator HumidityPair() - !StateHumidity"));
   #endif
-  return HumidityPair(); // undefined behaviour
+  return HumidityPair(Humidity(),Humidity()); // undefined behaviour
   }
 
-    return HumidityPair((Humidity*)PreviousData,(Humidity*)Data);  
+    return HumidityPair(*((Humidity*)PreviousData),*((Humidity*)Data));  
 }
 OneState::operator TemperaturePair()
 {
@@ -367,10 +367,10 @@ OneState::operator TemperaturePair()
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator TemperaturePair() - !StateTemperature"));
   #endif
-  return TemperaturePair(); // undefined behaviour
+  return TemperaturePair(Temperature(),Temperature()); // undefined behaviour
   }
 
-    return TemperaturePair((Temperature*)PreviousData,(Temperature*)Data);
+    return TemperaturePair(*((Temperature*)PreviousData),*((Temperature*)Data));
 }
 OneState::operator LuminosityPair()
 {
@@ -379,7 +379,7 @@ OneState::operator LuminosityPair()
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator LuminosityPair() - !StateLuminosity"));
   #endif
-  return LuminosityPair(); // undefined behaviour
+  return LuminosityPair(0,0); // undefined behaviour
   }
   return LuminosityPair(*((long*)PreviousData),*((long*)Data));   
 }
@@ -391,7 +391,7 @@ OneState::operator RelayPair()
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator RelayPair() - !StateRelay"));
   #endif
-  return RelayPair(); // undefined behaviour
+  return RelayPair(0,0); // undefined behaviour
   }
 
   return RelayPair(*((uint8_t*)PreviousData),*((uint8_t*)Data)); 
@@ -568,21 +568,6 @@ bool ModuleState::HasChanges()
   return false;
   
 }
-bool ModuleState::IsStateChanged(ModuleStates state, uint8_t idx)
-{
-  size_t sz = states.size();
-  for(size_t i=0;i<sz;i++)
-  {
-      OneState* s = states[i];
-      
-      if(s->GetType() == state && s->GetIndex() == idx)
-        return s->IsChanged();
-
-  } // for
-
-  return false;
-  
-}
 void ModuleState::UpdateState(ModuleStates state, uint8_t idx, void* newData)
 {
   size_t sz = states.size();
@@ -592,9 +577,13 @@ void ModuleState::UpdateState(ModuleStates state, uint8_t idx, void* newData)
       if(s->GetType() == state && s->GetIndex() == idx)
       {
         s->Update(newData);
-        break;
+        return;
       } // if
   } // for
+
+#ifdef _DEBUG
+Serial.println(F("[ERR] - UpdateState FAILED!"));
+#endif  
 }
 uint8_t ModuleState::GetStateCount(ModuleStates state)
 {
@@ -609,6 +598,24 @@ uint8_t ModuleState::GetStateCount(ModuleStates state)
   }
   
   return result;
+}
+OneState* ModuleState::GetStateByOrder(ModuleStates state, uint8_t orderNum)
+{
+  size_t sz = states.size();
+  uint8_t cntr = 0;
+  for(size_t i=0;i<sz;i++)
+  {
+      OneState* s = states[i];
+      if(s->GetType() == state)
+      {
+        if(cntr == orderNum)
+          return s;
+
+          cntr++;
+      }
+  }
+
+    return NULL;  
 }
 OneState* ModuleState::GetState(ModuleStates state, uint8_t idx)
 {

@@ -95,14 +95,15 @@ void WindowState::SwitchRelays(uint8_t rel1State, uint8_t rel2State)
    OneState* os = RelayStateHolder->GetState(StateRelay,idx);
    if(os)
    {
-     uint8_t curRelayStates = *((uint8_t*) os->Data); // получаем текущую маску состояния реле
+     RelayPair rp = *os;
+     uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
 
      // устанавливаем нужные биты
      bitWrite(curRelayStates,bitNum1, (rel1State == RELAY_ON));
      bitWrite(curRelayStates,bitNum2, (rel2State == RELAY_ON));
      
      // записываем новую маску состояния реле
-     RelayStateHolder->UpdateState(StateRelay,idx,(void*)&curRelayStates);
+     os->Update((void*)&curRelayStates);
      
    } // if(os)
       
@@ -251,7 +252,7 @@ void TempSensors::Update(uint16_t dt)
       t.Fract = tempData.Fract + smallSensorsChange;
       
     }
-    State.UpdateState(StateTemperature,i,(void*)&t);
+    State.UpdateState(StateTemperature,i,(void*)&t); // обновляем состояние температуры, индексы датчиков у нас идут без дырок, поэтому с итератором цикла вызывать можно
   } // for
 
   smallSensorsChange = 0;
@@ -441,24 +442,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           }
           workMode = wmAutomatic;
           smallSensorsChange = 1;
-/*
-          // говорим, что температура изменилась, чтобы форсировать обработку 
-          // через модуль ALERT, иначе он проигнорирует смену состояния.
-          // достаточно изменить буквально на чуть-чуть.
-          // Так как мы не знаем, к какому датчику привязаны правила - 
-          // меняем на чуть-чуть показания всех датчиков
-          uint8_t stCnt = State.GetStateCount(StateTemperature);
-          for(uint8_t st=0;st<stCnt;st++)
-          {
-            OneState* os = State.GetState(StateTemperature,st);
-            if(os)
-            {
-              Temperature* t = (Temperature*) os->Data;
-              if(t && t->Value != NO_TEMPERATURE_DATA) // если есть показания с датчика 
-                t->Fract = t->Fract + 1;
-            }
-            } // for
-*/          
+        
           blinker.blink();
         }
         else if(commandRequested == WM_MANUAL)
@@ -538,8 +522,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                        if(os)
                        {
                           TemperaturePair tp = *os;
-                          Temperature* t = tp.Current;
-                          PublishSingleton << PARAM_DELIMITER << (*t);
+                          PublishSingleton << PARAM_DELIMITER << (tp.Current);
                        } // if(os)
                     } // for
                   } // want answer
@@ -565,9 +548,8 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                         if(os)
                         {
                           TemperaturePair tp = *os;
-                          Temperature* t = tp.Current;
                           PublishSingleton = PROP_TEMP;
-                          PublishSingleton << PARAM_DELIMITER  << sensorIdx << PARAM_DELIMITER << (*t);
+                          PublishSingleton << PARAM_DELIMITER  << sensorIdx << PARAM_DELIMITER << (tp.Current);
                         }
                     } // if(wantAnswer)
                   }

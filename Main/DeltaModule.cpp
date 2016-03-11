@@ -57,7 +57,7 @@ void DeltaModule::OnDeltaRead(uint8_t& _sensorType, String& moduleName1,uint8_t&
  }
 
   //теперь проверяем, правильные ли индексы датчиков переданы
- if(!(ds.Module1->State.GetStateCount(sensorType) > sensorIdx1 && ds.Module2->State.GetStateCount(sensorType) > sensorIdx2))
+ if(!(ds.Module1->State.GetState(sensorType,sensorIdx1) && ds.Module2->State.GetState(sensorType,sensorIdx2)))
  {
   #ifdef _DEBUG
   Serial.println(F("One of sensors indicies is wrong!"));
@@ -237,6 +237,10 @@ void DeltaModule::UpdateDeltas()
     #endif // _DEBUG
     
   } // for
+
+  #ifdef _DEBUG
+  Serial.println(F("[OK] - Deltas updated."));
+  #endif
   
 }
 void DeltaModule::InitDeltas()
@@ -263,7 +267,7 @@ void DeltaModule::InitDeltas()
   String moduleName1 = F("LIGHT");
   uint8_t sensorIdx1 = 0;
   String moduleName2 = F("LIGHT");
-  uint8_t sensorIdx2 = 0;
+  uint8_t sensorIdx2 = 1;
   
   // тупо вызываем функцию, чтобы не париться с настройками
   OnDeltaRead(sensorType, moduleName1,sensorIdx1, moduleName2, sensorIdx2);
@@ -438,8 +442,8 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
             ds.Module1 == this || ds.Module2 == this || // или любой из них ссылается на нас
             !ds.Module1->State.HasState((ModuleStates)ds.SensorType) || // или у первого нет нужного типа датчика
             !ds.Module2->State.HasState((ModuleStates)ds.SensorType) || // или у второго нет нужного типа датчика
-            ds.SensorIndex1 >= ds.Module1->State.GetStateCount((ModuleStates)ds.SensorType) || // или переданный индекс первого датчика неправильный
-            ds.SensorIndex2 >= ds.Module2->State.GetStateCount((ModuleStates)ds.SensorType) // или переданный индекс второго датчика неправильный
+            !ds.Module1->State.GetState((ModuleStates)ds.SensorType,ds.SensorIndex1) || // или переданный индекс первого датчика неправильный
+            !ds.Module2->State.GetState((ModuleStates)ds.SensorType,ds.SensorIndex2) // или переданный индекс второго датчика неправильный
             )
             {
               // чего-то пошло не так

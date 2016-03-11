@@ -61,9 +61,15 @@ struct Temperature // структура показаний с датчика т
     return (Value == rhs.Value && Fract == rhs.Fract);
   }
 
-  operator String() // возвращаем значение температуры как строку
+  operator String() const // возвращаем значение температуры как строку
   {
     return String(Value) + F(",") + (Fract < 10 ? F("0") : F("")) + String(Fract);
+  }
+
+  Temperature(const Temperature& rhs)
+  {
+    Value = rhs.Value;
+    Fract = rhs.Fract;
   }
 
   Temperature& operator=(const Temperature& rhs)
@@ -100,19 +106,25 @@ StateHumidity = 8 // есть датчики влажности
 
 struct TemperaturePair
 {
-  Temperature* Prev;
-  Temperature* Current;
-  
-  TemperaturePair() : Prev(NULL), Current(NULL) {}
-  TemperaturePair(Temperature* p, Temperature* c) : Prev(p), Current(c) {}
+  Temperature Prev;
+  Temperature Current;  
+  TemperaturePair(const Temperature& p, const Temperature& c) : Prev(p), Current(c) {}
+
+  private:
+      TemperaturePair();
+      TemperaturePair operator=(const TemperaturePair&);
+
 };
 struct HumidityPair
 {
-  Humidity* Prev;
-  Humidity* Current;
+  const Humidity Prev;
+  const Humidity Current;
   
-  HumidityPair() : Prev(NULL), Current(NULL) {}
-  HumidityPair(Humidity* p, Humidity* c) : Prev(p), Current(c) {}
+  HumidityPair(const Humidity& p, const Humidity& c) : Prev(p), Current(c) {}
+
+  private:
+    HumidityPair();
+    HumidityPair& operator=(const HumidityPair&);
 };
 #ifdef SAVE_RELAY_STATES
 struct RelayPair
@@ -120,9 +132,11 @@ struct RelayPair
   uint8_t Prev;
   uint8_t Current;
 
-
-  RelayPair() : Prev(0), Current(0) {}
   RelayPair(uint8_t p, uint8_t c) : Prev(p), Current(c) {}
+
+  private:
+    RelayPair();
+    RelayPair& operator=(const RelayPair&);
 };
 #endif
 
@@ -131,8 +145,11 @@ struct LuminosityPair
   long Prev;
   long Current;
 
-  LuminosityPair() : Prev(0), Current(0) {}
   LuminosityPair(long p, long c) : Prev(p), Current(c) {}
+
+  private:
+    LuminosityPair();
+    LuminosityPair& operator=(const LuminosityPair&);
 };
 class OneState
 {
@@ -157,7 +174,7 @@ class OneState
 
     operator String(); // для удобства вывода информации
     operator TemperaturePair(); // получает температуру в виде пары предыдущее/текущее изменение
-    operator HumidityPair();
+    operator HumidityPair(); // получает влажность в виде пары предыдущее/текущее изменение
     operator LuminosityPair(); // получает состояние освещенности в виде пары предыдущее/текущее изменение
 #ifdef SAVE_RELAY_STATES  
     operator RelayPair(); // возвращает состояние реле
@@ -186,15 +203,30 @@ class ModuleState
 public:
   ModuleState();
 
+  // Проблема в том, что в текущей реализации не допускаются дырки в индексах датчиков одного типа,
+  // т.е. нельзя добавить датчик освещенности с индексом 1, если нет датчика с индексом 0.
+  // Но такое поведение необходимо для модуля DELTA, поскольку он последовательно добавляет
+  // виртуальные датчики разных типов, как следствие - могут возникнуть два датчика
+  // влажности с индексами 0 и 2, например. При обходе таких датчиков парным вызовом
+  //  GetStateCount и GetState (в цикле) мы сделаем две итерации, но не получим
+  // датчик номер 2, т.к. в итерацию он не попадает.
+  // Более того - проверять, есть ли датчик, сравнением индекса датчика в попадание
+  // в интервал 0 - GetStateCount - неправильно, т.к. может быть единственный
+  // датчик с индексом 1, например.
+  // Модуль ALERT успешно отрабатывает виртуальные датчики, поскольку обращается
+  // напрямую к GetState по индексу датчика. Остальные модули - надо шерстить.
+
   bool HasState(ModuleStates state); // проверяет, поддерживаются ли такие состояния?
   bool HasChanges(); // проверяет, есть ли изменения во внутреннем состоянии модуля?
-  OneState* AddState(ModuleStates state, uint8_t idx); // добавляем состояние и привязываем его к индексу
-  void UpdateState(ModuleStates state, uint8_t idx, void* newData); // обновляем состояние модуля (например, показания с температурных датчиков);
-  uint8_t GetStateCount(ModuleStates state); // возвращает кол-во состояний определённого вида (например, кол-во датчиков температуры)
-  OneState* GetState(ModuleStates state, uint8_t idx); // возвращает состояние определённого вида по индексу
-  bool IsStateChanged(ModuleStates state, uint8_t idx); // проверяет, не изменилось ли состояние по индексу?
-
-  void RemoveState(ModuleStates state, uint8_t idx); // удаляет состояние
+  
+  OneState* AddState(ModuleStates state, uint8_t sensorIndex); // добавляем датчик и привязываем его к индексу
+  void UpdateState(ModuleStates state, uint8_t sensorIndex, void* newData); // обновляем состояние модуля (например, показания с температурных датчиков);
+  
+  uint8_t GetStateCount(ModuleStates state); // возвращает кол-во датчиков определённого вида (не даёт информации об индексах датчиков!)
+  OneState* GetState(ModuleStates state, uint8_t sensorIndex); // возвращает состояние определённого вида по индексу датчика
+  OneState* GetStateByOrder(ModuleStates state, uint8_t orderNum); // возвращает состояние определённого вида по номеру его хранения в массиве
+  
+  void RemoveState(ModuleStates state, uint8_t sensorIndex); // удаляет состояние по индексу датчика
 
  
 };

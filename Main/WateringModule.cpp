@@ -51,9 +51,10 @@ void WateringModule::Setup()
     OneState* os = State.GetState(StateRelay,idx);
     if(os)
     {
-      uint8_t curRelayStates = *((uint8_t*) os->Data);
+      RelayPair rp = *os;
+      uint8_t curRelayStates = rp.Current;
       bitWrite(curRelayStates,bitNum1, dummyAllChannels.IsChannelRelayOn);
-      State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+      os->Update((void*)&curRelayStates);
     }
     #endif
 
@@ -157,9 +158,10 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
          OneState* os = State.GetState(StateRelay,idx);
          if(os)
          {
-          uint8_t curRelayStates = *((uint8_t*) os->Data); // получаем текущую маску состояния реле
+          RelayPair rp = *os;
+          uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
           bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn);
-          State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+          os->Update((void*)&curRelayStates);
          }
          #endif
       
@@ -176,9 +178,10 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
      OneState* os = State.GetState(StateRelay,idx);
      if(os)
      {
-      uint8_t curRelayStates = *((uint8_t*) os->Data); // получаем текущую маску состояния реле
+      RelayPair rp = *os;
+      uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
       bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn);
-      State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+      os->Update((void*)&curRelayStates);
      }
     #endif
     

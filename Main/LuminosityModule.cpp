@@ -104,9 +104,10 @@ void LuminosityModule::Setup()
     OneState* os = State.GetState(StateRelay,idx);
     if(os)
     {
-      uint8_t curRelayStates = *((uint8_t*) os->Data);
+      RelayPair rp = *os;
+      uint8_t curRelayStates = rp.Current;
       bitWrite(curRelayStates,bitNum1, bRelaysIsOn);
-      State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+      os->Update((void*)&curRelayStates);
     }
     #endif
   } // for
@@ -130,9 +131,10 @@ void LuminosityModule::Update(uint16_t dt)
     OneState* os = State.GetState(StateRelay,idx);
     if(os)
     {
-      uint8_t curRelayStates = *((uint8_t*) os->Data);
+      RelayPair rp = *os;
+      uint8_t curRelayStates = rp.Current;
       bitWrite(curRelayStates,bitNum1, bRelaysIsOn);
-      State.UpdateState(StateRelay,idx,(void*)&curRelayStates);
+      os->Update((void*)&curRelayStates);
     }
     #endif
     

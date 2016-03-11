@@ -82,18 +82,19 @@ bool AlertRule::HasAlert()
      if(!linkedModule->State.HasState(StateTemperature))  // не поддерживаем температуру
         return false;
 
-     if(!linkedModule->State.IsStateChanged(StateTemperature,sensorIdx) && !bFirstCall) // ничего не изменилось
+     OneState* os = linkedModule->State.GetState(StateTemperature,sensorIdx);
+       
+     if(!os) // не срослось
+      return false;
+
+     if(!os->IsChanged() && !bFirstCall) // ничего не изменилось
         return false;
       
        bFirstCall = false;
             
-       OneState* os = linkedModule->State.GetState(StateTemperature,sensorIdx);
-       if(!os)
-        return false;
 
        TemperaturePair tp = *os; 
-       Temperature* t = tp.Current;
-       int8_t curTemp = t->Value;
+       int8_t curTemp = tp.Current.Value;
 
        if(curTemp == NO_TEMPERATURE_DATA) // нет датчика на линии
         return false;
@@ -135,13 +136,15 @@ bool AlertRule::HasAlert()
      if(!linkedModule->State.HasState(StateLuminosity))  // не поддерживаем освещенность
         return false;
 
-     if(!linkedModule->State.IsStateChanged(StateLuminosity,sensorIdx) && !bFirstCall) // ничего не изменилось
+       OneState* os = linkedModule->State.GetState(StateLuminosity,sensorIdx);
+       
+       if(!os) // не срослось
+        return false;
+
+     if(!os->IsChanged() && !bFirstCall) // ничего не изменилось
         return false;
 
        bFirstCall = false;
-       OneState* os = linkedModule->State.GetState(StateLuminosity,sensorIdx);
-       if(!os)
-        return false;
 
        LuminosityPair lp = *os; 
        long lum = lp.Current;
@@ -166,17 +169,17 @@ bool AlertRule::HasAlert()
      if(!linkedModule->State.HasState(StateHumidity))  // не поддерживаем влажность
         return false;
 
-     if(!linkedModule->State.IsStateChanged(StateHumidity,sensorIdx) && !bFirstCall) // ничего не изменилось
+       OneState* os = linkedModule->State.GetState(StateHumidity,sensorIdx);
+       if(!os) // не срослось
+        return false;
+
+     if(!os->IsChanged() && !bFirstCall) // ничего не изменилось
         return false;
 
        bFirstCall = false;
-       OneState* os = linkedModule->State.GetState(StateHumidity,sensorIdx);
-       if(!os)
-        return false;
 
        HumidityPair hp = *os;
-       Humidity* h = hp.Current;
-       int8_t curHumidity = h->Value;
+       int8_t curHumidity = hp.Current.Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
         return false;
