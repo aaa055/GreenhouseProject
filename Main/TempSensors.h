@@ -86,7 +86,9 @@ class TempSensors : public AbstractModule // модуль опроса темп�
     // происходит смена режима работы.
     uint8_t smallSensorsChange; 
 
+#ifdef USE_WINDOWS_MANUAL_MODE_DIODE
     BlinkModeInterop blinker;
+#endif    
 
     DS18B20Support tempSensor;
     DS18B20Temperature tempData;

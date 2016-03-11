@@ -183,8 +183,9 @@ void TempSensors::Setup()
 {
   // настройка модуля тут
    workMode = wmAutomatic; // автоматический режим работы по умолчанию
-
-  blinker.begin(DIODE_MANUAL_MODE_PIN,F("SM"));  // настраиваем блинкер на нужный пин
+#ifdef USE_WINDOWS_MANUAL_MODE_DIODE
+  blinker.begin(DIODE_WINDOWS_MANUAL_MODE_PIN,F("SM"));  // настраиваем блинкер на нужный пин
+#endif  
   lastUpdateCall = 0;
   smallSensorsChange = 0;
   
@@ -219,8 +220,9 @@ void TempSensors::Setup()
  }
 void TempSensors::Update(uint16_t dt)
 { 
-
+#ifdef USE_WINDOWS_MANUAL_MODE_DIODE
   blinker.update();
+#endif  
 
   for(uint8_t i=0;i<SUPPORTED_WINDOWS;i++) // обновляем каналы управления фрамугами
   {
@@ -289,8 +291,10 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           if(!command.IsInternal()) // пришла команда от пользователя,
           {
             workMode = wmManual; // переходим на ручной режим работы
+            #ifdef USE_WINDOWS_MANUAL_MODE_DIODE
             // мигаем светодиодом на 6 пине
              blinker.blink(WORK_MODE_BLINK_INTERVAL);
+            #endif 
           }
 
           String token = command.GetArg(1);
@@ -442,8 +446,9 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           }
           workMode = wmAutomatic;
           smallSensorsChange = 1;
-        
+#ifdef USE_WINDOWS_MANUAL_MODE_DIODE        
           blinker.blink();
+#endif          
         }
         else if(commandRequested == WM_MANUAL)
         {
@@ -455,7 +460,9 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           }
           workMode = wmManual;
           smallSensorsChange = 1;
+#ifdef USE_WINDOWS_MANUAL_MODE_DIODE
           blinker.blink(WORK_MODE_BLINK_INTERVAL);
+#endif          
         }
         
       } // WORK_MODE

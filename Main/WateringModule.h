@@ -37,8 +37,9 @@ class WateringModule : public AbstractModule // модуль управлени�
   int8_t currentDOW; // текущий день недели
   int8_t currentHour; // текущий час
   bool bIsRTClockPresent; // флаг наличия модуля часов реального времени
-
+#ifdef USE_WATERING_MANUAL_MODE_DIODE
   BlinkModeInterop blinker;
+#endif
 
   void UpdateChannel(int8_t channelIdx, WateringChannel* channel, uint16_t dt); // обновляем состояние канала
 

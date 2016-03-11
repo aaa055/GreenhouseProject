@@ -58,9 +58,9 @@ class LuminosityModule : public AbstractModule // модуль управлен�
   private:
 
   GlobalSettings* settings; // настройки
-
+#ifdef USE_LIGHT_MANUAL_MODE_DIODE
   BlinkModeInterop blinker;
-
+#endif
 
   #if LIGHT_SENSORS_COUNT > 0
   BH1750Support lightMeter; // первый датчик освещенности

@@ -60,8 +60,9 @@
 
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
+#ifdef USE_READY_DIODE
 const char init_1[] PROGMEM = "CTSET=LOOP|SD|SET|80|7|PIN|6|T";// помигаем 5 раз диодом для проверки
-
+#endif
 const char init_STUB[] PROGMEM = ""; // ЗАГЛУШКА, НЕ ТРОГАТЬ!
 
 
@@ -69,8 +70,10 @@ const char init_STUB[] PROGMEM = ""; // ЗАГЛУШКА, НЕ ТРОГАТЬ!
 const char* const  INIT_COMMANDS[] PROGMEM  = 
 {
  //  init_0,
-  init_1
-  ,init_STUB // ЗАГЛУШКА, НЕ ТРОГАТЬ!
+#ifdef USE_READY_DIODE
+init_1,
+#endif
+  init_STUB // ЗАГЛУШКА, НЕ ТРОГАТЬ!
 };
 
 

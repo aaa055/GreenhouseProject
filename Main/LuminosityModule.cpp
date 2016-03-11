@@ -76,8 +76,10 @@ void LuminosityModule::Setup()
 
   workMode = lightAutomatic; // автоматический режим работы
   bRelaysIsOn = false; // все реле выключены
-
+  
+#ifdef USE_LIGHT_MANUAL_MODE_DIODE
   blinker.begin(DIODE_LIGHT_MANUAL_MODE_PIN,F("LX")); // настраиваем блинкер на нужный пин
+#endif
 
   #ifdef SAVE_RELAY_STATES
    uint8_t relayCnt = LAMP_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
@@ -117,8 +119,9 @@ void LuminosityModule::Setup()
 void LuminosityModule::Update(uint16_t dt)
 { 
   // обновление модуля тут
-
+#ifdef USE_LIGHT_MANUAL_MODE_DIODE
     blinker.update();
+#endif
 
  // обновляем состояние всех реле управления досветкой
   for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
@@ -190,8 +193,10 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
               if(!command.IsInternal()) // пришла команда от пользователя,
               {
                 workMode = lightManual; // переходим на ручной режим работы
+                #ifdef USE_LIGHT_MANUAL_MODE_DIODE
                 // мигаем светодиодом на 8 пине
                 blinker.blink(WORK_MODE_BLINK_INTERVAL);
+                #endif
               }
 
             if(!bRelaysIsOn)
@@ -224,8 +229,10 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
               if(!command.IsInternal()) // пришла команда от пользователя,
               {
                 workMode = lightManual; // переходим на ручной режим работы
+                #ifdef USE_LIGHT_MANUAL_MODE_DIODE
                 // мигаем светодиодом на 8 пине
                 blinker.blink(WORK_MODE_BLINK_INTERVAL);
+                #endif
               }
 
             if(bRelaysIsOn)
@@ -253,16 +260,20 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
               {
                 // попросили перейти в ручной режим работы
                 workMode = lightManual; // переходим на ручной режим работы
+                #ifdef USE_LIGHT_MANUAL_MODE_DIODE
                  // мигаем светодиодом на 8 пине
                blinker.blink(WORK_MODE_BLINK_INTERVAL);
+               #endif
               }
               else
               if(s == WM_AUTOMATIC)
               {
                 // попросили перейти в автоматический режим работы
                 workMode = lightAutomatic; // переходим на автоматический режим работы
+                #ifdef USE_LIGHT_MANUAL_MODE_DIODE
                  // гасим диод на 8 пине
                 blinker.blink();
+                #endif
               }
 
               PublishSingleton.Status = true;
