@@ -20,6 +20,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
 {
   if(wantAnswer) PublishSingleton = UNKNOWN_COMMAND;
 
+  bool canPublish = true; // флаг, что можем публиковать
+
    size_t argsCnt = command.GetArgsCount();
   
   if(command.GetType() == ctGET) 
@@ -76,6 +78,142 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
              PublishSingleton.Status = true;
              PublishSingleton = (hasChanges ? STATE_ON_ALT : STATE_OFF_ALT);
         }
+        else if(t == STATUS_COMMAND) // получить статус всего железного добра
+        {
+          if(wantAnswer)
+          {
+            // входящий поток установлен, значит, можем писать прямо в него
+            canPublish = false; // скажем, что мы не хотим публиковать через контроллер - будем писать в поток сами
+            Stream* pStream = command.GetIncomingStream();
+            pStream->print(OK_ANSWER);
+            pStream->print(COMMAND_DELIMITER);
+
+            WORK_STATUS.WriteStatus(pStream,true); // просим записать статус
+
+            // тут можем писать остальные статусы, типа показаний датчиков и т.п.
+
+            size_t modulesCount = mainController->GetModulesCount(); // получаем кол-во зарегистрированных модулей
+
+            const char* noDataByte = "FF"; // байт - нет данных с датчика
+
+            // пробегаем по всем модулям
+            String moduleName;
+            moduleName.reserve(20);
+            
+            for(size_t i=0;i<modulesCount;i++)
+            {
+
+              AbstractModule* mod = mainController->GetModule(i);
+              if(mod == this) // себя пропускаем
+                continue;
+
+              // проверяем, не пустой ли модуль. для этого смотрим, сколько у него датчиков вообще
+              uint8_t tempCount = mod->State.GetStateCount(StateTemperature);
+              uint8_t humCount = mod->State.GetStateCount(StateHumidity);
+              uint8_t lightCount = mod->State.GetStateCount(StateLuminosity);
+
+              if((tempCount + humCount + lightCount) < 1) // пустой модуль, без датчиков
+                continue;
+              
+
+            // показание каждого модуля идут так:
+            // 1 байт - длина ID модуля
+              moduleName = mod->GetID();
+              uint8_t mnamelen = moduleName.length();
+              pStream->write(WorkStatus::ToHex(mnamelen).c_str());
+            // далее идёт имя модуля
+              pStream->write(moduleName.c_str());
+            
+            
+            // затем идут данные из модуля, сначала - показания температуры:
+            
+            // 1 байт - кол-во датчиков температуры
+              pStream->write(WorkStatus::ToHex(tempCount).c_str());
+
+              for(uint8_t cntr=0;cntr<tempCount;cntr++)
+              {
+                OneState* os = mod->State.GetStateByOrder(StateTemperature,cntr);
+                // потом идут пакеты температуры. каждый пакет состоит из:
+                // 1 байт - индекс датчика
+                pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
+                TemperaturePair tp = *os;
+                if(tp.Current.Value != NO_TEMPERATURE_DATA)
+                {
+                  pStream->write(WorkStatus::ToHex(tp.Current.Value).c_str());
+                  pStream->write(WorkStatus::ToHex(tp.Current.Fract).c_str());
+                }
+                else
+                {
+                  // датчика нет на линии, пишем FFFF
+                  pStream->write(noDataByte);
+                  pStream->write(noDataByte);
+                }
+                 
+              } // for
+
+              // затем идёт кол-во датчиков влажности, 1 байт.
+              pStream->write(WorkStatus::ToHex(humCount).c_str());
+              
+              for(uint8_t cntr=0;cntr<humCount;cntr++)
+              {
+                OneState* os = mod->State.GetStateByOrder(StateHumidity,cntr);
+                // затем идут показания датчиков влажности, каждый пакет состоит из:
+                // 1 байт - индекс датчика
+                pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
+                HumidityPair hp = *os;
+                if(hp.Current.Value != NO_TEMPERATURE_DATA)
+                {
+                  pStream->write(WorkStatus::ToHex(hp.Current.Value).c_str());
+                  pStream->write(WorkStatus::ToHex(hp.Current.Fract).c_str());
+                }
+                else
+                {
+                  // датчика нет на линии, пишем FFFF
+                  pStream->write(noDataByte);
+                  pStream->write(noDataByte);
+                }
+
+              } // for
+
+            // затем идут показания датчиков освещенности:
+            // 1 байт - кол-во датчиков
+              pStream->write(WorkStatus::ToHex(lightCount).c_str());
+            
+            // затем идут пакеты с данными:
+                for(uint8_t cntr=0;cntr < lightCount; cntr++)
+                {
+                  OneState* os = mod->State.GetStateByOrder(StateLuminosity,cntr);
+                  // 1 байт - индекс датчика
+                  pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                  
+                  // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
+                  LuminosityPair lp = *os;
+                  long lum = lp.Current;
+                  if(lum != NO_LUMINOSITY_DATA)
+                  {
+                    byte* b = (byte*)&lum;
+                    pStream->write(WorkStatus::ToHex(*b++).c_str());
+                    pStream->write(WorkStatus::ToHex(*b).c_str());
+                  }
+                  else
+                  {
+                    // датчика нет на линии, пишем FFFF
+                    pStream->write(noDataByte);
+                    pStream->write(noDataByte);
+                  }
+
+                } // for
+
+            } // for
+            
+
+            pStream->print(NEWLINE); // пишем перевод строки
+            
+          } // wantAnswer
+          
+        } // STATUS_COMMAND
         else if(t == LIST_CHANGES_COMMAND) // какие изменения в состоянии модулей?
         {
           // CTGET=0|LIST_CHANGES - ВЕРНЕТ список всех измененных состояний во всех модулях
@@ -554,7 +692,10 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
   } // if
  
  // отвечаем на команду
-    mainController->Publish(this,command);
+ if(canPublish) // можем публиковать
+  mainController->Publish(this,command);
+ else
+  PublishSingleton = F(""); // просто очищаем общий буфер
     
   return PublishSingleton.Status;
 }

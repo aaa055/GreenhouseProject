@@ -262,4 +262,20 @@ public:
   
 };
 
+class WorkStatus
+{
+  uint8_t statuses[STATUSES_BYTES];
+
+  public:
+  
+    void SetStatus(uint8_t bitNum, bool bOn);
+    void WriteStatus(Stream* pStream, bool bAsTextHex);
+    WorkStatus();
+
+  static String ToHex(int i);
+  
+}; // структура статусов работы 
+
+extern WorkStatus WORK_STATUS; // статус состояния
+
 #endif

@@ -80,6 +80,50 @@ PublishStruct& PublishStruct::operator<<(long src)
   return *this;      
 }
 
+WorkStatus::WorkStatus()
+{
+  memset(statuses,0,sizeof(uint8_t)*STATUSES_BYTES);
+}
+void WorkStatus::SetStatus(uint8_t bitNum, bool bOn)
+{
+  uint8_t byte_num = bitNum/8;
+  uint8_t bit_num = bitNum%8;
+
+  bitWrite(statuses[byte_num],bit_num,(bOn ? 1 : 0));
+}
+
+const char HEX_CHARS[]  PROGMEM = {"0123456789ABCDEF"};
+String WorkStatus::ToHex(int i)
+{  
+  
+  String Out;
+  int idx = i & 0xF;
+  char char1 = (char) pgm_read_byte_near( HEX_CHARS + idx );
+  i>>=4;
+  idx = i & 0xF;
+  char char2 = (char) pgm_read_byte_near( HEX_CHARS + idx );
+  Out = String(char2); Out += String(char1);
+  
+  return Out; 
+}
+void WorkStatus::WriteStatus(Stream* pStream, bool bAsTextHex)
+{
+  if(!pStream)
+    return;
+    
+  for(uint8_t i=0;i<STATUSES_BYTES;i++)
+  {
+    if(!bAsTextHex)
+      pStream->write(statuses[i]);
+    else
+    {
+      pStream->print(WorkStatus::ToHex(statuses[i]));
+    }
+  } // for
+}
+
+WorkStatus WORK_STATUS; // экземпляр класса состояний
+
 void OneState::Update(void* newData) // обновляем внутреннее состояние
 {
      switch(Type)

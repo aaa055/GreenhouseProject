@@ -77,6 +77,9 @@ void LuminosityModule::Setup()
   workMode = lightAutomatic; // автоматический режим работы
   bRelaysIsOn = false; // все реле выключены
   
+  SAVE_STATUS(LIGHT_STATUS_BIT,0); // сохраняем, что досветка выключена
+  SAVE_STATUS(LIGHT_MODE_BIT,1); // сохраняем, что мы в автоматическом режиме работы
+  
 #ifdef USE_LIGHT_MANUAL_MODE_DIODE
   blinker.begin(DIODE_LIGHT_MANUAL_MODE_PIN,F("LX")); // настраиваем блинкер на нужный пин
 #endif
@@ -210,9 +213,13 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
             PublishSingleton.Status = true;
             if(wantAnswer) 
               PublishSingleton = STATE_ON;
+
+
             
            } // else
  
+            SAVE_STATUS(LIGHT_STATUS_BIT,bRelaysIsOn ? 1 : 0); // сохраняем состояние досветки
+            SAVE_STATUS(LIGHT_MODE_BIT,workMode == lightAutomatic ? 1 : 0); // сохраняем режим работы досветки
           
          } // STATE_ON
          else
@@ -246,8 +253,13 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
             PublishSingleton.Status = true;
             if(wantAnswer) 
               PublishSingleton = STATE_OFF;
+
             
            } // else
+
+            SAVE_STATUS(LIGHT_STATUS_BIT,bRelaysIsOn ? 1 : 0); // сохраняем состояние досветки
+            SAVE_STATUS(LIGHT_MODE_BIT,workMode == lightAutomatic ? 1 : 0); // сохраняем режим работы досветки
+
          } // STATE_OFF
          else
          if(s == WORK_MODE) // CTSET=LIGHT|MODE|AUTO, CTSET=LIGHT|MODE|MANUAL
@@ -282,6 +294,9 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
                 PublishSingleton = WORK_MODE; 
                 PublishSingleton << PARAM_DELIMITER << (workMode == lightAutomatic ? WM_AUTOMATIC : WM_MANUAL);
               }
+
+            SAVE_STATUS(LIGHT_STATUS_BIT,bRelaysIsOn ? 1 : 0); // сохраняем состояние досветки
+            SAVE_STATUS(LIGHT_MODE_BIT,workMode == lightAutomatic ? 1 : 0); // сохраняем режим работы досветки
               
            } // if (argsCnt > 1)
          } // WORK_MODE

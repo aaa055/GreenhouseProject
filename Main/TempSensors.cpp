@@ -217,6 +217,9 @@ void TempSensors::Setup()
   
    SetupWindows(); // настраиваем фрамуги
 
+   SAVE_STATUS(WINDOWS_MODE_BIT,1); // сохраняем режим работы окон
+   
+
  }
 void TempSensors::Update(uint16_t dt)
 { 
@@ -341,6 +344,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           {
             // по всем каналам шаримся
             bool bAnyPosChanged = false;
+            
             for(uint8_t i=from;i<to;i++)
             {
               if(Windows[i].ChangePosition(bOpen? dirOPEN : dirCLOSE,bOpen ? interval : 0))
@@ -359,20 +363,29 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                 // окно занято сменой позиции
                 if(wantAnswer) 
                   PublishSingleton = (Windows[from].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING);
+
+                SAVE_STATUS(WINDOWS_STATUS_BIT,Windows[from].GetDirection() == dirOPEN ? 1 : 0); // сохраняем состояние окон
                }
                else
                {
                 // окно не сменяет позицию
                 if(wantAnswer) 
                   PublishSingleton =  (bOpen ? STATE_OPEN : STATE_CLOSED);
+
+                SAVE_STATUS(WINDOWS_STATUS_BIT,bOpen ? 1 : 0); // сохраняем состояние окон  
                }
-              
-            }
+               
+              SAVE_STATUS(WINDOWS_MODE_BIT,workMode == wmAutomatic ? 1 : 0); // сохраняем режим работы окон
+
+            } // не смогли сменить позицию
             else
             {
               // сменили позицию, пишем в лог действие
               mainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
-              
+
+              SAVE_STATUS(WINDOWS_STATUS_BIT,bOpen ? 1 : 0); // сохраняем состояние окон
+              SAVE_STATUS(WINDOWS_MODE_BIT,workMode == wmAutomatic ? 1 : 0); // сохраняем режим работы окон
+
             } // else
 
           }
@@ -385,21 +398,34 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                   mainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
                   if(wantAnswer) 
                     PublishSingleton = (bOpen ? STATE_OPENING : STATE_CLOSING);
+
+              SAVE_STATUS(WINDOWS_STATUS_BIT,bOpen ? 1 : 0); // сохраняем состояние окон
+              SAVE_STATUS(WINDOWS_MODE_BIT,workMode == wmAutomatic ? 1 : 0); // сохраняем режим работы окон
+                    
               }
                else
                {
                 // позицию окна не сменили, смотрим - занято ли оно?
-                if(Windows[channelIdx].IsBusy()) // занято, возвращаем состояние - открывается или закрывается
-                {
-                   if(wantAnswer) 
-                    PublishSingleton = (Windows[channelIdx].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING); 
-                }   
-                else // окно ничем не занято, возвращаем положение - открыто или закрыто
-                {
-                  if(wantAnswer) 
-                      PublishSingleton =  (bOpen ? STATE_OPEN : STATE_CLOSED);
-                }
-               }
+                
+                    if(Windows[channelIdx].IsBusy()) // занято, возвращаем состояние - открывается или закрывается
+                    {
+                       if(wantAnswer) 
+                        PublishSingleton = (Windows[channelIdx].GetDirection() == dirOPEN ? STATE_OPENING : STATE_CLOSING);
+    
+                       SAVE_STATUS(WINDOWS_STATUS_BIT,Windows[channelIdx].GetDirection() == dirOPEN ? 1 : 0); // сохраняем состояние окон  
+                        
+                    }   
+                    else // окно ничем не занято, возвращаем положение - открыто или закрыто
+                    {
+                      if(wantAnswer) 
+                          PublishSingleton =  (bOpen ? STATE_OPEN : STATE_CLOSED);
+    
+                      SAVE_STATUS(WINDOWS_STATUS_BIT,bOpen ? 1 : 0); // сохраняем состояние окон
+                    }
+    
+                    SAVE_STATUS(WINDOWS_MODE_BIT,workMode == wmAutomatic ? 1 : 0); // сохраняем режим работы окон
+                
+               } // else не сменили позицию
           }
 
         } // else can process
@@ -464,6 +490,8 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           blinker.blink(WORK_MODE_BLINK_INTERVAL);
 #endif          
         }
+        
+        SAVE_STATUS(WINDOWS_MODE_BIT,workMode == wmAutomatic ? 1 : 0); // сохраняем режим работы окон
         
       } // WORK_MODE
       else if(commandRequested == WM_INTERVAL) // запросили установку интервала

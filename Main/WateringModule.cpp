@@ -235,7 +235,11 @@ void WateringModule::Update(uint16_t dt)
    blinker.update();
 #endif
   
-   uint8_t wateringOption = settings->GetWateringOption(); // получаем опцию управления поливом
+uint8_t wateringOption = settings->GetWateringOption(); // получаем опцию управления поливом
+
+SAVE_STATUS(WATER_STATUS_BIT,IsAnyChannelActive(wateringOption) ? 1 : 0); // сохраняем состояние полива
+SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраняем режим работы полива
+
 
 #ifdef USE_PUMP_RELAY
   // держим состояние реле для насоса
