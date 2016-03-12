@@ -102,6 +102,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
             
             for(size_t i=0;i<modulesCount;i++)
             {
+              yield(); // немного даём поработать другим модулям
 
               AbstractModule* mod = mainController->GetModule(i);
               if(mod == this) // себя пропускаем
@@ -132,6 +133,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
 
               for(uint8_t cntr=0;cntr<tempCount;cntr++)
               {
+                yield(); // немного даём поработать другим модулям
+                
                 OneState* os = mod->State.GetStateByOrder(StateTemperature,cntr);
                 // потом идут пакеты температуры. каждый пакет состоит из:
                 // 1 байт - индекс датчика
@@ -157,6 +160,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               
               for(uint8_t cntr=0;cntr<humCount;cntr++)
               {
+                yield(); // немного даём поработать другим модулям
+                
                 OneState* os = mod->State.GetStateByOrder(StateHumidity,cntr);
                 // затем идут показания датчиков влажности, каждый пакет состоит из:
                 // 1 байт - индекс датчика
@@ -184,6 +189,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
             // затем идут пакеты с данными:
                 for(uint8_t cntr=0;cntr < lightCount; cntr++)
                 {
+                  yield(); // немного даём поработать другим модулям
+                  
                   OneState* os = mod->State.GetStateByOrder(StateLuminosity,cntr);
                   // 1 байт - индекс датчика
                   pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
@@ -194,7 +201,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                   if(lum != NO_LUMINOSITY_DATA)
                   {
                     byte* b = (byte*)&lum;
-                    pStream->write(WorkStatus::ToHex(*b++).c_str());
+                    pStream->write(WorkStatus::ToHex(*(b+1)).c_str());
                     pStream->write(WorkStatus::ToHex(*b).c_str());
                   }
                   else
