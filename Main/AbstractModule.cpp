@@ -530,6 +530,12 @@ Temperature::Temperature()
 }
 Temperature operator-(const Temperature& left, const Temperature& right) 
 {
+  
+  if(left.Value == NO_TEMPERATURE_DATA || right.Value == NO_TEMPERATURE_DATA)
+  {
+    // разница температур, когда нет показаний на одном из датчиков - всегда имеет значение NO_TEMPERATURE_DATA
+    return Temperature(NO_TEMPERATURE_DATA,0);
+  }  
 
 // получаем разницу двух температур
   int8_t sign1 = 1;
