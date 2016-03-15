@@ -8,8 +8,8 @@ void PinModule::Setup()
 }
 void PinModule::UpdatePinStates()
 {
-  uint8_t sz = pinStates.size();
-  for(uint8_t i=0;i<sz;i++)
+  size_t sz = pinStates.size();
+  for(size_t i=0;i<sz;i++)
   {
     PIN_STATE* s = &(pinStates[i]);
     
@@ -18,14 +18,15 @@ void PinModule::UpdatePinStates()
       s->hasChanges = false;
       pinMode(s->pinNumber,OUTPUT); // делаем пин запоминающим значения
       digitalWrite(s->pinNumber,s->pinState); // запоминаем текущее состояние пина
+   
     }
   } // for
   
 }
 PIN_STATE* PinModule::GetPin(uint8_t pinNumber)
 {
-  uint8_t sz = pinStates.size();
-  for(uint8_t i=0;i<sz;i++)
+  size_t sz = pinStates.size();
+  for(size_t i=0;i<sz;i++)
   {
     PIN_STATE* s = &(pinStates[i]);
     if(s->pinNumber == pinNumber)

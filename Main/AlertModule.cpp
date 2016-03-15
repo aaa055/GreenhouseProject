@@ -197,6 +197,26 @@ bool AlertRule::HasAlert()
     }
     break;
 
+    case rtPinState: // следим за статусом пина
+    {
+       pinMode(sensorIdx,INPUT);
+       int pinState = digitalRead(sensorIdx); // читаем из пина его значение
+       // dataAlert у нас может принимать одно значение: 1, поскольку мы сравниваем
+       // это значение с HIGH и LOW на пине. Поэтому не имеют смысла операнды > и <=,
+       // вместо них мы принудительно используем операнды >= и <.
+     
+       switch(operand)
+       {
+          case roLessThan: return pinState < dataAlert; 
+          case roLessOrEqual: return pinState < dataAlert;
+          case roGreaterThan: return pinState >= dataAlert;
+          case roGreaterOrEqual: return pinState >= dataAlert;
+          default: return false;
+         
+       } // switch
+    }
+    break;
+
     case rtUnknown:
      // нет того, за чем следим, считаем, что мы сработали по времени
      return true;
@@ -223,6 +243,10 @@ String AlertRule::GetAlertRule() // конструируем правило, к�
 
       case rtHumidity:
       result += PROP_HUMIDITY;
+      break;
+
+      case rtPinState:
+      result += PROP_PIN;
       break;
 
       case rtUnknown:
@@ -385,6 +409,7 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
   dataSource = (RuleDataSource) EEPROM.read(curReadAddr++); readed++;// прочитали источник, с которого надо брать установку
   whichTime = EEPROM.read(curReadAddr++); readed++;// прочитали, когда работаем
 
+
   // прочитали, сколько времени работать
    byte* writeAddr = (byte*) &workTime;
   *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
@@ -526,9 +551,13 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   else
   if(curArg == PROP_HUMIDITY) // следим за влажностью
     target = rtHumidity;
+  else
+  if(curArg == PROP_PIN)
+    target = rtPinState; // следим за состоянием пина
 
   sensorIdx = String(command.GetArg(curArgIdx++)).toInt();
   curArg = command.GetArg(curArgIdx++);
+
   
   if(curArg == GREATER_THAN)
     operand = roGreaterThan;

@@ -9,7 +9,8 @@ typedef enum
   rtUnknown,
   rtTemp, // за температурой следим
   rtLuminosity, // за освещенностью следим
-  rtHumidity // за влажностью следим
+  rtHumidity, // за влажностью следим
+  rtPinState // следим за статусом пина
 } RuleTarget; // за чем следит правило
 
 typedef enum

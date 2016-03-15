@@ -456,6 +456,7 @@
 #define PROP_RELAY F("RELAY") // нам передали/запросили состояние канала реле CTGET=0|PROP|MODULE_NAME|RELAY|0, CTSET=0|PROP|MODULE_NAME|RELAY|0|ON
 #define PROP_LIGHT F("LIGHT") // свойство "освещенность"
 #define PROP_HUMIDITY F("HUMIDITY") // свойство "влажность"
+#define PROP_PIN F("PIN") // свойство "пин" (для слежения за статусом пинов)
 #define PROP_NONE F("_") // нет свойства
 
 //--------------------------------------------------------------------------------------------------------------------------------
