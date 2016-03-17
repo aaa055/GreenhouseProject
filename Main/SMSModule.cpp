@@ -645,14 +645,13 @@ void SMSModule::Update(uint16_t dt)
   // проверяем питание на модуле
   if(digitalRead(NEOWAY_VCCIO_CHECK_PIN) != HIGH)
   {
-     
-    needToWaitTimer = 10000; // проверим ещё раз через десять секунд
-
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println(F("NEOWAY NOT FOUND!"));
     #endif
 
     InitQueue(); // инициализировали очередь по новой, т.к. у модуля отвалилось питание
+    needToWaitTimer = 10000; // проверим ещё раз через десять секунд
+
     return;
   }
   
