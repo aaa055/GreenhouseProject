@@ -1,6 +1,8 @@
 #include "LCDMenu.h"
 #include "InteropStream.h"
 
+#ifdef USE_LCD_MODULE
+
 WaitScreenInfo WaitScreenInfos[] = 
 {
    WAIT_SCREEN_SENSORS
@@ -1062,4 +1064,6 @@ if(!needRedraw) // не надо ничего перерисовывать
 
    needRedraw = false; // отрисовали всё, что нам надо - и сбросили флаг необходимости отрисовки
 }
+
+#endif
 

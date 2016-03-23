@@ -2,10 +2,13 @@
 #define LCD_MENU_H
 
 #include <Arduino.h>
+#include "Globals.h"
+
+#ifdef USE_LCD_MODULE
+
 #include "U8glib.h"
 #include "rus6x10.h" // подключаем нужный шрифт
 #include "TinyVector.h"
-#include "Globals.h"
 #include "PushButton.h"
 #include "ModuleController.h"
 
@@ -232,7 +235,7 @@ class LCDMenu; // forward declaration
     virtual void init(LCDMenu* parent); // инициализируем, что нужно
 
     virtual void draw(DrawContext* dc) = 0; // отрисовывает контент пункта меню
-    virtual void update(uint16_t dt, LCDMenu* menu) = 0; // заглушка на дальнейшее развитие
+    virtual void update(uint16_t dt, LCDMenu* menu) = 0; // обновляет внутреннее состояние
     
     virtual void setFocus(bool f=true); // устанавливает фокус ввода на пункте меню
     virtual bool hasFocus() { return focused; } // проверяет, есть ли фокус на пункте меню
@@ -397,5 +400,6 @@ class LCDMenu : public DrawContext
    uint16_t gotLastCommmandAt; // время с момента получения последней команды
 };
 
+#endif
 
 #endif

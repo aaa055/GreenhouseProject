@@ -18,6 +18,8 @@ class LCDModule : public AbstractModule // модуль поддержки эк�
 
 };
 
+#ifdef USE_LCD_MODULE
 extern RotaryEncoder rotaryEncoder;
+#endif
 
 #endif
