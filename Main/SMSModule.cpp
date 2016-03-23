@@ -340,7 +340,7 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
     #endif
 
       // переводим управление окнами в автоматический режим работы
-      if(ModuleInterop.QueryCommand(ctSET, F("STATE|MODE|AUTO"),false))
+      if(ModuleInterop.QueryCommand(ctSET, F("STATE|MODE|AUTO"),false,false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println(F("CTSET=STATE|MODE|AUTO command parsed, process it..."));
@@ -349,7 +349,7 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
       }
 
       // переводим управление поливом в автоматический режим работы
-      if(ModuleInterop.QueryCommand(ctSET, F("WATER|MODE|AUTO"),false))
+      if(ModuleInterop.QueryCommand(ctSET, F("WATER|MODE|AUTO"),false,false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println(F("CTSET=WATER|MODE|AUTO command parsed, process it..."));
@@ -358,7 +358,7 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
       }
      
       // переводим управление досветкой в актоматический режим работы    
-      if(ModuleInterop.QueryCommand(ctSET, F("LIGHT|MODE|AUTO"),false))
+      if(ModuleInterop.QueryCommand(ctSET, F("LIGHT|MODE|AUTO"),false,false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println(F("CTSET=LIGHT|MODE|AUTO command parsed, process it..."));
@@ -377,7 +377,7 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
     #endif
 
     // включаем полив
-      if(ModuleInterop.QueryCommand(ctSET, F("WATER|ON"),false))
+      if(ModuleInterop.QueryCommand(ctSET, F("WATER|ON"),false,false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println(F("CTSET=WATER|ON command parsed, process it..."));
@@ -395,7 +395,7 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
     #endif
 
     // выключаем полив
-      if(ModuleInterop.QueryCommand(ctSET, F("WATER|OFF"),false))
+      if(ModuleInterop.QueryCommand(ctSET, F("WATER|OFF"),false,false))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println(F("CTSET=WATER|OFF command parsed, process it..."));
@@ -748,7 +748,7 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     if(tp.Current.Value != NO_TEMPERATURE_DATA)
       sms += tp.Current;
     else
-      sms += SMS_NO_DATA;
+      sms += NO_DATA;
       
     sms += NEWLINE;
     
@@ -762,7 +762,7 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     if(tp.Current.Value != NO_TEMPERATURE_DATA)
       sms += tp.Current;
     else
-      sms += SMS_NO_DATA;
+      sms += NO_DATA;
     
     sms += NEWLINE;
   } // if

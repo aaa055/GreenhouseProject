@@ -9,7 +9,6 @@ TCPClient::TCPClient()
   isConnected = false;
   commandHolder = F("");
   hasFullCommand = false; 
-
   Clear();
 }
 TCPClient::~TCPClient()

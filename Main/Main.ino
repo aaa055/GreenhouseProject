@@ -58,6 +58,10 @@
 #include "DeltaModule.h"
 #endif
 
+#ifdef USE_LCD_MODULE
+#include "LCDModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 #ifdef USE_READY_DIODE
@@ -180,6 +184,11 @@ LogModule logModule;
 #ifdef USE_DELTA_MODULE
 // модуль сбора дельт с датчиков
 DeltaModule deltaModule;
+#endif
+
+#ifdef USE_LCD_MODULE
+// модуль LCD
+LCDModule lcdModule;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -324,6 +333,10 @@ void setup()
   #ifdef USE_DELTA_MODULE
   controller.RegisterModule(&deltaModule);
   #endif
+  
+  #ifdef USE_LCD_MODULE
+  controller.RegisterModule(&lcdModule);
+  #endif
 
   #ifdef USE_LOG_MODULE
   controller.RegisterModule(&logModule);
@@ -383,6 +396,7 @@ void setup()
   Serial.println("HTTPClient: \t " + String(sizeof(HTTPClient)));
   Serial.println("DeltaModule: \t " + String(sizeof(DeltaModule)));
   Serial.println("File: \t " + String(sizeof(File)));
+  Serial.println("LCDModule: \t " + String(sizeof(LCDModule)));
   Serial.println(F(""));
   Serial.print(F("FREERAM HERE: "));
   Serial.println(freeRam());
@@ -470,5 +484,9 @@ void yield()
    // и модуль GSM тоже тут обновим
    NEOWAY_EVENT_FUNC();
    #endif 
+
+   #ifdef USE_LCD_MODULE
+    rotaryEncoder.update(); // обновляем энкодер меню
+   #endif
 }
 

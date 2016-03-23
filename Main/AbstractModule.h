@@ -270,6 +270,7 @@ class WorkStatus
   
     void SetStatus(uint8_t bitNum, bool bOn);
     void WriteStatus(Stream* pStream, bool bAsTextHex);
+    bool GetStatus(uint8_t bitNum);
     WorkStatus();
 
   static String ToHex(int i);

@@ -91,6 +91,12 @@ void WorkStatus::SetStatus(uint8_t bitNum, bool bOn)
 
   bitWrite(statuses[byte_num],bit_num,(bOn ? 1 : 0));
 }
+bool WorkStatus::GetStatus(uint8_t bitNum)
+{
+  uint8_t byte_num = bitNum/8;
+  uint8_t bit_num = bitNum%8;
+  return bitRead(statuses[byte_num],bit_num) ? true : false; 
+}
 
 const char HEX_CHARS[]  PROGMEM = {"0123456789ABCDEF"};
 String WorkStatus::ToHex(int i)
