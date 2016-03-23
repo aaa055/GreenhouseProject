@@ -194,17 +194,25 @@ void WIFI_EVENT_FUNC()
   {
     ch = WIFI_SERIAL.read();
 
+   
     if(ch == '\r')
       continue;
     
     if(ch == '\n')
-    {
-      wifiModule.ProcessAnswerLine(wiFiReceiveBuff);
-      wiFiReceiveBuff = F("");
+    {    
+        if(wiFiReceiveBuff.startsWith(F("+IPD")))
+        {
+          // Не убираем переводы строки, когда пришёл пакет с данными, поскольку \r\n может придти прямо в пакете данных.
+          // Т.к. у нас \r\n служит признаком окончания команды - значит, мы должны учитывать эти символы в пакете,
+          // и не можем самовоизвольно их отбрасывать.
+          wiFiReceiveBuff += NEWLINE; 
+        }
+          
+        wifiModule.ProcessAnswerLine(wiFiReceiveBuff);
+        wiFiReceiveBuff = F("");
     }
     else
-    {
-         
+    {     
         if(wifiModule.WaitForDataWelcome && ch == '>') // ждут команду >
         {
           wifiModule.WaitForDataWelcome = false;
@@ -213,7 +221,7 @@ void WIFI_EVENT_FUNC()
         else
           wiFiReceiveBuff += ch;
     }
-
+  
     
   } // while
    

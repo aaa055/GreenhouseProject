@@ -10,6 +10,8 @@ InteropStream::InteropStream() : Stream(), mainController(NULL)
 }
 bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool isInternalCommand,bool wantAnwer)
 {
+  data = F("");    
+  
  
   if(!mainController)
     return false; 
@@ -29,7 +31,6 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
   {
 
     cmd.SetInternal(isInternalCommand); // устанавливаем флаг команды
-    data = F("");    
     if(wantAnwer)
     {
       cmd.SetIncomingStream(this); // просим контроллер опубликовать ответ в нас - мы сохраним ответ в data

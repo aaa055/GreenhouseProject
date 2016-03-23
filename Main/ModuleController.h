@@ -16,7 +16,7 @@
 #include "LogModule.h"
 #endif
 
-#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
+#if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
 #include <SD.h>
 #endif
 
@@ -57,7 +57,7 @@ public:
   void Setup(); // настраивает контроллер на работу (инициализация нужных железок и т.п.)
   void begin(); // начинаем работу
 
-#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
+#if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
   bool HasSDCard() {return sdCardInitFlag;}
 #endif
   #ifdef USE_DS3231_REALTIME_CLOCK

@@ -278,4 +278,6 @@ class WorkStatus
 
 extern WorkStatus WORK_STATUS; // статус состояния
 
+extern char SD_BUFFER[SD_BUFFER_LENGTH];
+
 #endif

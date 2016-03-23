@@ -15,6 +15,20 @@ bool WiFiModule::IsKnownAnswer(const String& line)
 void WiFiModule::ProcessAnswerLine(const String& line)
 {
   // получаем ответ на команду, посланную модулю
+  // ситуация следующая: модуль контроллера, которому адресована команда,
+  // может дёргать yield для того, чтобы дать поработать другим модулям.
+  // в этом случае опять вызовется функция вычитки из порта, которая
+  // доложит нам в line очередную принятую порцию команд, без учёта переноса строки.
+  // это, по сути - неправильное поведение, т.к. мы получаем две строки,
+  // склеенные в одну. Т.е. налицо рекурсивный вызов ProcessAnswerLine
+  // до тех пор, пока мы всё не вычитаем из порта.
+  // запрещать yield на момент обработки команды - не выход, буфер может переполнится.
+  // значит, надо сделать так, чтобы этой склейки либо не было, либо - как-то
+  // эту ситуацию разруливать.
+
+  // Значит, клиент не должен запрашивать контроллер до тех пор, пока не придёт
+  // полная команда к нему.
+  
   #ifdef WIFI_DEBUG
      WIFI_DEBUG_WRITE(line,currentAction);
   #endif
@@ -22,31 +36,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
   // здесь может придти запрос от сервера
   if(line.startsWith(F("+IPD")))
   {
-     // пришёл запрос от сервера, сохраняем его
-     waitForQueryCompleted = true; // ждём конца запроса
-     //httpQuery = F(""); // сбрасываем запрос
-     httpQuery = line; // сохраняем первую строку запроса
+    ProcessQuery(line); // разбираем пришедшую команду
   } // if
-
-  if(waitForQueryCompleted) // ждём всего запроса, он нам может быть и не нужен
-  {
-    /*
-    if(!httpQuery.length()) // сохраняем только первую строку запроса, остальные игнорируем, чтобы не забивать память
-    {
-      httpQuery += line;
-      httpQuery += NEWLINE;
-    }
-    */
-      if( /*line.endsWith(F(",CLOSED")) ||*/ !line.length() // нашли пустую строку, значит, запрос пришёл полностью
-      //|| line.lastIndexOf(F("HTTP/1.")) != -1 
-      )
-      {
-        waitForQueryCompleted = false; // уже не ждём запроса
-        ProcessQuery(); // обрабатываем запрос
-      }
-  } // if waitForQueryCompleted
-
-
 
   
   switch(currentAction)
@@ -243,7 +234,8 @@ void WiFiModule::ProcessAnswerLine(const String& line)
         #ifdef WIFI_DEBUG
         WIFI_DEBUG_WRITE(String(F("No packets in client #")) + String(currentClientIDX),currentAction);
         #endif
-           
+
+         #ifndef WIFI_TCP_KEEP_ALIVE  // если надо разрывать соединение после отсыла результатов - разрываем его
           if(clients[currentClientIDX].IsConnected())
           {
             #ifdef WIFI_DEBUG
@@ -252,6 +244,7 @@ void WiFiModule::ProcessAnswerLine(const String& line)
             actionsQueue.push_back(wfaCIPCLOSE); // добавляем команду на закрытие соединения
             inSendData = true; // пока не обработаем отсоединение клиента - не разрешаем посылать пакеты другим клиентам
           } // if
+        #endif  
         
         } // if
       
@@ -320,22 +313,16 @@ void WiFiModule::ProcessAnswerLine(const String& line)
    #endif     
       clients[clientID].SetConnected(false);
       
-      //waitForQueryCompleted = false;
-      
-      //if(currentClientIDX == clientID && WaitForDataWelcome) // если мы ждём приглашения на отсыл данных этому клиенту,
-      //  WaitForDataWelcome = false; // то снимаем его
-        
-      //currentAction = wfaIdle;
     }
   } // if
   
   
 }
-void WiFiModule::ProcessQuery()
+void WiFiModule::ProcessQuery(const String& command)
 {
   
-  int idx = httpQuery.indexOf(F(",")); // ищем первую запятую после +IPD
-  const char* ptr = httpQuery.c_str();
+  int idx = command.indexOf(F(",")); // ищем первую запятую после +IPD
+  const char* ptr = command.c_str();
   ptr += idx+1;
   // перешли за запятую, парсим ID клиента
   String connectedClientID = F("");
@@ -344,88 +331,59 @@ void WiFiModule::ProcessQuery()
     connectedClientID += (char) *ptr;
     ptr++;
   }
+  ptr++; // за запятую
+  String dataLen;
   while(*ptr != ':')
+  {
+    dataLen += (char) *ptr;
     ptr++; // перешли на начало данных
+  }
   
   ptr++; // за двоеточие
 
-  String str = ptr; // сохраняем запрос для разбора
-  idx = str.indexOf(F(" ")); // ищем пробел
-  
-  if(idx != -1)
-  {
-    // переходим на URI
-    str = str.substring(idx+2);
-
-    idx = str.indexOf(F(" ")); // ищем пробел опять
-    if(idx != -1)
-    {
-      // выщемляем URI
-       String requestedURI = str.substring(0,idx);
-       if(!requestedURI.length()) // запросили страницу по умолчанию
-          requestedURI = DEF_PAGE;
-
-       // подготавливаем запрос
-       HTTPQuery query;
-       query.URI = requestedURI;
-       
-       ProcessURIRequest(connectedClientID.toInt(), query); // обрабатываем запрос от клиента
-    } // if 
-  } // if 
+  // тут пришла команда, разбираем её
+  ProcessCommand(connectedClientID.toInt(),dataLen.toInt(),ptr);
    
 }
-void WiFiModule::ProcessURIRequest(int clientID, const HTTPQuery& query)
+void WiFiModule::ProcessCommand(int clientID, int dataLen, const char* command)
 {
+  // обрабатываем команду, пришедшую по TCP/IP
+  
  #ifdef WIFI_DEBUG
- WIFI_DEBUG_WRITE(String(F("Client ID = ")) + String(clientID),currentAction);
-  WIFI_DEBUG_WRITE(String(F("Requested URI: ")) + query.URI,currentAction);
+  WIFI_DEBUG_WRITE(String(F("Client ID = ")) + String(clientID) + String(F("; len= ")) + String(dataLen),currentAction);
+  WIFI_DEBUG_WRITE(String(F("Requested command: ")) + String(command),currentAction);
 #endif
-
+  
   // работаем с клиентом
   if(clientID >=0 && clientID < MAX_WIFI_CLIENTS)
   {
-    if(clients[clientID].Prepare(sdCardInited,query)) // говорим клиенту, чтобы он подготовил данные к отправке
-    {
-      // клиент подготовил данные к отправке, отсылаем их в следующем вызове Update
-      #ifdef WIFI_DEBUG
-        WIFI_DEBUG_WRITE(F("Client prepared the data..."),currentAction);
-      #endif
-    }
+
+
+      if(!*command) // пустой пакет, с переводом строки
+        dataLen = 0;
+
+        // теперь нам надо сложить все данные в клиента - как только он получит полный пакет - он подготовит
+        // все данные к отправке. Признаком конца команды к контроллеру у нас служит перевод строки \r\n.
+        // следовательно, пока мы не получим в любом виде перевод строки - считается, что команда не получена.
+        // перевод строки может быть либо получен прямо в данных, либо - в следующем пакете.
+
+        // как только клиент накопит всю команду - он получает данные с контроллера в следующем вызове Update.
+        clients[clientID].CommandRequested(dataLen,command); // говорим клиенту, чтобы сложил во внутренний буфер
   } // if
-
-}
-
+ }
 void WiFiModule::Setup()
 {
   // настройка модуля тут
-
-  // резервируем место под строку запроса.
-  // поскольку мы обрабатываем только первую строку,
-  // достаточно будет несколько десятков байт.
-  // попробуем подсчитать:
-  //+IPD:0,12324:GET /index.htm HTTP/1.1\r\n
-  // получаем 40 байт. Но - у нас есть ещё
-  // команды вида
-  //+IPD:0,12324:GET /СTSET=LIGHT|ON HTTP/1.1\r\n
-  // и пр. Следовательно, резервируем 128 байт,
-  // и вроде как - париться не должны.
-  httpQuery.reserve(128);
   
   Settings = mainController->GetSettings();
-  sdCardInited = 
-  #ifdef USE_WIFI_MODULE
-  mainController->HasSDCard(); // проверяем, есть ли у контроллера возможность работы с SD-картой
-  #else
-    false;
-  #endif  
   nextClientIDX = 0;
   currentClientIDX = 0;
   inSendData = false;
   
   for(uint8_t i=0;i<MAX_WIFI_CLIENTS;i++)
-    clients[i].Setup(mainController,WIFI_PACKET_LENGTH);
+    clients[i].Setup(i, mainController,WIFI_PACKET_LENGTH);
 
-  waitForQueryCompleted = false;
+ // waitForQueryCompleted = false;
   WaitForDataWelcome = false; // не ждём приглашения
 
   // настраиваем то, что мы должны сделать
@@ -433,7 +391,7 @@ void WiFiModule::Setup()
   
   if(Settings->GetWiFiState() & 0x01) // коннектимся к роутеру
     actionsQueue.push_back(wfaCWJAP); // коннектимся к роутеру совсем в конце
-  else
+  else  
     actionsQueue.push_back(wfaCWQAP); // отсоединяемся от роутера
     
   actionsQueue.push_back(wfaCIPSERVER); // сервер поднимаем в последнюю очередь
@@ -553,7 +511,7 @@ void WiFiModule::ProcessQueue()
       #ifdef WIFI_DEBUG
         WIFI_DEBUG_WRITE(F("Starting TCP-server..."),currentAction);
       #endif
-      SendCommand(F("AT+CIPSERVER=1,80"));
+      SendCommand(F("AT+CIPSERVER=1,1975"));
       
       }
       break;
@@ -677,6 +635,9 @@ void WiFiModule::UpdateClients()
   for(uint8_t idx = nextClientIDX;idx < MAX_WIFI_CLIENTS; idx++)
   { 
     ++nextClientIDX; // переходим на следующего клиента, как только текущему будет послан один пакет
+
+    clients[idx].Update(); // обновляем внутреннее состояние клиента - здесь он может подготовить данные к отправке, например
+    
     if(clients[idx].IsConnected() && clients[idx].HasPacket())
     {
       currentAction = wfaCIPSEND; // говорим однозначно, что нам надо дождаться >

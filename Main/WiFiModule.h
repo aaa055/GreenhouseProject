@@ -4,7 +4,7 @@
 #include "AbstractModule.h"
 #include "TinyVector.h"
 #include "Settings.h"
-#include "HTTPClient.h"
+#include "TCPClient.h"
 
 #define MAX_WIFI_CLIENTS 4 // максимальное кол-во клиентов
 #define WIFI_PACKET_LENGTH 2048 // по скольку байт в пакете отсылать данные
@@ -41,23 +41,18 @@ class WiFiModule : public AbstractModule // модуль поддержки WI-F
     bool IsKnownAnswer(const String& line); // если ответ нам известный, то возвращает true
     void SendCommand(const String& command, bool addNewLine=true); // посылает команды модулю вай-фай
     void ProcessQueue(); // разбираем очередь команд
-    void ProcessQuery(); // обрабатываем запрос
-    void ProcessURIRequest(int clientID, const HTTPQuery& query);
+    void ProcessQuery(const String& command); // обрабатываем запрос
+    void ProcessCommand(int clientID, int dataLen,const char* command);
     void UpdateClients();
     
     uint8_t currentAction; // текущая операция, завершения которой мы ждём
     ActionsVector actionsQueue; // что надо сделать, шаг за шагом 
     
-    String httpQuery;
-    bool waitForQueryCompleted;
     uint8_t currentClientIDX; // индекс клиента, с которым мы работаем сейчас
     uint8_t nextClientIDX; // индекс клиента, статус которого надо проверить в следующий раз
 
     // список клиентов
-    HTTPClient clients[MAX_WIFI_CLIENTS];
-
-    bool sdCardInited; // флаг инициализации SD-модуля
-    
+    TCPClient clients[MAX_WIFI_CLIENTS];
     
   
   public:

@@ -663,13 +663,17 @@ if(hasSD)
               writeStream->print(COMMAND_DELIMITER);
               writeStream->println(FOLLOW);
 
-              //теперь читаем из файла посимвольно, делая паузы для вызова yield через несколько десятков байт
-              const int DELAY_AFTER = 32;
+              //теперь читаем из файла блоками, делая паузы для вызова yield через несколько блоков
+              const int DELAY_AFTER = 2;
               int delayCntr = 0;
+
+              uint16_t readed;
 
                while(fRead.available())
                {
-                writeStream->write(fRead.read()); // пишем в поток
+                readed = fRead.read(SD_BUFFER,SD_BUFFER_LENGTH);
+                //writeStream->write(fRead.read()); // пишем в поток
+                writeStream->write(SD_BUFFER,readed);
                 delayCntr++;
                 if(delayCntr > DELAY_AFTER)
                 {

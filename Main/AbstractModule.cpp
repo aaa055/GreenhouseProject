@@ -680,4 +680,5 @@ OneState* ModuleState::GetState(ModuleStates state, uint8_t idx)
     return NULL;
 }
 
+char SD_BUFFER[SD_BUFFER_LENGTH] = {0};
 
