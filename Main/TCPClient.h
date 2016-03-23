@@ -10,6 +10,7 @@
 // ничего не знает о статусах соединения, надо дёргать SetConnected вручную.
 // был вынесен в отдельный файл на будущее, когда придётся работать с Ethernet Shield,
 // чтобы не переписывать по два раза одно и то же.
+#define CACHE_LENGTH 256 // сколько байт кешировать в ответе
 
 class TCPClient : public Stream
 {
@@ -30,14 +31,18 @@ class TCPClient : public Stream
 
     File workFile; // файл, в который мы будем складывать ответы от модулей
     uint8_t tcpClientID; // ID клиента
+    String cachedData; // данные, которые будем кешировать для отсыла
 
     String commandHolder; // сюда складываем команду
     bool hasFullCommand; // флаг, что приняли всю команду
     bool Prepare(const char* command); // подготавливаем данные для отправки
 
-    void RemoveSDFile();
+    void OpenSDFile();
+    void CloseSDFile();
     void WriteErrorToFile();
     void Clear(); // очищаем все данные
+
+    
     
   public:
 

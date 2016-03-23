@@ -28,6 +28,7 @@ void TCPClient::Clear()
   packetsLeft = 0;
   packetsSent = 0;
   sentContentLength = 0;
+  cachedData = F("");
 }
 void TCPClient::Update()
 {
@@ -67,13 +68,7 @@ bool TCPClient::Prepare(const char* command)
   
   Clear(); // очищаем переменные и т.п.
 
-  RemoveSDFile(); // удаляем файл с диска
-
-   // создаём файл на карточке для записи туда данных
-   String fname = String(tcpClientID); fname += F(".TCP");
-
-   // открываем файл на запись
-   workFile = SD.open(fname.c_str(), FILE_WRITE | O_TRUNC); // усекаем файл до нуля
+  CloseSDFile(); // закрываем файл
 
   CommandParser* cParser = controller->GetCommandParser();
 
@@ -118,11 +113,13 @@ bool TCPClient::Prepare(const char* command)
    WriteErrorToFile();
  }
 
+   // теперь считаем длину данных
+  contentLength = cachedData.length();
+
   if(workFile)
   {
-   // теперь считаем длину данных
-    // выставляем длину данных, которые надо передать
-    contentLength = workFile.size();
+    // прибавляем длину данных, которые надо передать
+    contentLength += workFile.size();
     // переходим на начало файла
     workFile.seek(0);
   }
@@ -137,7 +134,7 @@ bool TCPClient::Prepare(const char* command)
     packetsCount++;
  }
 
- if(!workFile) // что-то с файлом не срослось
+ if(!cachedData.length()) // что-то не срослось - нет кешированных данных
  {
   contentLength = 0;
   packetsCount = 0;
@@ -154,27 +151,56 @@ bool TCPClient::Prepare(const char* command)
   return HasPacket();
  
 }
+void TCPClient::OpenSDFile()
+{
+  if(workFile)
+    return;
+
+  String fname = String(tcpClientID); fname += F(".TCP");
+  // открываем файл на запись
+  workFile = SD.open(fname.c_str(), FILE_WRITE | O_TRUNC); // открываем файл и усекаем его до нуля   
+    
+}
 void TCPClient::WriteErrorToFile()
 {
+ if(cachedData.length() < CACHE_LENGTH)
+ {
+   // можем записать в кеш
+   cachedData = ERR_ANSWER;
+   cachedData += COMMAND_DELIMITER;
+   cachedData += UNKNOWN_COMMAND;
+   cachedData += NEWLINE;
+ }
+ else
+ {
+  OpenSDFile();
+  
    if(workFile)
    {     
      String b = ERR_ANSWER; TCP_WRITE_TO_FILE(b);
      b = COMMAND_DELIMITER; TCP_WRITE_TO_FILE(b);
      b = UNKNOWN_COMMAND; TCP_WRITE_TO_FILE(b);
      b = NEWLINE; TCP_WRITE_TO_FILE(b);
-   }  
+   }
+ } // else  
 }
-void TCPClient::RemoveSDFile()
+void TCPClient::CloseSDFile()
 {
   if(workFile)
-  {
     workFile.close(); // закрываем файл
-   // SD.remove(workFile.name()); // удаляем файл с карточки
-  } 
 }
 size_t TCPClient::write(uint8_t toWr)
 {
- // тут пишем в промежуточный файл
+ // чтение ответов от модулей с кешированием первых N байт
+
+ if(cachedData.length() < CACHE_LENGTH) // ещё можно писать в кеш
+ {
+  cachedData += (char) toWr;
+  return 1;
+ }
+
+ OpenSDFile();
+ 
  if(workFile)
   workFile.write(toWr);
 
@@ -186,18 +212,59 @@ bool TCPClient::SendPacket(Stream* s)
 
  if(!packetsLeft) // нечего больше отсылать
  {
-  RemoveSDFile();
+  CloseSDFile();
   return false;
  }
   
   // тут отсылаем пакет
   // возвращаем false, если больше нечего посылать
-  if(workFile)
+
+  uint16_t cachedDataLen = cachedData.length();
+  if(cachedDataLen)
   {
-    // у нас идёт работа только с данными, полученными с контроллера
-    for(uint16_t i=0;i<nextPacketLength;i++) // читаем данные из файла и выдаём их в поток
-      s->write(workFile.read());
-  }
+    // ещё читаем из кешированных данных, надо послать либо все даннные, либо их часть, при этом дочитать остаток из файла
+    if(cachedDataLen >= nextPacketLength)
+    {
+       // длина оставшихся к отсылу данных больше, чем размер одного пакета.
+       // поэтому можем отсылать пакет целиком, предварительно его сформировав.
+       String str = cachedData.substring(0,nextPacketLength);
+       cachedData = cachedData.substring(nextPacketLength);
+
+       s->write(str.c_str(),nextPacketLength); // пишем данные в поток
+       
+    }
+    else
+    {
+      // длина оставшихся данных меньше, чем длина следующего пакета, поэтому нам надо дочитать
+      // необходимое кол-во байт из данных.
+      uint16_t dataLeft = nextPacketLength - cachedData.length();
+
+      s->write(cachedData.c_str(),cachedData.length()); // пишем данные в поток
+      cachedData = F("");
+
+     // тут вычитываем данные из файла, длиной dataLeft
+        if(workFile) // если файл открыт
+        {
+        // Блочное чтение из файла в нашем случае показало себя медленней, чем побайтовое (WTF???)            
+          for(uint16_t i=0;i<dataLeft;i++)
+            s->write(workFile.read()); // пишем данные в поток
+        }
+
+    } // else
+     
+    
+  } // if(cachedDataLen)
+  else
+  {
+    // уже только работа с файлом
+    if(workFile)
+    {
+      // у нас идёт работа только с данными, полученными с контроллера
+      for(uint16_t i=0;i<nextPacketLength;i++) // читаем данные из файла и выдаём их в поток
+        s->write(workFile.read());
+    }
+  } // else
+  
   
  // вычисляем, сколько осталось пакетов
  packetsLeft--;
@@ -211,7 +278,7 @@ bool TCPClient::SendPacket(Stream* s)
   nextPacketLength = (contentLength - sentContentLength);
 
   if(!packetsLeft) // пакеты закончились
-    RemoveSDFile(); // закрываем и удаляем файл
+    CloseSDFile(); // закрываем и удаляем файл
   
   return (packetsLeft > 0); // если ещё есть пакеты - продолжаем отсылать
 }
