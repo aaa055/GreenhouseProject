@@ -215,7 +215,7 @@ class LCDMenu; // forward declaration
   protected:
   
     const unsigned char* icon; // иконка, которая отображается для меню верхнего уровня
-    const __FlashStringHelper* caption; // текст пункта меню
+    const char* caption; // текст пункта меню
 
     bool focused; // флаг наличия фокуса на окне
     bool needToDrawCursor;
@@ -228,9 +228,9 @@ class LCDMenu; // forward declaration
     
   public:
     const unsigned char* GetIcon() {return icon;}
-    const __FlashStringHelper* GetCaption() {return caption;}
+    const char* GetCaption() {return caption;}
 
-    AbstractLCDMenuItem(const unsigned char* i, const __FlashStringHelper* c);
+    AbstractLCDMenuItem(const unsigned char* i, const char* c);
 
     virtual void init(LCDMenu* parent); // инициализируем, что нужно
 
@@ -389,6 +389,7 @@ class LCDMenu : public DrawContext
 
    private:
 
+   bool backlightIsOn;
    void backlight(bool en=true); // управление подсветкой
    uint16_t backlightCounter; // выключаем досветку, когда ничего не делается и накопили в этой переменной нужный интервал
    bool backlightCheckingEnabled;

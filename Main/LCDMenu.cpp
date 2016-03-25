@@ -36,7 +36,7 @@ LuminosityMenuItem LuminosityManageScreen; // экран управления д
 SettingsMenuItem SettingsManageScreen; // экран настроек
 
 
-AbstractLCDMenuItem::AbstractLCDMenuItem(const unsigned char* i, const __FlashStringHelper* c) :
+AbstractLCDMenuItem::AbstractLCDMenuItem(const unsigned char* i, const char* c) :
 icon(i), caption(c), focused(false), needToDrawCursor(false),cursorPos(-1), itemsCount(0)
 {
   
@@ -78,7 +78,7 @@ void AbstractLCDMenuItem::OnButtonClicked(LCDMenu* menu)
 }
 
 
-IdlePageMenuItem::IdlePageMenuItem() : AbstractLCDMenuItem(MONITOR_ICON,F("Монитор"))
+IdlePageMenuItem::IdlePageMenuItem() : AbstractLCDMenuItem(MONITOR_ICON,("Монитор"))
 {
   rotationTimer = ROTATION_INTERVAL; // получаем данные с сенсора сразу в первом вызове update
   currentSensorIndex = 0; 
@@ -237,7 +237,7 @@ void IdlePageMenuItem::draw(DrawContext* dc)
 
 }
 #ifdef USE_TEMP_SENSORS
-WindowMenuItem::WindowMenuItem() : AbstractLCDMenuItem(WINDOW_ICON,F("Окна"))
+WindowMenuItem::WindowMenuItem() : AbstractLCDMenuItem(WINDOW_ICON,("Окна"))
 {
   
 }
@@ -377,14 +377,14 @@ void WindowMenuItem::draw(DrawContext* dc)
     cur_top += HINT_FONT_BOX_PADDING;
     dc->drawHLine(left,cur_top,strW);
   }
-  
+  yield();
  } // for
 
 }
 #endif
 
 #ifdef USE_WATERING_MODULE
-WateringMenuItem::WateringMenuItem() : AbstractLCDMenuItem(WATERING_ICON,F("Полив"))
+WateringMenuItem::WateringMenuItem() : AbstractLCDMenuItem(WATERING_ICON,("Полив"))
 {
   
 }
@@ -456,7 +456,7 @@ void WateringMenuItem::draw(DrawContext* dc)
     cur_top += HINT_FONT_BOX_PADDING;
     dc->drawHLine(left,cur_top,strW);
   }
-  
+  yield();
  } // for
 }
 void WateringMenuItem::update(uint16_t dt, LCDMenu* menu)
@@ -532,7 +532,7 @@ bool WateringMenuItem::OnEncoderPositionChanged(int dir, LCDMenu* menu)
 #endif
 
 #ifdef USE_LUMINOSITY_MODULE
-LuminosityMenuItem::LuminosityMenuItem() : AbstractLCDMenuItem(LUMINOSITY_ICON,F("Досветка"))
+LuminosityMenuItem::LuminosityMenuItem() : AbstractLCDMenuItem(LUMINOSITY_ICON,("Досветка"))
 {
   
 }
@@ -604,7 +604,7 @@ void LuminosityMenuItem::draw(DrawContext* dc)
     cur_top += HINT_FONT_BOX_PADDING;
     dc->drawHLine(left,cur_top,strW);
   }
-  
+  yield();
  } // for
 }
 void LuminosityMenuItem::update(uint16_t dt, LCDMenu* menu)
@@ -678,7 +678,7 @@ bool LuminosityMenuItem::OnEncoderPositionChanged(int dir, LCDMenu* menu)
 }
 #endif
 
-SettingsMenuItem::SettingsMenuItem() : AbstractLCDMenuItem(SETTINGS_ICON,F("Настройки"))
+SettingsMenuItem::SettingsMenuItem() : AbstractLCDMenuItem(SETTINGS_ICON,("Настройки"))
 {
   
 }
@@ -716,6 +716,7 @@ void SettingsMenuItem::draw(DrawContext* dc)
  int cur_top = 24;
   int left = i*CONTENT_PADDING + i*one_icon_box_width + one_icon_left_spacing;
   dc->drawFrame(left, cur_top, text_field_width, text_field_height);
+  yield();
 
   // теперь рисуем текст в полях ввода
   String tmp;
@@ -727,6 +728,7 @@ void SettingsMenuItem::draw(DrawContext* dc)
   cur_top += HINT_FONT_HEIGHT + HINT_FONT_BOX_PADDING;
   left += HINT_FONT_BOX_PADDING*2;
   dc->drawStr(left,cur_top,tmp.c_str());
+  yield();
 
   // теперь рисуем текст под полем ввода
   u8g_uint_t strW = dc->getStrWidth(captions[i]);
@@ -737,6 +739,7 @@ void SettingsMenuItem::draw(DrawContext* dc)
   // рисуем заголовок
   cur_top += text_field_height;
   dc->drawStr(left, cur_top, captions[i]);
+  yield();
 
   if(needToDrawCursor && i == cursorPos)
   {
@@ -934,6 +937,7 @@ void LCDMenu::selectNextMenu(int encoderDirection)
 }
 void LCDMenu::backlight(bool en)
 {
+  backlightIsOn = en;
   analogWrite(SCREEN_BACKLIGHT_PIN, en ? SCREEN_BACKLIGHT_INTENSITY : 0);
  
   backlightCheckingEnabled = false;
@@ -941,6 +945,9 @@ void LCDMenu::backlight(bool en)
 }
 void LCDMenu::init(ModuleController* c)
 {
+  // устанавливаем выбранный шрифт
+  setFont(SELECTED_FONT);
+
   mainController = c;
   // инициализируем пин подсветки
   pinMode(SCREEN_BACKLIGHT_PIN,OUTPUT);
@@ -985,11 +992,11 @@ void LCDMenu::update(uint16_t dt)
   // обновляем внутренний таймер ничегонеделания
   gotLastCommmandAt += dt;
 
-  // обновляем таймер выключения досветки
+  // обновляем таймер выключения подсветки
   if(backlightCheckingEnabled)
   {
     backlightCounter += dt;
-    if(backlightCounter >= SCREEN_BACKLIGHT_OFF_DELAY) // надо выключить досветку
+    if(backlightCounter >= SCREEN_BACKLIGHT_OFF_DELAY) // надо выключить подсветку
       backlight(false);
   }
   
@@ -1011,8 +1018,13 @@ void LCDMenu::update(uint16_t dt)
 }
 void LCDMenu::draw()
 {
-if(!needRedraw) // не надо ничего перерисовывать
+if(!needRedraw || !backlightIsOn) // не надо ничего перерисовывать
   return;
+
+#ifdef LCD_DEBUG
+Serial.print("LCDMenu::draw() - ");
+unsigned long m = millis();
+#endif
     
  size_t sz = items.size();
  firstPage();  
@@ -1021,29 +1033,31 @@ if(!needRedraw) // не надо ничего перерисовывать
     yield();
     // рисуем бокс
     drawFrame(0,MENU_BITMAP_SIZE-1,FRAME_WIDTH,FRAME_HEIGHT+1);
-
+    
     // рисуем пункты меню верхнего уровня
     for(size_t i=0;i<sz;i++)
     {
       yield();
       drawXBMP( i*MENU_BITMAP_SIZE, 0, MENU_BITMAP_SIZE, MENU_BITMAP_SIZE, items[i]->GetIcon());
     }
+    
     // теперь рисуем фрейм вокруг выбранного пункта меню
     drawFrame(selectedMenuItem*MENU_BITMAP_SIZE,0,MENU_BITMAP_SIZE,MENU_BITMAP_SIZE);
-
+    yield();
+    
     // теперь рисуем прямоугольник с заливкой внизу от контента
     drawBox(0,FRAME_HEIGHT + MENU_BITMAP_SIZE - (HINT_FONT_HEIGHT + HINT_FONT_BOX_PADDING),FRAME_WIDTH,HINT_FONT_HEIGHT + HINT_FONT_BOX_PADDING);
-
+    yield();
+    
     setColorIndex(0);
 
-    yield();
     // теперь убираем линию под выбранным пунктом меню
     drawLine(selectedMenuItem*MENU_BITMAP_SIZE+1,MENU_BITMAP_SIZE-1,selectedMenuItem*MENU_BITMAP_SIZE+MENU_BITMAP_SIZE-2,MENU_BITMAP_SIZE-1);
-
+    yield();
+    
     // теперь рисуем название пункта меню
-    setFont(SELECTED_FONT);
-
-    const __FlashStringHelper* capt = items[selectedMenuItem]->GetCaption();
+    const char* capt = items[selectedMenuItem]->GetCaption();
+    
     #ifdef SCREEN_HINT_AT_RIGHT
     // рисуем подсказку, выровненную по правому краю
     u8g_uint_t strW = getStrWidth(capt);    
@@ -1055,14 +1069,17 @@ if(!needRedraw) // не надо ничего перерисовывать
 
     setColorIndex(1);
 
-    yield();
     // теперь просим пункт меню отрисоваться на экране
     items[selectedMenuItem]->draw(this);
-
+    yield();  
+  
   
   } while( nextPage() ); 
 
    needRedraw = false; // отрисовали всё, что нам надо - и сбросили флаг необходимости отрисовки
+#ifdef LCD_DEBUG
+   Serial.println(millis() - m);
+#endif   
 }
 
 #endif

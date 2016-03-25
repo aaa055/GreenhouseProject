@@ -2,8 +2,10 @@
 #define _HUMIDITY_MODULE_H
 
 #include "AbstractModule.h"
-#include "DHTSupport.h"
 #include "HumidityGlobals.h"
+
+#include "Si7021Support.h"
+#include "DHTSupport.h"
 
 typedef struct
 {
@@ -17,6 +19,8 @@ class HumidityModule : public AbstractModule // модуль управлени�
   private:
 
     DHTSupport dhtQuery; // класс опроса датчиков DHT
+    Si7021 si7021; // класс опроса датчиков Si7021
+
     uint16_t lastUpdateCall;
 
     HumidityAnswer dummyAnswer;

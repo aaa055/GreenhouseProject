@@ -8,6 +8,8 @@ void HumidityModule::Setup()
 {
   // настройка модуля тут
 
+  si7021.begin(); // настраиваем датчик Si7021
+
   dummyAnswer.IsOK = false;
 
   for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
@@ -33,8 +35,13 @@ const HumidityAnswer& HumidityModule::QuerySensor(uint8_t pin, HumiditySensorTyp
       return dhtQuery.read(pin,DHT_2x);
     }
     break;
-  }
 
+    case SI7021:
+    {
+      return si7021.read();
+    }
+    break;
+  }
   return dummyAnswer;
 }
 void HumidityModule::Update(uint16_t dt)

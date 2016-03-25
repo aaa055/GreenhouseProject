@@ -7,7 +7,6 @@
 #include "CommandBuffer.h"
 #include "CommandParser.h"
 #include "ModuleController.h"
-//#include "Menu.h"
 
 #ifdef AS_CONTROLLER
 #include "AlertModule.h"
@@ -291,12 +290,7 @@ void setup()
   controller.SetCommandParser(&commandParser);
 
 
-  // регистрируем модули
-  #ifdef USE_WIFI_MODULE
-  wiFiReceiveBuff.reserve(100);
-  controller.RegisterModule(&wifiModule);
-  #endif
-  
+  // регистрируем модули  
   #ifdef USE_PIN_MODULE  
   controller.RegisterModule(&pinModule);
   #endif
@@ -342,6 +336,11 @@ void setup()
   controller.RegisterModule(&logModule);
   controller.SetLogWriter(&logModule); // задаём этот модуль как модуль, который записывает события в лог
   #endif
+
+  #ifdef USE_WIFI_MODULE
+  wiFiReceiveBuff.reserve(100);
+  controller.RegisterModule(&wifiModule);
+  #endif 
 
  // модуль алертов регистрируем последним, т.к. он должен вычитать зависимости с уже зарегистрированными модулями
   #ifdef AS_CONTROLLER
@@ -402,6 +401,7 @@ void setup()
   Serial.println(freeRam());
 #endif
 
+
 }
 // эта функция вызывается после обновления состояния каждого модуля.
 // передаваемый параметр - указатель на обновлённый модуль.
@@ -426,8 +426,8 @@ void loop()
 {
 // отсюда можно добавлять любой сторонний код
 
-
 // до сюда можно добавлять любой сторонний код
+
   
     // вычисляем время, прошедшее с момента последнего вызова
     unsigned long curMillis = millis();
@@ -435,6 +435,7 @@ void loop()
     
     lastMillis = curMillis; // сохраняем последнее значение вызова millis()
     
+
   // смотрим, есть ли входящие команды
    if(commandsFromSerial.HasCommand())
    {
@@ -445,11 +446,10 @@ void loop()
        Stream* answerStream = commandsFromSerial.GetStream();
       // разобрали, назначили поток, с которого пришла команда
         cmd.SetIncomingStream(answerStream);
-        
+
       // запустили команду в обработку
        controller.ProcessModuleCommand(cmd);
-
-    
+ 
     } // if
     else
     {

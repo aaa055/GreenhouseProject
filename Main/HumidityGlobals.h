@@ -13,7 +13,8 @@ typedef struct
 typedef enum
 {
   DHT11, // сенсор DHT11
-  DHT2x // сенсор DHT21 и старше
+  DHT2x, // сенсор DHT21 и старше
+  SI7021 // цифровой сенсор Si7021 
   
 } HumiditySensorType; // какие сенсоры поддерживаем
 
