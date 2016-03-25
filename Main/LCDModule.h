@@ -9,6 +9,10 @@
 class LCDModule : public AbstractModule // модуль поддержки экрана 128х64 на чипе ST7920
 {
   private:
+
+  unsigned long waitInitCounter;
+  bool inited;
+  
   public:
     LCDModule() : AbstractModule(F("LCD")) {}
 

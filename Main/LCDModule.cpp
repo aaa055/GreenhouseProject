@@ -11,6 +11,9 @@ RotaryEncoder rotaryEncoder(ENCODER_A_PIN,ENCODER_B_PIN,ENCODER_PULSES_PER_CLICK
 
 void LCDModule::Setup()
 {
+waitInitCounter = 0;
+inited = false;
+  
 #ifdef USE_LCD_MODULE  
   rotaryEncoder.begin(); // инициализируем энкодер
 
@@ -21,6 +24,18 @@ void LCDModule::Setup()
 
 void LCDModule::Update(uint16_t dt)
 { 
+  // ждём три секунды до начала обновления, чтобы дать прчухаться всему остальному
+  if(!inited)
+  {
+     waitInitCounter += dt;
+     if(waitInitCounter > 3000)
+     {
+      waitInitCounter = 0;
+      inited = true;
+     }
+     return;
+  }
+  
 #ifdef USE_LCD_MODULE  
   rotaryEncoder.update(); // обновляем энкодер
   lcdMenu.update(dt);

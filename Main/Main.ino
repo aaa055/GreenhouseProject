@@ -488,5 +488,6 @@ void yield()
    #ifdef USE_LCD_MODULE
     rotaryEncoder.update(); // обновляем энкодер меню
    #endif
+
 }
 

@@ -177,7 +177,7 @@
 // типы показаний: StateTemperature - температура, StateLuminosity - освещенность, StateHumidity - влажность
 
 // определяем вид экрана ожидания тут
-#define WAIT_SCREEN_SENSORS W_S(StateTemperature,0,"STATE","T внутри") ,W_S(StateHumidity,0,"HUMIDITY","Влажность") ,W_S(StateLuminosity,0,"LIGHT","Освещенность")
+#define WAIT_SCREEN_SENSORS W_S(StateTemperature,0,"STATE","T внутри") ,W_S(StateHumidity,1,"HUMIDITY","Влажность") ,W_S(StateLuminosity,0,"LIGHT","Освещенность")
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
