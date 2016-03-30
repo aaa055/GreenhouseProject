@@ -195,7 +195,7 @@
 // для добавления показаний с датчика используйте конструкцию NW_S.
 // показания добавляются в NEXTION_WAIT_SCREEN_SENSORS, через запятую, например:
 // добавляем на экран ожидания показания температурного датчика с индексом 0
-// модуля STATE:  W_S(StateTemperature,0,"STATE")
+// модуля STATE:  NW_S(StateTemperature,0,"STATE")
 // Пример для нескольких датчиков:
 // #define NEXTION_WAIT_SCREEN_SENSORS NW_S(StateTemperature,0,"STATE") ,NW_S(StateTemperature,1,"STATE") ,NW_S(StateLuminosity,0,"LIGHT") ,NW_S(StateHumidity,0,"HUMIDITY")
 // типы показаний: StateTemperature - температура, StateLuminosity - освещенность, StateHumidity - влажность
