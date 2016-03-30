@@ -1,5 +1,5 @@
-#ifndef _REMOTE_MODULE_H
-#define _REMOTE_MODULE_H
+#ifndef _NEXTION_MODULE_H
+#define _NEXTION_MODULE_H
 
 #include "AbstractModule.h"
 #include "NextionController.h"
