@@ -61,6 +61,10 @@
 #include "LCDModule.h"
 #endif
 
+#ifdef USE_NEXTION_MODULE
+#include "NextionModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 #ifdef USE_READY_DIODE
@@ -188,6 +192,11 @@ DeltaModule deltaModule;
 #ifdef USE_LCD_MODULE
 // модуль LCD
 LCDModule lcdModule;
+#endif
+
+#ifdef USE_NEXTION_MODULE
+// модуль Nextion
+NextionModule nextionModule;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -330,6 +339,10 @@ void setup()
   
   #ifdef USE_LCD_MODULE
   controller.RegisterModule(&lcdModule);
+  #endif
+
+  #ifdef USE_NEXTION_MODULE
+  controller.RegisterModule(&nextionModule);
   #endif
 
   #ifdef USE_LOG_MODULE

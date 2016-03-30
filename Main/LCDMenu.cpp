@@ -1025,38 +1025,42 @@ if(!needRedraw || !backlightIsOn) // не надо ничего перерисо
 Serial.print("LCDMenu::draw() - ");
 unsigned long m = millis();
 #endif
+
+#define LCD_YIELD yield()
     
  size_t sz = items.size();
+ AbstractLCDMenuItem* selItem = items[selectedMenuItem];
+ const char* capt = selItem->GetCaption();
+ 
  firstPage();  
   do 
   {
-    yield();
+   LCD_YIELD;
     // рисуем бокс
     drawFrame(0,MENU_BITMAP_SIZE-1,FRAME_WIDTH,FRAME_HEIGHT+1);
     
     // рисуем пункты меню верхнего уровня
     for(size_t i=0;i<sz;i++)
     {
-      yield();
+      LCD_YIELD;
       drawXBMP( i*MENU_BITMAP_SIZE, 0, MENU_BITMAP_SIZE, MENU_BITMAP_SIZE, items[i]->GetIcon());
     }
     
     // теперь рисуем фрейм вокруг выбранного пункта меню
     drawFrame(selectedMenuItem*MENU_BITMAP_SIZE,0,MENU_BITMAP_SIZE,MENU_BITMAP_SIZE);
-    yield();
+    LCD_YIELD;
     
     // теперь рисуем прямоугольник с заливкой внизу от контента
     drawBox(0,FRAME_HEIGHT + MENU_BITMAP_SIZE - (HINT_FONT_HEIGHT + HINT_FONT_BOX_PADDING),FRAME_WIDTH,HINT_FONT_HEIGHT + HINT_FONT_BOX_PADDING);
-    yield();
+    LCD_YIELD;
     
     setColorIndex(0);
 
     // теперь убираем линию под выбранным пунктом меню
     drawLine(selectedMenuItem*MENU_BITMAP_SIZE+1,MENU_BITMAP_SIZE-1,selectedMenuItem*MENU_BITMAP_SIZE+MENU_BITMAP_SIZE-2,MENU_BITMAP_SIZE-1);
-    yield();
+    LCD_YIELD;
     
     // теперь рисуем название пункта меню
-    const char* capt = items[selectedMenuItem]->GetCaption();
     
     #ifdef SCREEN_HINT_AT_RIGHT
     // рисуем подсказку, выровненную по правому краю
@@ -1070,8 +1074,8 @@ unsigned long m = millis();
     setColorIndex(1);
 
     // теперь просим пункт меню отрисоваться на экране
-    items[selectedMenuItem]->draw(this);
-    yield();  
+    selItem->draw(this);
+    LCD_YIELD;  
   
   
   } while( nextPage() ); 

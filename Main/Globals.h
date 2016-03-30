@@ -21,6 +21,7 @@
 #define USE_LOG_MODULE // закомментировать, если не нужен модуль логгирования информации. Внимание: модуль работает только с модулем реального времени (USE_DS3231_REALTIME_CLOCK должна быть определена!)
 #define USE_DELTA_MODULE // закомментировать, если не нужно собирать показания дельт с датчиков
 #define USE_LCD_MODULE // закомментировать, если не нужен дисплей 128х64 на базе контроллера ST7920
+#define USE_NEXTION_MODULE // закомментировать, если не нужна поддержка Nextion
 #define USE_READY_DIODE // закомментировать, если не нужен диод, горящий при работе контроллера (пин номер 6)
 #define USE_WINDOWS_MANUAL_MODE_DIODE // закомментировать, если не нужен диод, мигающий в ручном режиме управления фрамугами (пин DIODE_WINDOWS_MANUAL_MODE_PIN)
 #define USE_WATERING_MANUAL_MODE_DIODE // закомментировать, если не нужен диод, мигающий в ручном режиме управления поливом (пин DIODE_WATERING_MANUAL_MODE_PIN)
@@ -178,6 +179,29 @@
 
 // определяем вид экрана ожидания тут
 #define WAIT_SCREEN_SENSORS W_S(StateTemperature,0,"STATE","T внутри") ,W_S(StateHumidity,1,"HUMIDITY","Влажность") ,W_S(StateLuminosity,0,"LIGHT","Освещенность")
+
+//--------------------------------------------------------------------------------------------------------------------------------
+// Настройки Nextion
+//--------------------------------------------------------------------------------------------------------------------------------
+#define NEXTION_SERIAL Serial3 // какой Serial используем для Nextion
+#define NEXTION_BAUD_RATE 9600 // скорость обмена командами с дисплеем
+#define NEXTION_SLEEP_DELAY 60 // через сколько секунд переходить в сон, если ничего не сделано на экране
+#define NEXTION_WAIT_TIMER 10000 // интервал таймера переключения на экран ожидания, мс
+#define NEXTION_ROTATION_INTERVAL 7000 // через сколько мс менять на экране ожидания показания с датчиков
+
+// настройки экрана ожидания
+#define NW_S(type,index, module) {(type),(index),(module)}
+// на экране ожидания можно выводить N показаний любых поддерживаемых системой датчиков.
+// для добавления показаний с датчика используйте конструкцию NW_S.
+// показания добавляются в NEXTION_WAIT_SCREEN_SENSORS, через запятую, например:
+// добавляем на экран ожидания показания температурного датчика с индексом 0
+// модуля STATE:  W_S(StateTemperature,0,"STATE")
+// Пример для нескольких датчиков:
+// #define NEXTION_WAIT_SCREEN_SENSORS NW_S(StateTemperature,0,"STATE") ,NW_S(StateTemperature,1,"STATE") ,NW_S(StateLuminosity,0,"LIGHT") ,NW_S(StateHumidity,0,"HUMIDITY")
+// типы показаний: StateTemperature - температура, StateLuminosity - освещенность, StateHumidity - влажность
+
+// определяем вид экрана ожидания тут
+#define NEXTION_WAIT_SCREEN_SENSORS NW_S(StateTemperature,0,"STATE") ,NW_S(StateHumidity,1,"HUMIDITY") ,NW_S(StateLuminosity,0,"LIGHT")
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
