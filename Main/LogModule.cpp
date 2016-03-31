@@ -275,6 +275,11 @@ void LogModule::TryAddFileHeader()
           statesFound |= StateHumidity;
           anyInterestedStatesFound = true;
         }
+        if(m->State.HasState(StateWaterFlowIncremental))
+        {
+          statesFound |= StateWaterFlowIncremental;
+          anyInterestedStatesFound = true;
+        }
         
         if(anyInterestedStatesFound)
         {
@@ -328,6 +333,16 @@ void LogModule::TryAddFileHeader()
       secondLine += LOG_HUMIDITY_TYPE;
       secondLine += COMMAND_DELIMITER;
       secondLine += String(StateHumidity);
+    }
+
+    if(statesFound & StateWaterFlowIncremental) // // есть датчик постоянного расхода воды
+    {
+      if(secondLine.length())
+        secondLine += LogModule::_COMMA;
+        
+      secondLine += LOG_WATERFLOW_TYPE;
+      secondLine += COMMAND_DELIMITER;
+      secondLine += String(StateWaterFlowIncremental);
     }
     
    if(secondLine.length()) // можем записывать в файл вторую строку с привязкой датчиков к типам
@@ -403,7 +418,14 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
   #else
   LOG_LUMINOSITY_TYPE;
   #endif
-  
+
+  String waterflowType = 
+  #ifdef LOG_CHANGE_TYPE_TO_IDX
+  String(StateWaterFlowIncremental);
+  #else
+  LOG_WATERFLOW_TYPE;
+  #endif
+ 
   // он сказал - поехали
   size_t cnt = mainController->GetModulesCount();
   // он махнул рукой
@@ -530,10 +552,51 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
              Serial.println(F("[ERR] LOG - No GetState(StateLuminosity)!"));
             }
             #endif
-            
+          
           } // for
           
         } // if(stateCnt > 0)
+
+
+        // освещенность обошли, обходим датчики постоянного расхода воды
+        stateCnt = m->State.GetStateCount(StateWaterFlowIncremental);
+        if(stateCnt > 0)
+        {
+          // нашли датчик постоянного расхода воды
+          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
+          {
+            OneState* os = m->State.GetStateByOrder(StateWaterFlowIncremental,stateIdx);// обходим все датчики последовательно, вне зависимости, какой у них индекс
+            if(os)
+            {
+              String sensorIdx = String(os->GetIndex());
+              WaterFlowPair lp = *os;
+              unsigned long dt = lp.Current;
+              
+              String sensorData = String(dt);
+              if(
+                #ifdef WRITE_ABSENT_SENSORS_DATA
+                true
+                #else
+                dt > 0 // только если у датчика уже есть сохранённый расход
+                #endif
+                ) 
+              {
+                  // пишем строку с данными
+                  WriteLogLine(hhmm,moduleName,waterflowType,sensorIdx,sensorData);
+              } // if
+
+            } // if(os)
+            #ifdef _DEBUG
+            else
+            {
+             Serial.println(F("[ERR] LOG - No GetState(StateWaterFlowIncremental)!"));
+            }
+            #endif
+          
+          } // for
+          
+        } // if(stateCnt > 0)
+
 
         
     } // for

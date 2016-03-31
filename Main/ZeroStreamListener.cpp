@@ -112,12 +112,24 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               uint8_t tempCount = mod->State.GetStateCount(StateTemperature);
               uint8_t humCount = mod->State.GetStateCount(StateHumidity);
               uint8_t lightCount = mod->State.GetStateCount(StateLuminosity);
+              uint8_t waterflowCountInstant = mod->State.GetStateCount(StateWaterFlowInstant);
+              uint8_t waterflowCount = mod->State.GetStateCount(StateWaterFlowIncremental);
 
-              if((tempCount + humCount + lightCount) < 1) // пустой модуль, без датчиков
+              if((tempCount + humCount + lightCount + waterflowCountInstant + waterflowCount) < 1) // пустой модуль, без интересующих нас датчиков
                 continue;
-              
+
+              uint8_t flags = 0;
+              if(tempCount) flags |= StateTemperature;
+              if(humCount) flags |= StateHumidity;
+              if(lightCount) flags |= StateLuminosity;
+              if(waterflowCountInstant) flags |= StateWaterFlowInstant;
+              if(waterflowCount) flags |= StateWaterFlowIncremental;
 
             // показание каждого модуля идут так:
+            
+            // 1 байт - флаги о том, какие датчики есть
+             pStream->write(WorkStatus::ToHex(flags).c_str());
+            
             // 1 байт - длина ID модуля
               moduleName = mod->GetID();
               uint8_t mnamelen = moduleName.length();
@@ -126,8 +138,9 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               pStream->write(moduleName.c_str());
             
             
-            // затем идут данные из модуля, сначала - показания температуры:
-            
+            // затем идут данные из модуля, сначала - показания температуры, если они есть:
+            if(tempCount)
+            {
             // 1 байт - кол-во датчиков температуры
               pStream->write(WorkStatus::ToHex(tempCount).c_str());
 
@@ -154,8 +167,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                 }
                  
               } // for
+            } // tempCount > 0
 
-              // затем идёт кол-во датчиков влажности, 1 байт.
+              // затем идёт кол-во датчиков влажности, 1 байт, если они есть
+            if(humCount)
+            {
               pStream->write(WorkStatus::ToHex(humCount).c_str());
               
               for(uint8_t cntr=0;cntr<humCount;cntr++)
@@ -181,8 +197,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                 }
 
               } // for
+            } // humCount > 0
 
-            // затем идут показания датчиков освещенности:
+            // затем идут показания датчиков освещенности, если они есть
+            if(lightCount)
+            {
             // 1 байт - кол-во датчиков
               pStream->write(WorkStatus::ToHex(lightCount).c_str());
             
@@ -212,6 +231,67 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                   }
 
                 } // for
+            } // lightCount > 0
+
+             // затем идут моментальные показания датчиков расхода воды, если они есть
+             if(waterflowCountInstant)
+             {
+            // 1 байт - кол-во датчиков
+              pStream->write(WorkStatus::ToHex(waterflowCountInstant).c_str());
+            
+            // затем идут пакеты с данными:
+                for(uint8_t cntr=0;cntr < waterflowCountInstant; cntr++)
+                {
+                  yield(); // немного даём поработать другим модулям
+                  
+                  OneState* os = mod->State.GetStateByOrder(StateWaterFlowInstant,cntr);
+                  // 1 байт - индекс датчика
+                  pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                  
+                  // 4 байта - его показания, мы пишем любые показания, даже если у датчика нет накопленных показаний
+                  WaterFlowPair wfp = *os;
+                  unsigned long wf = wfp.Current;
+                  byte* b = (byte*)&wf;
+                  
+                  pStream->write(WorkStatus::ToHex(*(b+3)).c_str());
+                  pStream->write(WorkStatus::ToHex(*(b+2)).c_str());
+                  pStream->write(WorkStatus::ToHex(*(b+1)).c_str());
+                  pStream->write(WorkStatus::ToHex(*b).c_str());
+
+                } // for
+             } // waterflowCountInstant > 0
+
+             // затем идут накопительные показания датчиков расхода воды, если они есть
+             if(waterflowCount)
+             {
+            // 1 байт - кол-во датчиков
+              pStream->write(WorkStatus::ToHex(waterflowCount).c_str());
+            
+            // затем идут пакеты с данными:
+                for(uint8_t cntr=0;cntr < waterflowCount; cntr++)
+                {
+                  yield(); // немного даём поработать другим модулям
+                  
+                  OneState* os = mod->State.GetStateByOrder(StateWaterFlowIncremental,cntr);
+                  // 1 байт - индекс датчика
+                  pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                  
+                  // 4 байта - его показания, мы пишем любые показания, даже если у датчика нет накопленных показаний
+                  WaterFlowPair wfp = *os;
+                  unsigned long wf = wfp.Current;
+                  byte* b = (byte*)&wf;
+                  
+                  pStream->write(WorkStatus::ToHex(*(b+3)).c_str());
+                  pStream->write(WorkStatus::ToHex(*(b+2)).c_str());
+                  pStream->write(WorkStatus::ToHex(*(b+1)).c_str());
+                  pStream->write(WorkStatus::ToHex(*b).c_str());
+
+                } // for
+             } // waterflowCount > 0
+
+
+            
+            // тут другие типы датчиков
 
             } // for
             

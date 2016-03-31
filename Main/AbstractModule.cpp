@@ -174,6 +174,20 @@ void OneState::Update(void* newData) // обновляем внутреннее 
         *ui1 = *newState; // пишем новое состояние освещенности
       } 
       break;
+
+      case StateWaterFlowInstant: // работаем с датчиками расхода воды
+      case StateWaterFlowIncremental:
+      {
+        unsigned long*  ui1 = (unsigned long*) Data;
+        unsigned long*  ui2 = (unsigned long*) PreviousData;
+
+        *ui2 = *ui1; // сохраняем предыдущее состояние расхода воды
+
+        unsigned long* newState = (unsigned long*) newData;
+        *ui1 = *newState; // пишем новое состояние расхода воды
+        
+      }
+      break;
       
     } // switch
  
@@ -224,6 +238,21 @@ void OneState::Init(ModuleStates state, uint8_t idx)
         PreviousData = ui2;
       }
       break;
+
+      case StateWaterFlowInstant:
+      case StateWaterFlowIncremental:
+      {
+        unsigned long*  ui1 = new unsigned long;
+        unsigned long*  ui2 = new unsigned long;
+
+        *ui1 = 0; // нет данных о расходе воды
+        *ui2 = 0;
+        
+        Data = ui1;
+        PreviousData = ui2;
+        
+      }
+      break;
     } // switch
   
 }
@@ -251,6 +280,13 @@ OneState::operator String() // выводим текущие значения к
       {
         long*  ul1 = (long*) Data;
         return String(*ul1);
+      }
+
+      case StateWaterFlowInstant:
+      case StateWaterFlowIncremental:
+      {
+        unsigned long*  ul1 = (unsigned long*) Data;
+        return String(*ul1);        
       }
     } // switch
 
@@ -314,6 +350,21 @@ OneState& OneState::operator=(const OneState& rhs)
           *this_ui2 = *rhs_ui2;
         }  
         break;
+
+        case StateWaterFlowInstant:
+        case StateWaterFlowIncremental:
+        {
+          unsigned long*  rhs_ui1 = (unsigned long*) rhs.Data;
+          unsigned long*  rhs_ui2 = (unsigned long*) rhs.PreviousData;
+  
+          unsigned long*  this_ui1 = (unsigned long*) Data;
+          unsigned long*  this_ui2 = (unsigned long*) PreviousData;
+
+          *this_ui1 = *rhs_ui1;
+          *this_ui2 = *rhs_ui2;
+        }  
+        break;
+      
       } // switch
   
 
@@ -353,6 +404,19 @@ bool OneState::IsChanged()
           return true; // состояние освещенности изменилось
         }  
         break;
+
+        case StateWaterFlowInstant:
+        case StateWaterFlowIncremental:
+        {
+          unsigned long*  ui1 = (unsigned long*) Data;
+          unsigned long*  ui2 = (unsigned long*) PreviousData;
+  
+         if(*ui1 != *ui2)
+          return true; // состояние освещенности изменилось
+        }  
+        break;
+
+      
       } // switch
 
  return false;
@@ -394,6 +458,18 @@ OneState::~OneState()
           delete ui2;
         }  
         break;
+
+        case StateWaterFlowInstant:
+        case StateWaterFlowIncremental:
+        {
+          unsigned long*  ui1 = (unsigned long*) Data;
+          unsigned long*  ui2 = (unsigned long*) PreviousData;
+  
+          delete ui1;
+          delete ui2;
+        }  
+        break;
+      
       } // switch
  
   
@@ -433,6 +509,18 @@ OneState::operator LuminosityPair()
   }
   return LuminosityPair(*((long*)PreviousData),*((long*)Data));   
 }
+OneState::operator WaterFlowPair()
+{
+  if(!(Type == StateWaterFlowInstant || Type == StateWaterFlowIncremental))
+  {
+  #ifdef _DEBUG
+    Serial.println(F("[ERR] OneState:operator WaterFlowPair() - !StateWaterFlow"));
+  #endif
+  return WaterFlowPair(0,0); // undefined behaviour
+  }
+  return WaterFlowPair(*((unsigned long*)PreviousData),*((unsigned long*)Data));   
+}
+
 #ifdef SAVE_RELAY_STATES
 OneState::operator RelayPair()
 {
@@ -524,6 +612,30 @@ OneState operator-(const OneState& left, const OneState& right)
             *thisLong = abs((*ui1 - *ui2));   
         }  
         break;
+
+        case StateWaterFlowInstant:
+        case StateWaterFlowIncremental:
+        {
+          unsigned long*  ui1 = (unsigned long*) left.Data;
+          unsigned long*  ui2 = (unsigned long*) right.Data;
+
+          unsigned long* thisUi = (unsigned long*) result.Data;
+
+          // получаем дельту текущих изменений
+          *thisUi = abs((*ui1 - *ui2));
+
+          ui1 = (unsigned long*) left.PreviousData;
+          ui2 = (unsigned long*) right.PreviousData;
+
+          thisUi = (unsigned long*) result.PreviousData;
+
+          // получаем дельту предыдущих изменений
+          *thisUi = abs((*ui1 - *ui2));
+  
+        }  
+        break;
+
+        
       } // switch
       
   return result;

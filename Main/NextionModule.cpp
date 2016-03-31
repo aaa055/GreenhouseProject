@@ -8,8 +8,6 @@ NextionWaitScreenInfo _waitScreenInfos[] =
   ,{0,0,""} // последний элемент пустой, заглушка для признака окончания списка
 };
 
-
-
 void nSleep(NextionAbstractController* Sender)
 {
   NextionModule* m = (NextionModule*) Sender->getUserData();

@@ -100,7 +100,9 @@ StateTemperature = 1, // есть температурные датчики
 StateRelay = 2, // есть реле
 #endif
 StateLuminosity = 4, // есть датчики освещенности
-StateHumidity = 8 // есть датчики влажности
+StateHumidity = 8, // есть датчики влажности
+StateWaterFlowInstant = 16, // есть датчик мгновенного расхода воды
+StateWaterFlowIncremental = 32 // есть датчик постоянного расхода воды
 
 } ModuleStates; // вид состояния
 
@@ -151,6 +153,19 @@ struct LuminosityPair
     LuminosityPair();
     LuminosityPair& operator=(const LuminosityPair&);
 };
+
+struct WaterFlowPair
+{
+  unsigned long Prev;
+  unsigned long Current;
+
+  WaterFlowPair(unsigned long p, unsigned long c) : Prev(p), Current(c) {}
+
+  private:
+    WaterFlowPair();
+    WaterFlowPair& operator=(const WaterFlowPair&);
+};
+
 class OneState
 {
     ModuleStates Type; // тип состояния (температура, освещенность, каналы реле)
@@ -176,6 +191,8 @@ class OneState
     operator TemperaturePair(); // получает температуру в виде пары предыдущее/текущее изменение
     operator HumidityPair(); // получает влажность в виде пары предыдущее/текущее изменение
     operator LuminosityPair(); // получает состояние освещенности в виде пары предыдущее/текущее изменение
+    operator WaterFlowPair(); // получает значения расхода воды в виде пары предыдущее/текущее изменение
+    
 #ifdef SAVE_RELAY_STATES  
     operator RelayPair(); // возвращает состояние реле
 #endif

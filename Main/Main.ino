@@ -65,6 +65,10 @@
 #include "NextionModule.h"
 #endif
 
+#ifdef USE_WATERFLOW_MODULE
+#include "WaterflowModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 #ifdef USE_READY_DIODE
@@ -197,6 +201,11 @@ LCDModule lcdModule;
 #ifdef USE_NEXTION_MODULE
 // модуль Nextion
 NextionModule nextionModule;
+#endif
+
+#ifdef USE_WATERFLOW_MODULE
+// модуль учёта расхода воды
+WaterflowModule waterflowModule;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -343,6 +352,10 @@ void setup()
 
   #ifdef USE_NEXTION_MODULE
   controller.RegisterModule(&nextionModule);
+  #endif
+
+  #ifdef USE_WATERFLOW_MODULE
+  controller.RegisterModule(&waterflowModule);
   #endif
 
   #ifdef USE_LOG_MODULE
