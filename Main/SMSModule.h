@@ -31,7 +31,7 @@ class SMSModule : public AbstractModule // модуль поддержки уп�
 
     uint8_t currentAction; // текущая операция, завершения которой мы ждём
     SMSActionsVector actionsQueue; // что надо сделать, шаг за шагом 
-    bool IsKnownAnswer(const String& line); // если ответ нам известный, то возвращает true
+    bool IsKnownAnswer(const String& line, bool& okFound); // если ответ нам известный, то возвращает true
     void SendCommand(const String& command, bool addNewLine=true); // посылает команды модулю GSM
     void ProcessQueue(); // разбираем очередь команд
     void InitQueue(); // инициализируем очередь

@@ -46,7 +46,8 @@ class WateringModule : public AbstractModule // модуль управлени�
   void HoldChannelState(int8_t channelIdx, WateringChannel* channel);  // поддерживаем состояние реле для канала.
 
 #ifdef USE_PUMP_RELAY   
-   void HoldPumpState(uint8_t wateringOption); // поддерживаем состояние реле насоса
+   void HoldPumpState(bool anyChannelActive); // поддерживаем состояние реле насоса
+   bool bPumpIsOn;
 #endif
 
    bool IsAnyChannelActive(uint8_t wateringOption); // возвращает true, если хотя бы один из каналов активен

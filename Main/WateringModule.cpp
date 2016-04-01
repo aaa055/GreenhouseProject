@@ -69,6 +69,7 @@ void WateringModule::Setup()
   // выключаем реле насоса  
   pinMode(PUMP_RELAY_PIN,OUTPUT);
   digitalWrite(PUMP_RELAY_PIN,RELAY_OFF);
+  bPumpIsOn = false;
 #endif
 
     // настраиваем режим работы перед стартом
@@ -215,17 +216,25 @@ bool WateringModule::IsAnyChannelActive(uint8_t wateringOption)
     return false;
 }
 #ifdef USE_PUMP_RELAY
-void WateringModule::HoldPumpState(uint8_t wateringOption)
+void WateringModule::HoldPumpState(bool anyChannelActive)
 {
   // поддерживаем состояние реле насоса
-    bool bPumpIsOn = false;
-    
-    if(settings->GetTurnOnPump() == 1) // если мы должны включать насос при поливе на любом из каналов
-      bPumpIsOn = IsAnyChannelActive(wateringOption); // то делаем это только тогда, когда полив включен на любом из каналов
+  if(settings->GetTurnOnPump() != 1) // не надо включать насос
+  {
+    if(bPumpIsOn) // если был включен - выключаем
+    {
+      bPumpIsOn = false;
+      digitalWrite(PUMP_RELAY_PIN,RELAY_OFF);
+    }
+    return; // и не будем ничего больше делать
+  }
+    if(bPumpIsOn != anyChannelActive) // состояние изменилось, пишем в пин только при смене состояния
+    {
+      bPumpIsOn = anyChannelActive;
 
-    // пишем в реле насоса вкл или выкл в зависимости от настройки "включать насос при поливе"
-    uint8_t state = bPumpIsOn ? RELAY_ON : RELAY_OFF;
-    digitalWrite(PUMP_RELAY_PIN,state); 
+     // пишем в реле насоса вкл или выкл в зависимости от настройки "включать насос при поливе"
+      digitalWrite(PUMP_RELAY_PIN,bPumpIsOn ? RELAY_ON : RELAY_OFF);
+    } 
 }
 #endif
 
@@ -236,14 +245,15 @@ void WateringModule::Update(uint16_t dt)
 #endif
   
 uint8_t wateringOption = settings->GetWateringOption(); // получаем опцию управления поливом
+bool anyChActive = IsAnyChannelActive(wateringOption);
 
-SAVE_STATUS(WATER_STATUS_BIT,IsAnyChannelActive(wateringOption) ? 1 : 0); // сохраняем состояние полива
+SAVE_STATUS(WATER_STATUS_BIT, anyChActive ? 1 : 0); // сохраняем состояние полива
 SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраняем режим работы полива
 
 
 #ifdef USE_PUMP_RELAY
   // держим состояние реле для насоса
-  HoldPumpState(wateringOption);
+  HoldPumpState(anyChActive);
 #endif
 
   #ifdef USE_DS3231_REALTIME_CLOCK

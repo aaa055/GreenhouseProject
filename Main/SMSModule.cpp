@@ -3,9 +3,14 @@
 #include "PDUClasses.h"
 #include "InteropStream.h"
 
-bool SMSModule::IsKnownAnswer(const String& line)
+bool SMSModule::IsKnownAnswer(const String& line, bool& okFound)
 {
-  return ( line == F("OK") || (line.indexOf(F("ERROR")) != -1) );
+  if(line == F("OK"))
+  {
+    okFound = true;
+    return true;
+  }
+  return ( line.indexOf(F("ERROR")) != -1 );
 }
 
 void SMSModule::Setup()
@@ -54,6 +59,7 @@ void SMSModule::ProcessAnswerLine(const String& line)
     Serial.print(F("<== Receive \"")); Serial.print(line); Serial.println(F("\" answer from NEOWAY..."));
   #endif
 
+  bool okFound;
 
   switch(currentAction)
   {
@@ -80,7 +86,7 @@ void SMSModule::ProcessAnswerLine(const String& line)
 
     case smaEchoOff: // выключили эхо
     {
-      if(IsKnownAnswer(line))
+      if(IsKnownAnswer(line,okFound))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println(F("[OK] => ECHO OFF processed."));
@@ -93,7 +99,7 @@ void SMSModule::ProcessAnswerLine(const String& line)
 
     case smaDisableCellBroadcastMessages: // запретили получение броадкастовых SMS
     {
-      if(IsKnownAnswer(line))
+      if(IsKnownAnswer(line,okFound))
       {
         #ifdef NEOWAY_DEBUG_MODE
           Serial.println(F("[OK] => Broadcast SMS disabled."));
@@ -107,9 +113,9 @@ void SMSModule::ProcessAnswerLine(const String& line)
 
     case smaAON: // включили АОН
     {
-      if(IsKnownAnswer(line))
+      if(IsKnownAnswer(line,okFound))
       {
-        if(line == F("OK"))
+        if(okFound)
         {
           #ifdef NEOWAY_DEBUG_MODE
             Serial.println(F("[OK] => AON is ON."));
@@ -130,9 +136,9 @@ void SMSModule::ProcessAnswerLine(const String& line)
 
     case smaPDUEncoding: // кодировка PDU
     {
-      if(IsKnownAnswer(line))
+      if(IsKnownAnswer(line,okFound))
       {
-        if(line == F("OK"))
+        if(okFound)
         {
           #ifdef NEOWAY_DEBUG_MODE
             Serial.println(F("[OK] => PDU encoding is set."));
@@ -154,9 +160,9 @@ void SMSModule::ProcessAnswerLine(const String& line)
 
     case smaSMSSettings: // установили режим отображения входящих SMS сразу в порт
     {
-      if(IsKnownAnswer(line))
+      if(IsKnownAnswer(line,okFound))
       {
-        if(line == F("OK"))
+        if(okFound)
         {
             #ifdef NEOWAY_DEBUG_MODE
               Serial.println(F("[OK] => SMS settings is set."));
@@ -199,7 +205,7 @@ void SMSModule::ProcessAnswerLine(const String& line)
 
     case smaHangUp: // положили трубку
     {
-      if(IsKnownAnswer(line))
+      if(IsKnownAnswer(line,okFound))
       {
              #ifdef NEOWAY_DEBUG_MODE
               Serial.println(F("[OK] => Hang up DONE."));
@@ -227,7 +233,7 @@ void SMSModule::ProcessAnswerLine(const String& line)
 
     case smaSmsActualSend: // отослали SMS
     {
-      if(IsKnownAnswer(line))
+      if(IsKnownAnswer(line,okFound))
       {
             #ifdef NEOWAY_DEBUG_MODE
               Serial.println(F("[OK] => SMS sent."));
@@ -242,7 +248,7 @@ void SMSModule::ProcessAnswerLine(const String& line)
 
     case smaClearAllSMS: // очистили все SMS
     {
-      if(IsKnownAnswer(line))
+      if(IsKnownAnswer(line,okFound))
       {
             #ifdef NEOWAY_DEBUG_MODE
               Serial.println(F("[OK] => saved SMS cleared."));
