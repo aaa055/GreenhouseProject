@@ -337,7 +337,7 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
   if(lastAnyChannelActiveFlag < 0)
   {
     // ещё не собирали статус, собираем первый раз
-    lastAnyChannelActiveFlag = IsAnyChannelActive(wateringOption) ? 1 : 0;
+    lastAnyChannelActiveFlag = anyChActive ? 1 : 0;
 
     if(lastAnyChannelActiveFlag)
     {
@@ -350,7 +350,7 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
   else
   {
     // уже собирали, надо проверить с текущим состоянием
-    byte nowAnyChannelActive = IsAnyChannelActive(wateringOption) ? 1 : 0;
+    byte nowAnyChannelActive = anyChActive ? 1 : 0;
     
     if(nowAnyChannelActive != lastAnyChannelActiveFlag)
     {
