@@ -1,5 +1,6 @@
 #include "WateringModule.h"
 #include "ModuleController.h"
+#include <EEPROM.h>
 
 static uint8_t WATER_RELAYS[] = { WATER_RELAYS_PINS }; // объявляем массив пинов реле
 
@@ -9,6 +10,14 @@ void WateringModule::Setup()
 
   settings = mainController->GetSettings();
 
+   #ifdef USE_DS3231_REALTIME_CLOCK
+    bIsRTClockPresent = true; // есть часы реального времени
+    DS3231Clock watch =  mainController->GetClock();
+    DS3231Time t =   watch.getTime();
+  #else
+    bIsRTClockPresent = false; // нет часов реального времени
+  #endif 
+
 #ifdef USE_WATERING_MANUAL_MODE_DIODE
   blinker.begin(DIODE_WATERING_MANUAL_MODE_PIN, F("WM"));  // настраиваем блинкер на нужный пин
 #endif
@@ -17,16 +26,32 @@ void WateringModule::Setup()
   dummyAllChannels.WateringTimer = 0; // обнуляем таймер полива для всех каналов
   dummyAllChannels.IsChannelRelayOn = false; // все реле выключены
 
+  #ifdef USE_DS3231_REALTIME_CLOCK
+    // смотрим, не поливали ли мы на всех каналах сегодня
+    uint8_t today = t.dayOfWeek;
+    uint16_t curReadAddr = WATERING_STATUS_EEPROM_ADDR;
+
+    unsigned long savedWorkTime = 0;
+    uint8_t savedDOW = EEPROM.read(curReadAddr++);
+
+     byte* writeAddr = (byte*) &savedWorkTime;
+    *writeAddr++ = EEPROM.read(curReadAddr++);
+    *writeAddr++ = EEPROM.read(curReadAddr++);
+    *writeAddr++ = EEPROM.read(curReadAddr++);
+    *writeAddr = EEPROM.read(curReadAddr++);
+    
+    if(savedDOW != 0xFF && savedWorkTime != 0xFFFFFFFF) // есть сохранённое время работы всех каналов на сегодня
+    {
+      if(savedDOW == today) // поливали на всех каналах сегодня, выставляем таймер канала так, как будто он уже поливался сколько-то времени
+        dummyAllChannels.WateringTimer = savedWorkTime + 1;
+      
+    }
+  #endif
+
   lastDOW = -1; // неизвестный день недели
   currentDOW = -1; // ничего не знаем про текущий день недели
   currentHour = -1; // и про текущий час тоже ничего не знаем
   lastAnyChannelActiveFlag = -1; // ещё не собирали активность каналов
-
-  #ifdef USE_DS3231_REALTIME_CLOCK
-    bIsRTClockPresent = true; // есть часы реального времени
-  #else
-    bIsRTClockPresent = false; // нет часов реального времени
-  #endif
 
    #ifdef SAVE_RELAY_STATES
    uint8_t relayCnt = WATER_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
@@ -63,6 +88,26 @@ void WateringModule::Setup()
     // настраиваем все каналы
     wateringChannels[i].IsChannelRelayOn = dummyAllChannels.IsChannelRelayOn;
     wateringChannels[i].WateringTimer = 0;
+
+    #ifdef USE_DS3231_REALTIME_CLOCK
+      // смотрим, не поливался ли уже канал сегодня?
+      curReadAddr = WATERING_STATUS_EEPROM_ADDR + (i+1)*5;
+      savedWorkTime = 0;
+
+      savedDOW = EEPROM.read(curReadAddr++);
+
+      writeAddr = (byte*) &savedWorkTime;
+     *writeAddr++ = EEPROM.read(curReadAddr++);
+     *writeAddr++ = EEPROM.read(curReadAddr++);
+     *writeAddr++ = EEPROM.read(curReadAddr++);
+     *writeAddr = EEPROM.read(curReadAddr++);
+     
+      if(savedDOW != 0xFF && savedWorkTime != 0xFFFFFFFF )
+      {
+        if(savedDOW == today) // поливали на канале в этот день недели, выставляем таймер канала так, как будто он уже поливался какое-то время
+          wateringChannels[i].WateringTimer = savedWorkTime + 1;
+      }
+    #endif
   } // for
 
 #ifdef USE_PUMP_RELAY
@@ -126,8 +171,9 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
         // то в среду надо полить 32 мин. Поэтому таймер полива переводим в нужный режим:
         // оставляем в нём недополитое время, чтобы учесть, что поливать надо, например, 32 минуты.
   
-        //               разница между полным и отработанным временем
-        channel->WateringTimer = -((timeToWatering*60000) - channel->WateringTimer); // загоняем в минус, чтобы добавить недостающие минуты к работе
+        // разница между полным и отработанным временем
+        if(channel->WateringTimer > 0) // только если таймер был больше нуля, иначе - в два раза увеличим время работы полива
+          channel->WateringTimer = -((timeToWatering*60000) - channel->WateringTimer); // загоняем в минус, чтобы добавить недостающие минуты к работе
       }
       
       channel->WateringTimer += dt; // прибавляем время работы
@@ -141,7 +187,24 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
       if(channel->WateringTimer > (timeToWatering*60000) + dt) // приплыли, надо выключать полив
       {
         channel->WateringTimer -= dt;// оставляем таймер застывшим на окончании полива, плюс маленькая дельта
-        channel->IsChannelRelayOn = false;
+
+        if(channel->IsChannelRelayOn) // если канал был включён, значит, он будет выключен, и мы однократно запишем в EEPROM нужное значение
+        {
+          
+          //Тут сохранение в EEPROM статуса, что мы на сегодня уже полили сколько-то времени
+          uint16_t wrAddr = WATERING_STATUS_EEPROM_ADDR + (channelIdx+1)*5; // channelIdx == -1 для всех каналов, поэтому прибавляем единичку
+          // сохраняем в EEPROM день недели, для которого запомнили значение таймера
+          EEPROM.write(wrAddr++,currentDOW);
+          
+          // сохраняем в EEPROM значение таймера канала
+          byte* readAddr = (byte*) &(channel->WateringTimer);
+          for(int i=0;i<4;i++)
+            EEPROM.write(wrAddr++,*readAddr++);
+            
+        } // if(channel->IsChannelRelayOn)
+
+        channel->IsChannelRelayOn = false; // выключаем реле
+      
       }
       else
         channel->IsChannelRelayOn = true; // ещё можем работать, продолжаем поливать
@@ -273,6 +336,12 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
       // начался новый день недели, принудительно переходим в автоматический режим работы
       // даже если до этого был включен полив командой от пользователя
       workMode = wwmAutomatic;
+
+      //Тут затирание в EEPROM предыдущего сохранённого значения о статусе полива на всех каналах
+      uint16_t wrAddr = WATERING_STATUS_EEPROM_ADDR;
+      EEPROM.write(wrAddr++,0); // для всех каналов
+      for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
+        EEPROM.write(wrAddr++,0); // для каждого канала по отдельности
     }
 
     currentDOW = t.dayOfWeek; // сохраняем текущий день недели
@@ -337,7 +406,7 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
   if(lastAnyChannelActiveFlag < 0)
   {
     // ещё не собирали статус, собираем первый раз
-    lastAnyChannelActiveFlag = anyChActive ? 1 : 0;
+    lastAnyChannelActiveFlag = IsAnyChannelActive(wateringOption) ? 1 : 0;
 
     if(lastAnyChannelActiveFlag)
     {
@@ -350,7 +419,7 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
   else
   {
     // уже собирали, надо проверить с текущим состоянием
-    byte nowAnyChannelActive = anyChActive ? 1 : 0;
+    byte nowAnyChannelActive = IsAnyChannelActive(wateringOption) ? 1 : 0;
     
     if(nowAnyChannelActive != lastAnyChannelActiveFlag)
     {
