@@ -339,8 +339,8 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
 
       //Тут затирание в EEPROM предыдущего сохранённого значения о статусе полива на всех каналах
       uint16_t wrAddr = WATERING_STATUS_EEPROM_ADDR;
-      EEPROM.write(wrAddr++,0); // для всех каналов
-      for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
+      uint8_t bytes_to_write = 5 + WATER_RELAYS_COUNT*5;
+      for(uint8_t i=0;i<bytes_to_write;i++)
         EEPROM.write(wrAddr++,0); // для каждого канала по отдельности
     }
 
