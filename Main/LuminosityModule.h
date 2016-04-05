@@ -72,6 +72,7 @@ class LuminosityModule : public AbstractModule // модуль управлен�
 
   uint8_t workMode;
   bool bRelaysIsOn; // включены ли реле досветки?
+  bool bLastRelaysIsOn; // флаг последнего состояния досветки
   uint16_t lastUpdateCall;
     
   public:

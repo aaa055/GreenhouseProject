@@ -62,12 +62,12 @@ void LuminosityModule::Setup()
 {
   #if LIGHT_SENSORS_COUNT > 0
   lightMeter.begin(); // запускаем первый датчик освещенности
-  State.AddState(StateLuminosity,0); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексов 0
+  State.AddState(StateLuminosity,0); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексом 0
   #endif
 
   #if LIGHT_SENSORS_COUNT > 1
   lightMeter2.begin(BH1750Address2);
-  State.AddState(StateLuminosity,1); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексов 1
+  State.AddState(StateLuminosity,1); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексом 1
   #endif
 
   
@@ -76,6 +76,7 @@ void LuminosityModule::Setup()
 
   workMode = lightAutomatic; // автоматический режим работы
   bRelaysIsOn = false; // все реле выключены
+  bLastRelaysIsOn = false; // состояние не изменилось
   
   SAVE_STATUS(LIGHT_STATUS_BIT,0); // сохраняем, что досветка выключена
   SAVE_STATUS(LIGHT_MODE_BIT,1); // сохраняем, что мы в автоматическом режиме работы
@@ -127,24 +128,29 @@ void LuminosityModule::Update(uint16_t dt)
 #endif
 
  // обновляем состояние всех реле управления досветкой
-  for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
-  {
-    digitalWrite(LAMP_RELAYS[i],bRelaysIsOn ? RELAY_ON : RELAY_OFF);
-
-    #ifdef SAVE_RELAY_STATES
-    uint8_t idx = i/8;
-    uint8_t bitNum1 = i % 8;
-    OneState* os = State.GetState(StateRelay,idx);
-    if(os)
-    {
-      RelayPair rp = *os;
-      uint8_t curRelayStates = rp.Current;
-      bitWrite(curRelayStates,bitNum1, bRelaysIsOn);
-      os->Update((void*)&curRelayStates);
-    }
-    #endif
+ if(bLastRelaysIsOn != bRelaysIsOn) // только если состояние с момента последнего опроса изменилось
+ {
+    bLastRelaysIsOn = bRelaysIsOn; // сохраняем текущее
     
-  } // for 
+    for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
+    {
+      digitalWrite(LAMP_RELAYS[i],bRelaysIsOn ? RELAY_ON : RELAY_OFF); // пишем в пин нужное состояние
+  
+      #ifdef SAVE_RELAY_STATES
+      uint8_t idx = i/8;
+      uint8_t bitNum1 = i % 8;
+      OneState* os = State.GetState(StateRelay,idx);
+      if(os)
+      {
+        RelayPair rp = *os;
+        uint8_t curRelayStates = rp.Current;
+        bitWrite(curRelayStates,bitNum1, bRelaysIsOn);
+        os->Update((void*)&curRelayStates);
+      }
+      #endif
+      
+    } // for 
+ } // if
 
 
   lastUpdateCall += dt;
