@@ -13,12 +13,24 @@ typedef enum
   
 } WateringWorkMode; // режим работы полива
 
-typedef struct
+class WateringChannel // канал для полива
 {
-  bool IsChannelRelayOn; // включено ли реле канала?
-  long WateringTimer; // таймер полива для канала
+  
+private:
+  
+  bool rel_on; // включено ли реле канала?
+  bool last_rel_on; // последнее состояние реле канала
+
+public:
+
+  bool IsChannelRelayOn() {return rel_on;}
+  void SetRelayOn(bool bOn) { last_rel_on = rel_on; rel_on = bOn; }
+  bool IsChanged() {return last_rel_on != rel_on; }
+  
+  unsigned long WateringTimer; // таймер полива для канала
+  unsigned long WateringDelta; // дельта дополива
     
-} WateringChannel; // канал для полива
+}; 
 
 class WateringModule : public AbstractModule // модуль управления поливом
 {
@@ -33,9 +45,9 @@ class WateringModule : public AbstractModule // модуль управлени�
 
   int8_t lastAnyChannelActiveFlag; // флаг последнего состояния активности каналов
 
-  int8_t lastDOW; // день недели с момента предыдущего опроса
-  int8_t currentDOW; // текущий день недели
-  int8_t currentHour; // текущий час
+  uint8_t lastDOW; // день недели с момента предыдущего опроса
+  uint8_t currentDOW; // текущий день недели
+  uint8_t currentHour; // текущий час
   bool bIsRTClockPresent; // флаг наличия модуля часов реального времени
 #ifdef USE_WATERING_MANUAL_MODE_DIODE
   BlinkModeInterop blinker;

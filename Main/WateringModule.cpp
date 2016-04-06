@@ -24,7 +24,8 @@ void WateringModule::Setup()
 
   workMode = wwmAutomatic; // автоматический режим работы
   dummyAllChannels.WateringTimer = 0; // обнуляем таймер полива для всех каналов
-  dummyAllChannels.IsChannelRelayOn = false; // все реле выключены
+  dummyAllChannels.WateringDelta = 0;
+  dummyAllChannels.SetRelayOn(false); // все реле выключены
 
   #ifdef USE_DS3231_REALTIME_CLOCK
     // смотрим, не поливали ли мы на всех каналах сегодня
@@ -46,11 +47,20 @@ void WateringModule::Setup()
         dummyAllChannels.WateringTimer = savedWorkTime + 1;
       
     }
+
+  lastDOW = t.dayOfWeek; // запоминаем прошлый день недели
+  currentDOW = t.dayOfWeek; // запоминаем текущий день недели
+  currentHour = t.hour; // запоминаем текущий час
+  
+  #else
+
+  // нет часов реального времени в прошивке
+  lastDOW = 0; // запоминаем прошлый день недели
+  currentDOW = 0; // запоминаем текущий день недели
+  currentHour = 0; // запоминаем текущий час
+    
   #endif
 
-  lastDOW = -1; // неизвестный день недели
-  currentDOW = -1; // ничего не знаем про текущий день недели
-  currentHour = -1; // и про текущий час тоже ничего не знаем
   lastAnyChannelActiveFlag = -1; // ещё не собирали активность каналов
 
    #ifdef SAVE_RELAY_STATES
@@ -80,14 +90,15 @@ void WateringModule::Setup()
     {
       RelayPair rp = *os;
       uint8_t curRelayStates = rp.Current;
-      bitWrite(curRelayStates,bitNum1, dummyAllChannels.IsChannelRelayOn);
+      bitWrite(curRelayStates,bitNum1, dummyAllChannels.IsChannelRelayOn());
       os->Update((void*)&curRelayStates);
     }
     #endif
 
     // настраиваем все каналы
-    wateringChannels[i].IsChannelRelayOn = dummyAllChannels.IsChannelRelayOn;
+    wateringChannels[i].SetRelayOn(false);
     wateringChannels[i].WateringTimer = 0;
+    wateringChannels[i].WateringDelta = 0;
 
     #ifdef USE_DS3231_REALTIME_CLOCK
       // смотрим, не поливался ли уже канал сегодня?
@@ -152,30 +163,44 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
      uint16_t timeToWatering = channelIdx == -1 ? settings->GetWateringTime() : settings->GetChannelWateringTime(channelIdx); // время полива (в минутах!)
 
 
+      // переход через день недели мы фиксируем однократно, поэтому нам важно его не пропустить.
+      // можем ли мы работать или нет - неважно, главное - правильно обработать переход через день недели.
+      
+      if(lastDOW != currentDOW)  // сначала проверяем, не другой ли день недели уже?
+      {
+        // начался другой день недели. Для одного дня недели у нас установлена
+        // продолжительность полива, поэтому, если мы поливали 28 минут вместо 30, например, во вторник, и перешли на среду,
+        // то в среду надо полить ещё 2 мин. Поэтому таймер полива переводим в нужный режим:
+        // оставляем в нём недополитое время, чтобы учесть, что поливать надо, например, ещё 2 минуты.
+
+         channel->WateringDelta = 0; // обнуляем дельту дополива, т.к. мы в этот день можем и не работать
+
+        if(bitRead(weekDays,currentDOW-1)) // можем работать в этот день недели, значит, надо скорректировать значение таймера
+        {
+          // вычисляем разницу между полным и отработанным временем
+            unsigned long wateringDelta = ((timeToWatering*60000) - channel->WateringTimer);
+            // запоминаем для канала дополнительную дельту для работы
+            channel->WateringDelta = wateringDelta;
+        }
+
+        channel->WateringTimer = 0; // сбрасываем таймер полива, т.к. начался новый день недели
+        
+      } // if(lastDOW != currentDOW)      
+
+
     // проверяем, установлен ли у нас день недели для полива, и настал ли час, с которого можно поливать
-    bool canWork = bitRead(weekDays,currentDOW-1) && currentHour >= startWateringTime;
+    bool canWork = bitRead(weekDays,currentDOW-1) && (currentHour >= startWateringTime);
   
     if(!canWork)
-     {            
-       channel->WateringTimer = 0; // в этот день недели и в этот час работать не можем, однозначно обнуляем таймер полива    
-       channel->IsChannelRelayOn = false; // выключаем реле
+     { 
+      //TODO: Закомментировал для теста, потому что меня смущает это обнуление!!!          
+      // channel->WateringTimer = 0; // в этот день недели и в этот час работать не можем, однозначно обнуляем таймер полива    
+       channel->SetRelayOn(false); // выключаем реле
      }
      else
      {
       // можем работать, смотрим, не вышли ли мы за пределы установленного интервала
- 
-      if(lastDOW != currentDOW)  // сначала проверяем, не другой ли день недели уже?
-      {
-        // начался другой день недели, в который мы можем работать. Для одного дня недели у нас установлена
-        // продолжительность полива, поэтому, если мы поливали 28 минут вместо 30, например, во вторник, и перешли на среду,
-        // то в среду надо полить 32 мин. Поэтому таймер полива переводим в нужный режим:
-        // оставляем в нём недополитое время, чтобы учесть, что поливать надо, например, 32 минуты.
-  
-        // разница между полным и отработанным временем
-        if(channel->WateringTimer > 0) // только если таймер был больше нуля, иначе - в два раза увеличим время работы полива
-          channel->WateringTimer = -((timeToWatering*60000) - channel->WateringTimer); // загоняем в минус, чтобы добавить недостающие минуты к работе
-      }
-      
+
       channel->WateringTimer += dt; // прибавляем время работы
   
       // проверяем, можем ли мы ещё работать
@@ -184,11 +209,12 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
       // просто отнимаем дельту времени из таймера, таким образом оставляя его застывшим по времени
       // окончания полива
   
-      if(channel->WateringTimer > (timeToWatering*60000) + dt) // приплыли, надо выключать полив
+      if(channel->WateringTimer > ((timeToWatering*60000) + channel->WateringDelta + dt)) // приплыли, надо выключать полив
       {
-        channel->WateringTimer -= dt;// оставляем таймер застывшим на окончании полива, плюс маленькая дельта
+        channel->WateringTimer -= (dt + channel->WateringDelta);// оставляем таймер застывшим на окончании полива, плюс маленькая дельта
+        channel->WateringDelta = 0; // сбросили дельту дополива
 
-        if(channel->IsChannelRelayOn) // если канал был включён, значит, он будет выключен, и мы однократно запишем в EEPROM нужное значение
+        if(channel->IsChannelRelayOn()) // если канал был включён, значит, он будет выключен, и мы однократно запишем в EEPROM нужное значение
         {
           
           //Тут сохранение в EEPROM статуса, что мы на сегодня уже полили сколько-то времени
@@ -197,50 +223,54 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
           EEPROM.write(wrAddr++,currentDOW);
           
           // сохраняем в EEPROM значение таймера канала
-          byte* readAddr = (byte*) &(channel->WateringTimer);
+          unsigned long ttw = timeToWatering*60000; // запишем полное время полива на сегодня
+          byte* readAddr = (byte*) &ttw;
           for(int i=0;i<4;i++)
             EEPROM.write(wrAddr++,*readAddr++);
             
-        } // if(channel->IsChannelRelayOn)
+        } // if(channel->IsChannelRelayOn())
 
-        channel->IsChannelRelayOn = false; // выключаем реле
+        channel->SetRelayOn(false); // выключаем реле
       
       }
       else
-        channel->IsChannelRelayOn = true; // ещё можем работать, продолжаем поливать
+        channel->SetRelayOn(true); // ещё можем работать, продолжаем поливать
      } // else
 
   
 }
 void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channel)
 {
-    uint8_t state = channel->IsChannelRelayOn ? RELAY_ON : RELAY_OFF;
+    uint8_t state = channel->IsChannelRelayOn() ? RELAY_ON : RELAY_OFF;
 
-    if(channelIdx == -1) // работаем со всеми каналами
+    if(channelIdx == -1) // работаем со всеми каналами, пишем в пин только тогда, когда состояние реле поменялось
     {
-      for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
-      {
-        digitalWrite(WATER_RELAYS[i],state);
-
-         #ifdef SAVE_RELAY_STATES
-         uint8_t idx = i/8; // выясняем, какой индекс
-         uint8_t bitNum1 = i % 8;
-         OneState* os = State.GetState(StateRelay,idx);
-         if(os)
-         {
-          RelayPair rp = *os;
-          uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
-          bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn);
-          os->Update((void*)&curRelayStates);
-         }
-         #endif
-      
-      }   
+      if(channel->IsChanged())
+        for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
+        {
+          digitalWrite(WATER_RELAYS[i],state);
+  
+           #ifdef SAVE_RELAY_STATES
+           uint8_t idx = i/8; // выясняем, какой индекс
+           uint8_t bitNum1 = i % 8;
+           OneState* os = State.GetState(StateRelay,idx);
+           if(os)
+           {
+            RelayPair rp = *os;
+            uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
+            bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn());
+            os->Update((void*)&curRelayStates);
+           }
+           #endif
+        
+        } // for   
+        
       return;
     } // if
 
-    // работаем с одним каналом
-    digitalWrite(WATER_RELAYS[channelIdx],state);
+    // работаем с одним каналом, пишем в пин только тогда, когда состояние реле поменялось
+    if(channel->IsChanged())
+      digitalWrite(WATER_RELAYS[channelIdx],state);
 
      #ifdef SAVE_RELAY_STATES 
      uint8_t idx = channelIdx/8; // выясняем, какой индекс
@@ -250,7 +280,7 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
      {
       RelayPair rp = *os;
       uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
-      bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn);
+      bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn());
       os->Update((void*)&curRelayStates);
      }
     #endif
@@ -260,19 +290,19 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
 bool WateringModule::IsAnyChannelActive(uint8_t wateringOption)
 {  
    if(workMode == wwmManual) // в ручном режиме мы управляем только всеми каналами сразу
-    return dummyAllChannels.IsChannelRelayOn; // поэтому смотрим состояние реле на всех каналах
+    return dummyAllChannels.IsChannelRelayOn(); // поэтому смотрим состояние реле на всех каналах
 
     // в автоматическом режиме мы можем рулить как всеми каналами вместе (wateringOption == wateringWeekDays),
     // так и по отдельности (wateringOption == wateringSeparateChannels). В этом случае надо выяснить, состояние каких каналов
     // смотреть, чтобы понять - активен ли кто-то.
 
     if(wateringOption == wateringWeekDays)
-      return dummyAllChannels.IsChannelRelayOn; // смотрим состояние реле на всех каналах
+      return dummyAllChannels.IsChannelRelayOn(); // смотрим состояние реле на всех каналах
 
     // тут мы рулим всеми каналами по отдельности, поэтому надо проверить - включено ли реле на каком-нибудь из каналов
     for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
     {
-      if(wateringChannels[i].IsChannelRelayOn)
+      if(wateringChannels[i].IsChannelRelayOn())
         return true;
     }
 
@@ -324,12 +354,15 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
     // обновляем состояние часов
     DS3231Clock watch =  mainController->GetClock();
     DS3231Time t =   watch.getTime();
-    
+
+    // Выпилил, т.к. настраиваем это всё в Setup, плюс привёл всё к беззнаковым типам, как и положено
+    /*
     if(currentDOW == -1) // если мы не сохраняли текущий день недели, то
     {
       currentDOW = t.dayOfWeek; // сохраним его, чтобы потом проверять переход через дни недели
       lastDOW = t.dayOfWeek; // сохраним и как предыдущий день недели
     }
+    */
 
     if(currentDOW != t.dayOfWeek)
     {
@@ -478,7 +511,7 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
               if(wateringOption == wateringOFF) // если выключено автоуправление поливом
               {
                 workMode = wwmManual; // переходим в ручной режим работы
-                dummyAllChannels.IsChannelRelayOn = false; // принудительно гасим полив на всех каналах
+                dummyAllChannels.SetRelayOn(false); // принудительно гасим полив на всех каналах
                 #ifdef USE_WATERING_MANUAL_MODE_DIODE
                 blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
                 #endif
@@ -580,7 +613,7 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
           // Хотя это - неправильно, должна быть возможность в автоматическом
           // режиме включать/выключать полив из модуля ALERT, без мигания диодом.
 
-          dummyAllChannels.IsChannelRelayOn = true; // включаем реле на всех каналах
+          dummyAllChannels.SetRelayOn(true); // включаем реле на всех каналах
 
           PublishSingleton.Status = true;
           PublishSingleton = STATE_ON;
@@ -602,7 +635,7 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
           // Хотя это - неправильно, должна быть возможность в автоматическом
           // режиме включать/выключать полив из модуля ALERT, без мигания диодом.
 
-          dummyAllChannels.IsChannelRelayOn = false; // выключаем реле на всех каналах
+          dummyAllChannels.SetRelayOn(false); // выключаем реле на всех каналах
 
           PublishSingleton.Status = true;
           PublishSingleton = STATE_OFF;
