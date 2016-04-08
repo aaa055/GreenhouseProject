@@ -7,7 +7,7 @@ static uint8_t TEMP_SENSORS[] = { TEMP_SENSORS_PINS };
 static uint8_t WINDOWS_RELAYS[] = { WINDOWS_RELAYS_PINS };
 #endif
 
-void WindowState::Setup(TempSensors* parent,ModuleState* state,  uint8_t relayChannel1, uint8_t relayChannel2)//, uint8_t relayPin1, uint8_t relayPin2)
+void WindowState::Setup(TempSensors* parent,ModuleState* state,  uint8_t relayChannel1, uint8_t relayChannel2)
 {
   RelayStateHolder = state;
   Parent = parent;
@@ -176,15 +176,35 @@ void TempSensors::WriteToShiftRegister() // ПИШЕМ В СДВИГОВЫЙ Р�
 
   if(!hasChanges)
     return;
-
+/*
   Serial.print("Writing to shift register: ");
   
   for(uint8_t i=0;i<shiftRegisterDataSize;i++)
     Serial.print(shiftRegisterData[i],BIN);
     
   Serial.println("");
+*/
+   if(shiftRegisterDataSize > 0)
+   {
+    
+    //Тут пишем в сдвиговый регистр
+    
+    // Отключаем вывод на регистре
+    digitalWrite(WINDOWS_SHIFT_LATCH_PIN, LOW);
+
+    // проталкиваем все байты один за другим, начиная со старшего к младшему
+    
+      for(uint8_t i=shiftRegisterDataSize-1;i>=0;i++)
+      {
+        // проталкиваем байт в регистр
+        shiftOut(WINDOWS_SHIFT_DATA_PIN, WINDOWS_SHIFT_CLOCK_PIN, MSBFIRST, shiftRegisterData[i]);
+      } // for
+
+      // "защелкиваем" регистр, чтобы байт появился на его выходах
+      digitalWrite(WINDOWS_SHIFT_LATCH_PIN, HIGH);
+    
+   } // if
   
-  //TODO: Тут пишем в сдвиговый регистр!!!
 
   // теперь сохраняем последнее запомненное состояние
    for(uint8_t i=0;i<shiftRegisterDataSize;i++)
@@ -658,10 +678,12 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                    PublishSingleton = PROP_TEMP;
                     
                     // получаем значение всех датчиков
-                    for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
+                    uint8_t _tempCnt = State.GetStateCount(StateTemperature);
+                    
+                    for(uint8_t i=0;i<_tempCnt;i++)
                     {
   
-                       OneState* os = State.GetState(StateTemperature,i);
+                       OneState* os = State.GetStateByOrder(StateTemperature,i);
                        if(os)
                        {
                           TemperaturePair tp = *os;
@@ -675,7 +697,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                 {
                    // по индексу
                 uint8_t sensorIdx = commandRequested.toInt();
-                if(sensorIdx >= SUPPORTED_SENSORS)
+                if(sensorIdx >= State.GetStateCount(StateTemperature) )
                 {
                    if(wantAnswer)
                       PublishSingleton = NOT_SUPPORTED; // неверный индекс
@@ -687,7 +709,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
 
                     if(wantAnswer)
                     {
-                        OneState* os = State.GetState(StateTemperature,sensorIdx);
+                        OneState* os = State.GetStateByOrder(StateTemperature,sensorIdx);
                         if(os)
                         {
                           TemperaturePair tp = *os;

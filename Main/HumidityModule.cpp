@@ -107,21 +107,23 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
           if(wantAnswer) 
           {
             PublishSingleton = PROP_CNT; 
-            PublishSingleton << PARAM_DELIMITER << SUPPORTED_HUMIDITY_SENSORS;
+            uint8_t _cnt = State.GetStateCount(StateHumidity);
+            PublishSingleton << PARAM_DELIMITER << _cnt;
           }
         } // PROP_CNT
         else
         if(param == ALL) // запросили показания со всех датчиков
         {
           PublishSingleton.Status = true;
+          uint8_t _cnt = State.GetStateCount(StateHumidity);
           if(wantAnswer) 
-            PublishSingleton = SUPPORTED_HUMIDITY_SENSORS;
+            PublishSingleton = _cnt;
           
-          for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
+          for(uint8_t i=0;i<_cnt;i++)
           {
 
-             OneState* stateTemp = State.GetState(StateTemperature,i);
-             OneState* stateHumidity = State.GetState(StateHumidity,i);
+             OneState* stateTemp = State.GetStateByOrder(StateTemperature,i);
+             OneState* stateHumidity = State.GetStateByOrder(StateHumidity,i);
              if(stateTemp && stateHumidity)
              {
                 TemperaturePair tp = *stateTemp;
@@ -140,7 +142,9 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
         {
           // запросили показания с датчика по индексу
           uint8_t idx = param.toInt();
-          if(idx >= SUPPORTED_HUMIDITY_SENSORS)
+          uint8_t _cnt = State.GetStateCount(StateHumidity);
+          
+          if(idx >= _cnt)
           {
             // плохой индекс
             if(wantAnswer) 
@@ -151,8 +155,8 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
              if(wantAnswer) 
               PublishSingleton = param;
               
-             OneState* stateTemp = State.GetState(StateTemperature,idx);
-             OneState* stateHumidity = State.GetState(StateHumidity,idx);
+             OneState* stateTemp = State.GetStateByOrder(StateTemperature,idx);
+             OneState* stateHumidity = State.GetStateByOrder(StateHumidity,idx);
              if(stateTemp && stateHumidity)
              {
                 PublishSingleton.Status = true;
