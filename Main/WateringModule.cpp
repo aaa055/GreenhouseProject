@@ -40,6 +40,8 @@ void WateringModule::Setup()
     *writeAddr++ = EEPROM.read(curReadAddr++);
     *writeAddr++ = EEPROM.read(curReadAddr++);
     *writeAddr = EEPROM.read(curReadAddr++);
+
+   // Serial.println(savedWorkTime);
     
     if(savedDOW != 0xFF && savedWorkTime != 0xFFFFFFFF) // есть сохранённое время работы всех каналов на сегодня
     {
@@ -112,6 +114,8 @@ void WateringModule::Setup()
      *writeAddr++ = EEPROM.read(curReadAddr++);
      *writeAddr++ = EEPROM.read(curReadAddr++);
      *writeAddr = EEPROM.read(curReadAddr++);
+
+     //Serial.println(savedWorkTime);
      
       if(savedDOW != 0xFF && savedWorkTime != 0xFFFFFFFF )
       {

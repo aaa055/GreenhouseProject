@@ -237,7 +237,7 @@ void TempSensors::SetupWindows()
   for(uint8_t i=0, j=0;i<SUPPORTED_WINDOWS;i++, j+=2)
   {
       // раздаём каналы реле: первому окну - 0,1, второму - 2,3 и т.д.
-      Windows[i].Setup(this, &State,j,j+1);//,WINDOWS_RELAYS[j],WINDOWS_RELAYS[j+1]); 
+      Windows[i].Setup(this, &State,j,j+1);
 
       #ifdef USE_WINDOWS_SHIFT_REGISTER // если используем сдвиговые регистры
         // ничего не делаем, поскольку у нас все реле будут выключены после первоначальной настройки
@@ -261,6 +261,7 @@ void TempSensors::Setup()
 {
   // настройка модуля тут
    workMode = wmAutomatic; // автоматический режим работы по умолчанию
+   
 #ifdef USE_WINDOWS_MANUAL_MODE_DIODE
   blinker.begin(DIODE_WINDOWS_MANUAL_MODE_PIN,F("SM"));  // настраиваем блинкер на нужный пин
 #endif  
@@ -269,7 +270,6 @@ void TempSensors::Setup()
   lastUpdateCall = 0;
   smallSensorsChange = 0;
   
-
    // добавляем датчики температуры
    
    tempData.Whole = 0;
@@ -320,8 +320,6 @@ void TempSensors::Setup()
     // надо именно побитово, т.к. значение RELAY_OFF может быть 1, и в этом случае
     // все биты должны быть установлены в 1.
 
-    for(uint8_t i=0;i<shiftRegisterDataSize;i++)
-    {
       uint8_t bOff = 0;
       uint8_t bOn = 0;
       for(uint8_t j=0;j<8;j++)
@@ -329,7 +327,9 @@ void TempSensors::Setup()
         bOff |= (RELAY_OFF << j);
         bOn |= (RELAY_ON << j);
       }
-      
+
+    for(uint8_t i=0;i<shiftRegisterDataSize;i++)
+    {      
       // сохранили разные значения первоначально, поскольку мы хотим записать их впервые
       shiftRegisterData[i] = bOff;
       lastShiftRegisterData[i] = bOn;
@@ -337,7 +337,8 @@ void TempSensors::Setup()
     } // for
       
     WriteToShiftRegister(); // пишем первоначальное состояние реле в сдвиговый регистр
-   #endif
+    
+   #endif // USE_WINDOWS_SHIFT_REGISTER
 
 
    SAVE_STATUS(WINDOWS_MODE_BIT,1); // сохраняем режим работы окон
@@ -663,8 +664,9 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                  PublishSingleton.Status = true;
                  if(wantAnswer) 
                  {
+                  uint8_t _tempCnt = State.GetStateCount(StateTemperature);
                   PublishSingleton = PROP_TEMP_CNT;
-                  PublishSingleton << PARAM_DELIMITER << State.GetStateCount(StateTemperature);
+                  PublishSingleton << PARAM_DELIMITER << _tempCnt;
                  }
               } // if
               else // запросили по индексу или запрос ALL

@@ -60,14 +60,18 @@ long BH1750Support::GetCurrentLuminosity()
 
 void LuminosityModule::Setup()
 {
+
+  for(uint8_t i=0;i<LIGHT_SENSORS_COUNT;i++)
+  {
+    State.AddState(StateLuminosity,i); // добавляем в состояние нужные индексы датчиков
+  } // for
+  
   #if LIGHT_SENSORS_COUNT > 0
   lightMeter.begin(); // запускаем первый датчик освещенности
-  State.AddState(StateLuminosity,0); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексом 0
   #endif
 
   #if LIGHT_SENSORS_COUNT > 1
-  lightMeter2.begin(BH1750Address2);
-  State.AddState(StateLuminosity,1); // добавляем в состояние модуля флаг, что мы поддерживаем освещенность, и у нас есть датчик с индексом 1
+  lightMeter2.begin(BH1750Address2); // запускаем второй датчик освещённости
   #endif
 
   
@@ -319,6 +323,39 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
       PublishSingleton.Status = true;
       if(wantAnswer) 
       {
+         PublishSingleton = "";
+        // запросили показания с датчиков. У нас должно выводиться минимум 2 показания,
+        // для обеспечения нормальной работы конфигуратора. Поэтому мы добавляем недостающие показания
+        // как показания NO_LUMINOSITY_DATA для тех датчиков, которых нет в прошивке.
+
+         uint8_t _cnt = State.GetStateCount(StateLuminosity);
+         uint8_t _written = 0;
+         
+         for(uint8_t i=0;i<_cnt;i++)
+         {
+            OneState* os = State.GetStateByOrder(StateLuminosity,i);
+            if(os)
+            {
+              LuminosityPair lp = *os;
+
+              if(_written > 0)
+                PublishSingleton << PARAM_DELIMITER;
+
+              PublishSingleton << lp.Current;
+                
+              _written++;
+              
+            } // if(os)
+         } // for
+
+         // добиваем до двух датчиков минимум
+         for(uint8_t i=_written; i<2;i++)
+         {
+           PublishSingleton << PARAM_DELIMITER;
+           PublishSingleton << NO_LUMINOSITY_DATA;
+         } // for
+        
+        /*
         PublishSingleton = 
      #if LIGHT_SENSORS_COUNT > 0
       (lightMeter.GetCurrentLuminosity());
@@ -333,6 +370,7 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
       #else
         NO_LUMINOSITY_DATA;
       #endif
+      */
       }
     }
     else // есть аргументы

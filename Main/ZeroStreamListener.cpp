@@ -57,6 +57,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton = SMS_NUMBER_COMMAND; 
           PublishSingleton << PARAM_DELIMITER << mainController->GetSettings()->GetSmsPhoneNumber();
         }
+        /*
         else if(t == HAS_CHANGES_COMMAND) // есть ли изменения в состоянии модулей?
         {
           // CTGET=0|HAS_CHANGES - ВЕРНЕТ 1, ЕСЛИ ЕСТЬ ИЗМЕНЕНИЯ, И 0 - ЕСЛИ НЕТ
@@ -78,6 +79,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
              PublishSingleton.Status = true;
              PublishSingleton = (hasChanges ? STATE_ON_ALT : STATE_OFF_ALT);
         }
+        */
         else if(t == STATUS_COMMAND) // получить статус всего железного добра
         {
           if(wantAnswer)
@@ -301,6 +303,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           } // wantAnswer
           
         } // STATUS_COMMAND
+        /*
         else if(t == LIST_CHANGES_COMMAND) // какие изменения в состоянии модулей?
         {
           // CTGET=0|LIST_CHANGES - ВЕРНЕТ список всех измененных состояний во всех модулях
@@ -347,7 +350,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
              PublishSingleton.AddModuleIDToAnswer = false;
              PublishSingleton.Status = true;
             
-        }        
+        }
+        */        
         else if(t == REGISTERED_MODULES_COMMAND) // пролистать зарегистрированные модули
         {
           PublishSingleton.AddModuleIDToAnswer = false;
@@ -369,6 +373,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               
           } // for
         }
+        /*
         else if(t == PROPERTIES_COMMAND) // запросили свойства модуля
         {
         // запросили чтение свойств
@@ -498,6 +503,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           } // else
           
         } // PROPERTIES_COMMAND
+        */
         else
         {
             // неизвестная команда
@@ -565,8 +571,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           
        }
        #ifdef USE_DS3231_REALTIME_CLOCK
-       else
-       if(t == SETTIME_COMMAND)
+       else if(t == SETTIME_COMMAND)
        {
          // установка даты/времени
          String rawDatetime = command.GetArg(1);
@@ -634,7 +639,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
          } // if
        }
        #endif
-       
+       /*
        else if(t == PROPERTIES_COMMAND)
        {
         // запросили установку свойств
@@ -769,6 +774,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           } // else
         
        } // PROPERTIES_COMMAND
+       */
        else
        {
          // неизвестная команда
