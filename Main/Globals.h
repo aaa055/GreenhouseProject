@@ -11,6 +11,7 @@
 #define USE_DS3231_REALTIME_CLOCK // закомментировать, если не хотим использовать модуль реального времени
 #define USE_PIN_MODULE // закомментировать, если не нужен модуль управления пинами
 #define USE_TEMP_SENSORS // закомментировать, если не нужно управление окнами по температуре
+//#define USE_WINDOWS_SHIFT_REGISTER // использовать ли сдвиговый регистр 74HC595 для управления окнами, вместо контроля пинов напрямую
 #define USE_LOOP_MODULE // закомментировать, если не нужна поддержка модуля LOOP
 #define USE_STAT_MODULE // закомментировать, если не нужна поддержка модуля статистики (FREERAM, UPTIME, DATETIME)
 //#define USE_SMS_MODULE // закомментировать, если не нужна поддержка управления по SMS
@@ -121,7 +122,14 @@
 // Как подключается мотор: контакты двигателя подключаются к общим (COM) контактам пары реле.
 // Плюс питания - к NO (нормально разомкнутым контактам пары реле).
 // Минус питания - к NC (нормально замкнутым контактам реле).
+
+// Настройки пинов: если USE_WINDOWS_SHIFT_REGISTER не определена - через эти пины будут управляться реле
 #define WINDOWS_RELAYS_PINS 40,41,42,43,44,45,46,47 
+
+// Если USE_WINDOWS_SHIFT_REGISTER определена - управление окнами пойдёт через сдвиговый регистр по пинам, указанным ниже
+#define WINDOWS_SHIFT_LATCH_PIN 40 // пин защёлки
+#define WINDOWS_SHIFT_DATA_PIN 41 // пин данных
+#define WINDOWS_SHIFT_CLOCK_PIN  42 // пин тактирования 
 
 //--------------------------------------------------------------------------------------------------------------------------------
 // настройки модуля управления поливом
@@ -313,6 +321,58 @@
 #if defined(USE_LCD_MODULE) && defined(USE_NEXTION_MODULE)
 #error PLEASE DONT USE TWO OR MORE DISPLAYS !!!
 #endif
+
+//--------------------------------------------------------------------------------------------------------------------------------
+// Проверяем правильность распределения аппаратных UART между модулями
+//--------------------------------------------------------------------------------------------------------------------------------
+#ifdef USE_SMS_MODULE
+
+  #ifdef USE_WIFI_MODULE
+    #if WIFI_SERIAL == NEOWAY_SERIAL
+    #error UART CONFLICT DETECTED !!!
+    #endif
+  #endif // USE_WIFI_MODULE
+
+  #ifdef USE_NEXTION_MODULE
+    #if NEXTION_SERIAL == NEOWAY_SERIAL
+    #error UART CONFLICT DETECTED !!!
+    #endif
+  #endif // USE_NEXTION_MODULE
+
+  
+#endif // USE_SMS_MODULE
+
+#ifdef USE_WIFI_MODULE
+
+  #ifdef USE_SMS_MODULE
+    #if WIFI_SERIAL == NEOWAY_SERIAL
+    #error UART CONFLICT DETECTED !!!
+    #endif
+  #endif // USE_SMS_MODULE
+
+  #ifdef USE_NEXTION_MODULE
+    #if NEXTION_SERIAL == WIFI_SERIAL
+    #error UART CONFLICT DETECTED !!!
+    #endif
+  #endif // USE_NEXTION_MODULE  
+
+#endif // USE_WIFI_MODULE
+
+#ifdef USE_NEXTION_MODULE
+
+  #ifdef USE_SMS_MODULE
+    #if NEXTION_SERIAL == NEOWAY_SERIAL
+    #error UART CONFLICT DETECTED !!!
+    #endif
+  #endif // USE_SMS_MODULE
+
+  #ifdef USE_WIFI_MODULE
+    #if WIFI_SERIAL == NEXTION_SERIAL
+    #error UART CONFLICT DETECTED !!!
+    #endif
+  #endif // USE_WIFI_MODULE  
+
+#endif // USE_NEXTION_MODULE
 
 //--------------------------------------------------------------------------------------------------------------------------------
 // ВСЕ НАСТРОЙКИ НИЖЕ - МЕНЯЕМ НА СВОЙ СТРАХ И РИСК, С ПОЛНЫМ ПОНИМАНИЕМ ТОГО, ЧТО ХОТИМ СДЕЛАТЬ. 

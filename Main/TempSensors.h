@@ -20,6 +20,8 @@ typedef enum
   
 } DIRECTION;
 
+class TempSensors;
+
 class WindowState
 {
  private:
@@ -35,9 +37,10 @@ class WindowState
 
   uint8_t RelayChannel1;
   uint8_t RelayChannel2;
-  uint8_t RelayPin1;
-  uint8_t RelayPin2;
+ // uint8_t RelayPin1;
+ // uint8_t RelayPin2;
   ModuleState* RelayStateHolder;
+  TempSensors* Parent;
 
 public:
 
@@ -51,7 +54,7 @@ public:
 
   void UpdateState(uint16_t dt); // обновляет состояние фрамуги
   
-  void Setup(ModuleState* state, uint8_t relayChannel1, uint8_t relayChannel2, uint8_t relayPin1, uint8_t relayPin2); // настраиваем перед пуском
+  void Setup(TempSensors* parent,ModuleState* state, uint8_t relayChannel1, uint8_t relayChannel2/*, uint8_t relayPin1, uint8_t relayPin2*/); // настраиваем перед пуском
 
 
   WindowState() 
@@ -79,6 +82,13 @@ class TempSensors : public AbstractModule // модуль опроса темп�
     WindowState Windows[SUPPORTED_WINDOWS];
     void SetupWindows();
 
+    #ifdef USE_WINDOWS_SHIFT_REGISTER
+    void WriteToShiftRegister(); // пишем в сдвиговый регистр
+    uint8_t* shiftRegisterData; // данные для сдвигового регистра
+    uint8_t* lastShiftRegisterData; // последние данные, запиханные в сдвиговый регистр (чтоб не дёргать каждый раз, а только при изменениях)
+    uint8_t shiftRegisterDataSize; // кол-во байт, хранящихся в массиве для сдвигового регистра
+    #endif
+
 
     uint8_t workMode; // текущий режим работы (автоматический или ручной)
     // добавляем сюда небольшое значение, когда меняется режим работы.
@@ -102,6 +112,8 @@ class TempSensors : public AbstractModule // модуль опроса темп�
 
     uint8_t GetWorkMode() {return workMode;}
     void SetWorkMode(uint8_t m) {workMode = m;}
+
+    void SaveChannelState(uint8_t channel, uint8_t state); // сохраняем состояние каналов
 
 };
 

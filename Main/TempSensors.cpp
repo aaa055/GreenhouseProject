@@ -2,27 +2,20 @@
 #include "ModuleController.h"
 
 static uint8_t TEMP_SENSORS[] = { TEMP_SENSORS_PINS };
-static uint8_t WINDOWS_RELAYS[] = { WINDOWS_RELAYS_PINS };
 
-void WindowState::Setup(ModuleState* state,  uint8_t relayChannel1, uint8_t relayChannel2, uint8_t relayPin1, uint8_t relayPin2)
+#ifndef USE_WINDOWS_SHIFT_REGISTER
+static uint8_t WINDOWS_RELAYS[] = { WINDOWS_RELAYS_PINS };
+#endif
+
+void WindowState::Setup(TempSensors* parent,ModuleState* state,  uint8_t relayChannel1, uint8_t relayChannel2)//, uint8_t relayPin1, uint8_t relayPin2)
 {
   RelayStateHolder = state;
+  Parent = parent;
 
-  // запоминаем, какие каналы модуля реле мы используем
+  // запоминаем, какие каналы модуля реле мы используем (в случае со сдвиговым регистром - это номера битов)
   RelayChannel1 = relayChannel1;
   RelayChannel2 = relayChannel2;
 
-  // запоминаем, на каких пинах висит управление этой форточкой
-  RelayPin1 = relayPin1;
-  RelayPin2 = relayPin2;
-
-  // настраиваем пины, через которые мы будем рулить реле
-  pinMode(RelayPin1,OUTPUT);
-  pinMode(RelayPin2, OUTPUT);
-
-  // выключаем реле
-  digitalWrite(RelayPin1,RELAY_OFF);
-  digitalWrite(RelayPin2,RELAY_OFF);
 }
 
 bool WindowState::ChangePosition(uint8_t dir, unsigned long newPos)
@@ -78,9 +71,10 @@ bool WindowState::ChangePosition(uint8_t dir, unsigned long newPos)
 }
 void WindowState::SwitchRelays(uint8_t rel1State, uint8_t rel2State)
 {
-  //Здесь включаем реле, устанавливая на нужный пин переданное состояние
-  digitalWrite(RelayPin1,rel1State);
-  digitalWrite(RelayPin2,rel2State);
+
+  // уведомляем родителя, что такой-то канал имеет такое-то состояние, он сам разберётся, что с этим делать
+  Parent->SaveChannelState(RelayChannel1,rel1State);
+  Parent->SaveChannelState(RelayChannel2,rel2State);
 
   #ifdef SAVE_RELAY_STATES
   if(RelayStateHolder) // сообщаем, что реле мы выключили или включили
@@ -166,16 +160,80 @@ void WindowState::UpdateState(uint16_t dt)
     SwitchRelays(bRelay1State,bRelay2State);
   
 }
+#ifdef USE_WINDOWS_SHIFT_REGISTER
+void TempSensors::WriteToShiftRegister() // ПИШЕМ В СДВИГОВЫЙ РЕГИСТР
+{
+  // сперва проверяем, были ли изменения
+  bool hasChanges = false;
+  for(uint8_t i=0;i<shiftRegisterDataSize;i++)
+  {
+    if(shiftRegisterData[i] != lastShiftRegisterData[i])
+    {
+      hasChanges = true;
+      break;
+    }
+  } // for
+
+  if(!hasChanges)
+    return;
+
+  Serial.print("Writing to shift register: ");
+  
+  for(uint8_t i=0;i<shiftRegisterDataSize;i++)
+    Serial.print(shiftRegisterData[i],BIN);
+    
+  Serial.println("");
+  
+  //TODO: Тут пишем в сдвиговый регистр!!!
+
+  // теперь сохраняем последнее запомненное состояние
+   for(uint8_t i=0;i<shiftRegisterDataSize;i++)
+    lastShiftRegisterData[i] = shiftRegisterData[i];
+}
+#endif
+void TempSensors::SaveChannelState(uint8_t channel, uint8_t state)
+{
+  #ifdef USE_WINDOWS_SHIFT_REGISTER
+    //TODO: Сохраняем состояние каналов для сдвигового регистра тут!!!
+
+     uint8_t idx = channel/8; // выясняем, какой индекс в массиве байт
+   // теперь мы должны выяснить, в какой бит писать
+    uint8_t bitNum = channel % 8;
+
+    // пишем в нужный байт и в нужный бит нужное состояние
+    uint8_t bt = shiftRegisterData[idx];
+    bitWrite(bt,bitNum, state);
+    shiftRegisterData[idx] = bt;
+    
+    
+  #else
+    // просто управляем пинами, поэтому напрямую пишем в пины
+    digitalWrite(WINDOWS_RELAYS[channel],state);
+  #endif
+}
 void TempSensors::SetupWindows()
 {
   // настраиваем фрамуги
   for(uint8_t i=0, j=0;i<SUPPORTED_WINDOWS;i++, j+=2)
   {
       // раздаём каналы реле: первому окну - 0,1, второму - 2,3 и т.д.
-      // также назначаем пины для реле из массива WINDOWS_RELAYS:
-      // первому окну - первый и второй пин из массива,
-      // второму окну - третий и четвёртый пин и т.д.
-      Windows[i].Setup(&State,j,j+1,WINDOWS_RELAYS[j],WINDOWS_RELAYS[j+1]); 
+      Windows[i].Setup(this, &State,j,j+1);//,WINDOWS_RELAYS[j],WINDOWS_RELAYS[j+1]); 
+
+      #ifdef USE_WINDOWS_SHIFT_REGISTER // если используем сдвиговые регистры
+        // ничего не делаем, поскольку у нас все реле будут выключены после первоначальной настройки
+      #else
+        // просто настраиваем пины
+          uint8_t pin1 = WINDOWS_RELAYS[j];
+          uint8_t pin2 = WINDOWS_RELAYS[j+1];
+        
+          pinMode(pin1,OUTPUT);
+          pinMode(pin2, OUTPUT);
+        
+          // выключаем реле
+          digitalWrite(pin1,RELAY_OFF);
+          digitalWrite(pin2,RELAY_OFF);        
+     #endif
+      
   } // for
 }
 
@@ -186,6 +244,8 @@ void TempSensors::Setup()
 #ifdef USE_WINDOWS_MANUAL_MODE_DIODE
   blinker.begin(DIODE_WINDOWS_MANUAL_MODE_PIN,F("SM"));  // настраиваем блинкер на нужный пин
 #endif  
+
+
   lastUpdateCall = 0;
   smallSensorsChange = 0;
   
@@ -214,8 +274,51 @@ void TempSensors::Setup()
    for(uint8_t i=0;i<relayCnt;i++)
     State.AddState(StateRelay,i);
    #endif  
+
   
    SetupWindows(); // настраиваем фрамуги
+
+   #ifdef USE_WINDOWS_SHIFT_REGISTER
+
+    // настраиваем пины для сдвигового регистра на выход
+    pinMode(WINDOWS_SHIFT_LATCH_PIN,OUTPUT);
+    pinMode(WINDOWS_SHIFT_DATA_PIN,OUTPUT);
+    pinMode(WINDOWS_SHIFT_CLOCK_PIN,OUTPUT);
+   
+    // настраиваем кол-во байт, в котором мы будем держать состояние каналов для сдвигового регистра.
+    // у нас для каждого окна - два канала, соответственно, общее кол-во бит - это
+    // SUPPORTED_WINDOWS*2. Исходя из этого - легко посчитать кол-во байт, необходимых
+    // для хранения данных.
+    shiftRegisterDataSize =  (SUPPORTED_WINDOWS*2)/8;
+    if((SUPPORTED_WINDOWS*2) > 8 && (SUPPORTED_WINDOWS*2) % 8)
+      shiftRegisterDataSize++;
+
+    shiftRegisterData = new uint8_t[shiftRegisterDataSize];
+    lastShiftRegisterData = new uint8_t[shiftRegisterDataSize];
+    // теперь в каждый бит этих байт записываем значение RELAY_OFF для shiftRegisterData,
+    // и значение RELAY_ON для lastShiftRegisterData.
+    // надо именно побитово, т.к. значение RELAY_OFF может быть 1, и в этом случае
+    // все биты должны быть установлены в 1.
+
+    for(uint8_t i=0;i<shiftRegisterDataSize;i++)
+    {
+      uint8_t bOff = 0;
+      uint8_t bOn = 0;
+      for(uint8_t j=0;j<8;j++)
+      {
+        bOff |= (RELAY_OFF << j);
+        bOn |= (RELAY_ON << j);
+      }
+      
+      // сохранили разные значения первоначально, поскольку мы хотим записать их впервые
+      shiftRegisterData[i] = bOff;
+      lastShiftRegisterData[i] = bOn;
+      
+    } // for
+      
+    WriteToShiftRegister(); // пишем первоначальное состояние реле в сдвиговый регистр
+   #endif
+
 
    SAVE_STATUS(WINDOWS_MODE_BIT,1); // сохраняем режим работы окон
    
@@ -231,6 +334,11 @@ void TempSensors::Update(uint16_t dt)
   {
       Windows[i].UpdateState(dt);
   } // for 
+
+ #ifdef USE_WINDOWS_SHIFT_REGISTER
+  // пишем в сдвиговый регистр, если есть изменения
+  WriteToShiftRegister();
+ #endif 
 
 
   lastUpdateCall += dt;
