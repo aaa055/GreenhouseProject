@@ -279,6 +279,9 @@ void TempSensors::Setup()
     State.AddState(StateTemperature,i);
     // запускаем конвертацию с датчиков при старте, через 2 секунды нам вернётся измеренная температура
     tempSensor.begin(TEMP_SENSORS[i]);
+
+    tempSensors.setResolution(temp12bit); // устанавливаем разрешение датчика
+    
     tempSensor.readTemperature(&tempData);
    }
 

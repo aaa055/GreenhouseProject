@@ -11,6 +11,15 @@ typedef struct
   
 } DS18B20Temperature;
 
+typedef enum
+{
+  temp9bit = 0x1F,
+  temp10bit = 0x3F,
+  temp11bit = 0x5F,
+  temp12bit = 0x7F
+  
+} DS18B20Resolution;
+
 class DS18B20Support
 {
   private:
@@ -21,7 +30,8 @@ class DS18B20Support
     DS18B20Support() : pin(0) {};
 
     void begin(uint8_t _pin) {pin = _pin;}
-    bool readTemperature(DS18B20Temperature* result); 
+    bool readTemperature(DS18B20Temperature* result);
+    void setResolution(DS18B20Resolution res); 
     
 };
 

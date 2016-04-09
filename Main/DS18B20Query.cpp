@@ -2,6 +2,30 @@
 #include <OneWire.h>
 #include "Globals.h"
 
+void DS18B20Support::setResolution(DS18B20Resolution res)
+{
+  if(!pin)
+    return;
+
+  OneWire ow(pin);
+
+  if(!ow.reset()) // нет датчика
+    return;  
+
+   ow.write(0xCC); // пофиг на адреса (SKIP ROM)
+   ow.write(0x4E); // запускаем запись в scratchpad
+
+   ow.write(0); // верхний температурный порог 
+   ow.write(0); // нижний температурный порог
+   ow.write(res); // разрешение датчика
+
+   ow.reset();
+   ow.write(0xCC); // пофиг на адреса (SKIP ROM)
+   ow.write(0x48); // COPY SCRATCHPAD
+   delay(10);
+   ow.reset();
+   
+}
 bool DS18B20Support::readTemperature(DS18B20Temperature* result)
 {
   result->Whole = NO_TEMPERATURE_DATA; // нет данных с датчика
@@ -18,11 +42,11 @@ bool DS18B20Support::readTemperature(DS18B20Temperature* result)
 
   byte data[9];
    
-  ow.write(0xCC); // пофиг на адреса
+  ow.write(0xCC); // пофиг на адреса (SKIP ROM)
   ow.write(0x44); // запускаем преобразование
 
   ow.reset();
-  ow.write(0xCC); // пофиг на адреса
+  ow.write(0xCC); // пофиг на адреса (SKIP ROM)
   ow.write(0xBE); // читаем scratchpad датчика на пине
 
   for(uint8_t i=0;i<9;i++)
