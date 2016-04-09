@@ -646,8 +646,10 @@
 #define REG_ERR F("EXIST") // модуль уже зарегистрирован
 #define UNKNOWN_PROPERTY F("UNKNOWN_PROPERTY") // неизвестное свойство
 #define STATUS_COMMAND F("STAT") // получить статус внутренних состояний в виде закодированного пакета, CTGET=0|STAT
-#define HAS_CHANGES_COMMAND F("HAS_CHANGES") // есть ли изменения в состоянии модулей? CTGET=0|HAS_CHANGES
-#define LIST_CHANGES_COMMAND F("LIST_CHANGES") // пролистать, что и в каких модулях изменилось CTGET=0|LIST_CHANGES , РЕЗУЛЬТАТЫ ОТВЕТА:
+#define RESET_COMMAND F("RST") // перезагрузить контроллер
+//#define HAS_CHANGES_COMMAND F("HAS_CHANGES") // есть ли изменения в состоянии модулей? CTGET=0|HAS_CHANGES
+//#define LIST_CHANGES_COMMAND F("LIST_CHANGES") // пролистать, что и в каких модулях изменилось CTGET=0|LIST_CHANGES , РЕЗУЛЬТАТЫ ОТВЕТА:
+
 /*
  * MODULE_NAME|PROP_NAME|IDX|FROM|TO\r\n
  * MODULE_NAME|PROP_NAME|IDX|FROM|TO\r\n

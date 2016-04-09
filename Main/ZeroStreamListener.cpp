@@ -4,6 +4,8 @@
 #include "RemoteModule.h"
 #endif
 
+void(* resetFunc) (void) = 0;
+
 void ZeroStreamListener::Setup()
 {
   // настройка модуля тут
@@ -303,6 +305,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           } // wantAnswer
           
         } // STATUS_COMMAND
+       
         /*
         else if(t == LIST_CHANGES_COMMAND) // какие изменения в состоянии модулей?
         {
@@ -527,12 +530,19 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
       if(argsCnt < 2)
       {
         // мало параметров
-        PublishSingleton = PARAMS_MISSED;        
+        PublishSingleton = PARAMS_MISSED;
+        String t = command.GetArg(0);    
+
+        if(t == RESET_COMMAND)
+        {
+          resetFunc(); // ресетимся, писать в ответ ничего не надо
+        } // RESET_COMMAND
+        
       } // if
       else
       {
         String t = command.GetArg(0); // получили команду
-        t.toUpperCase();
+       // t.toUpperCase();
         
       #ifdef USE_REMOTE_MODULES 
       if(t == ADD_COMMAND) // запросили регистрацию нового модуля
@@ -639,6 +649,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
          } // if
        }
        #endif
+
        /*
        else if(t == PROPERTIES_COMMAND)
        {
