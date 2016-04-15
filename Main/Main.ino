@@ -69,6 +69,10 @@
 #include "WaterflowModule.h"
 #endif
 
+#ifdef USE_COMPOSITE_COMMANDS_MODULE
+#include "CompositeCommandsModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 #ifdef USE_READY_DIODE
@@ -206,6 +210,11 @@ NextionModule nextionModule;
 #ifdef USE_WATERFLOW_MODULE
 // модуль учёта расхода воды
 WaterflowModule waterflowModule;
+#endif
+
+#ifdef USE_COMPOSITE_COMMANDS_MODULE
+// модуль составных команд
+CompositeCommandsModule compositeCommands;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -356,6 +365,10 @@ void setup()
 
   #ifdef USE_WATERFLOW_MODULE
   controller.RegisterModule(&waterflowModule);
+  #endif
+
+  #ifdef USE_COMPOSITE_COMMANDS_MODULE
+  controller.RegisterModule(&compositeCommands);
   #endif
 
   #ifdef USE_LOG_MODULE
