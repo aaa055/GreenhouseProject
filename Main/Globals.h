@@ -18,7 +18,7 @@
 #define USE_WATERING_MODULE // закомментировать, если не нужно управление поливом
 #define USE_LUMINOSITY_MODULE // закомментировать, если не нужен модуль контроля освещенности (BH1750)
 #define USE_HUMIDITY_MODULE // закомментировать, если не нужен модуль работы с датчиками влажности DHT и Si7021
-#define USE_WIFI_MODULE // закомментировать, если не нужна поддержка управления через Wi-Fi (ESP8266)
+//#define USE_WIFI_MODULE // закомментировать, если не нужна поддержка управления через Wi-Fi (ESP8266)
 #define USE_LOG_MODULE // закомментировать, если не нужен модуль логгирования информации. Внимание: модуль работает только с модулем реального времени (USE_DS3231_REALTIME_CLOCK должна быть определена!)
 #define USE_DELTA_MODULE // закомментировать, если не нужно собирать показания дельт с датчиков
 #define USE_WATERFLOW_MODULE // закомментировать, если не нужны датчик(и) расхода воды (пин(ы) 2 (и 3) меги), настройки - см. ниже
@@ -84,7 +84,7 @@
 //--------------------------------------------------------------------------------------------------------------------------------
 // настройки модуля освещенности (BH1750)
 //--------------------------------------------------------------------------------------------------------------------------------
-#define LIGHT_SENSORS_COUNT 1 // кол-во проводных датчиков освещенности, 0, 1 или 2, 2 - максимум
+#define LIGHT_SENSORS_COUNT 2 // кол-во проводных датчиков освещенности, 0, 1 или 2, 2 - максимум
 #define LAMP_RELAYS_COUNT 1 // кол-во реле для управления досветкой
 #define LAMP_RELAYS_PINS 34 // пины, на которых сидят реле управления досветкой (через запятую, кол-во равно LAMP_RELAYS_COUNT!)
 
@@ -325,59 +325,6 @@
 #if defined(USE_LCD_MODULE) && defined(USE_NEXTION_MODULE)
 #error PLEASE DONT USE TWO OR MORE DISPLAYS !!!
 #endif
-
-//--------------------------------------------------------------------------------------------------------------------------------
-// Проверяем правильность распределения аппаратных UART между модулями
-//--------------------------------------------------------------------------------------------------------------------------------
-#ifdef USE_SMS_MODULE
-
-  #ifdef USE_WIFI_MODULE
-    #if WIFI_SERIAL == NEOWAY_SERIAL
-    #error UART CONFLICT DETECTED !!!
-    #endif
-  #endif // USE_WIFI_MODULE
-
-  #ifdef USE_NEXTION_MODULE
-    #if NEXTION_SERIAL == NEOWAY_SERIAL
-    #error UART CONFLICT DETECTED !!!
-    #endif
-  #endif // USE_NEXTION_MODULE
-
-  
-#endif // USE_SMS_MODULE
-
-#ifdef USE_WIFI_MODULE
-
-  #ifdef USE_SMS_MODULE
-    #if WIFI_SERIAL == NEOWAY_SERIAL
-    #error UART CONFLICT DETECTED !!!
-    #endif
-  #endif // USE_SMS_MODULE
-
-  #ifdef USE_NEXTION_MODULE
-    #if NEXTION_SERIAL == WIFI_SERIAL
-    #error UART CONFLICT DETECTED !!!
-    #endif
-  #endif // USE_NEXTION_MODULE  
-
-#endif // USE_WIFI_MODULE
-
-#ifdef USE_NEXTION_MODULE
-
-  #ifdef USE_SMS_MODULE
-    #if NEXTION_SERIAL == NEOWAY_SERIAL
-    #error UART CONFLICT DETECTED !!!
-    #endif
-  #endif // USE_SMS_MODULE
-
-  #ifdef USE_WIFI_MODULE
-    #if WIFI_SERIAL == NEXTION_SERIAL
-    #error UART CONFLICT DETECTED !!!
-    #endif
-  #endif // USE_WIFI_MODULE  
-
-#endif // USE_NEXTION_MODULE
-
 //--------------------------------------------------------------------------------------------------------------------------------
 // ВСЕ НАСТРОЙКИ НИЖЕ - МЕНЯЕМ НА СВОЙ СТРАХ И РИСК, С ПОЛНЫМ ПОНИМАНИЕМ ТОГО, ЧТО ХОТИМ СДЕЛАТЬ. 
 //--------------------------------------------------------------------------------------------------------------------------------

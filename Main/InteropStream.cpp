@@ -64,8 +64,7 @@ void BlinkModeInterop::update()
     return;
 
  needUpdate = false;   
-
-  String s;
+ String s;
   
 #ifdef USE_LOOP_MODULE 
 
