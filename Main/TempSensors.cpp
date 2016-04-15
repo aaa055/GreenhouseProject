@@ -1,7 +1,7 @@
 #include "TempSensors.h"
 #include "ModuleController.h"
 
-static uint8_t TEMP_SENSORS[] = { TEMP_SENSORS_PINS };
+static TempSensorSettings TEMP_SENSORS[] = { TEMP_SENSORS_PINS };
 
 #ifndef USE_WINDOWS_SHIFT_REGISTER
 static uint8_t WINDOWS_RELAYS[] = { WINDOWS_RELAYS_PINS };
@@ -278,11 +278,11 @@ void TempSensors::Setup()
    {
     State.AddState(StateTemperature,i);
     // запускаем конвертацию с датчиков при старте, через 2 секунды нам вернётся измеренная температура
-    tempSensor.begin(TEMP_SENSORS[i]);
+    tempSensor.begin(TEMP_SENSORS[i].pin);
 
     tempSensor.setResolution(temp12bit); // устанавливаем разрешение датчика
     
-    tempSensor.readTemperature(&tempData);
+    tempSensor.readTemperature(&tempData,(DSSensorType)TEMP_SENSORS[i].type);
    }
 
    #ifdef SAVE_RELAY_STATES   
@@ -378,8 +378,8 @@ void TempSensors::Update(uint16_t dt)
     t.Value = NO_TEMPERATURE_DATA;
     t.Fract = 0;
     
-    tempSensor.begin(TEMP_SENSORS[i]);
-    if(tempSensor.readTemperature(&tempData))
+    tempSensor.begin(TEMP_SENSORS[i].pin);
+    if(tempSensor.readTemperature(&tempData,(DSSensorType)TEMP_SENSORS[i].type))
     {
       t.Value = tempData.Whole;
     

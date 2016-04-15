@@ -26,7 +26,7 @@ void DS18B20Support::setResolution(DS18B20Resolution res)
    ow.reset();
    
 }
-bool DS18B20Support::readTemperature(DS18B20Temperature* result)
+bool DS18B20Support::readTemperature(DS18B20Temperature* result,DSSensorType type)
 {
   result->Whole = NO_TEMPERATURE_DATA; // нет данных с датчика
   result->Fract = 0;
@@ -66,7 +66,18 @@ bool DS18B20Support::readTemperature(DS18B20Temperature* result)
   if(result->Negative)
     temp = (temp ^ 0xFFFF) + 1;
 
-  int tc_100 = (6 * temp) + temp/4;
+  int tc_100 = 0;
+  switch(type)
+  {
+    case DS18B20:
+      tc_100 = (6 * temp) + temp/4;
+    break;
+
+    case DS18S20:
+      tc_100 = (temp*100)/2;
+    break;
+  }
+   
 
   result->Whole = tc_100/100;
   result->Fract = tc_100 % 100;

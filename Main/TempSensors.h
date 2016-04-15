@@ -5,6 +5,13 @@
 #include "DS18B20Query.h"
 #include "InteropStream.h"
 
+typedef struct
+{
+  uint8_t pin;
+  uint8_t type;
+  
+} TempSensorSettings; // настройки сенсоров
+
 typedef enum
 {
   wmAutomatic, // автоматический режим управления окнами

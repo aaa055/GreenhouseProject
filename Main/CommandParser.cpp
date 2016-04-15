@@ -51,7 +51,6 @@ void Command::Construct(const String& id,const String& arg, uint8_t ct,uint8_t d
   Clear(); // сбрасываем все настройки
   
     Type = ct;
-   // Arg = arg;
     ModuleID = id;
     Destination = dest;
 
@@ -59,7 +58,8 @@ void Command::Construct(const String& id,const String& arg, uint8_t ct,uint8_t d
         int curIdx = 0;
         String tmpStr = arg;
         String param;
-        
+
+        //TODO: не нравится, как написано, опять дёрганья substring, когда можно обойтись без этого
         while(curIdx != -1)
         {
           curIdx = tmpStr.indexOf(PARAM_DELIMITER);
@@ -93,16 +93,13 @@ void Command::Construct(const String& id,const String& arg, uint8_t ct,uint8_t d
 }
 void Command::Construct(const String& id,const String& arg, const String& ct,uint8_t dest)
 {
- //  StringType = ct;
    Construct(id, arg,GetCommandType(ct),dest);
 }
 
 void Command::Clear()
 {
- // ArgsCount = 0;
   Type = ctUNKNOWN;
   ModuleID = F("");
-//  Arg = F("");
   IncomingStream = NULL;
   bIsInternal = false;
   Destination = cdUNKNOWN;
