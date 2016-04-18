@@ -53,7 +53,7 @@ bool DS18B20Support::readTemperature(DS18B20Temperature* result,DSSensorType typ
     data[i] = ow.read();
 
 
- if ( OneWire::crc8( data, 8) != data[8]) // проверяем контрольную сумму
+ if (OneWire::crc8( data, 8) != data[8]) // проверяем контрольную сумму
       return false;
   
   int loByte = data[0];

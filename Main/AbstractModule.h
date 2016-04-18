@@ -102,7 +102,8 @@ StateRelay = 2, // есть реле
 StateLuminosity = 4, // есть датчики освещенности
 StateHumidity = 8, // есть датчики влажности
 StateWaterFlowInstant = 16, // есть датчик мгновенного расхода воды
-StateWaterFlowIncremental = 32 // есть датчик постоянного расхода воды
+StateWaterFlowIncremental = 32, // есть датчик постоянного расхода воды
+StateSoilMoisture = 64 // есть датчик влажности почвы
 
 } ModuleStates; // вид состояния
 
