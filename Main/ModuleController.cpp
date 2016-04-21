@@ -1,5 +1,6 @@
 #include "ModuleController.h"
 #include "InteropStream.h"
+#include "UniversalSensors.h"
 
 PublishStruct PublishSingleton;
 
@@ -19,6 +20,8 @@ DS3231Clock& ModuleController::GetClock()
 void ModuleController::begin()
 {
  // тут можно написать код, который выполнится непосредственно перед началом работы
+ 
+ UniDispatcher.Setup(this); // настраиваем диспетчера универсальных датчиков
 }
 void ModuleController::Setup()
 {
