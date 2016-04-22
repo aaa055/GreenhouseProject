@@ -35,6 +35,8 @@ class GlobalSettings
 {
   private:
 
+  uint8_t controllerID;
+
   uint8_t tempOpen; // температура открытия
   uint8_t tempClose; // температура закрытия
   unsigned long openInterval; // интервал для открытия окон
@@ -62,6 +64,9 @@ class GlobalSettings
     void Load();
     void Save();
     void ResetToDefault();
+
+    uint8_t GetControllerID() {return controllerID;}
+    void SetControllerID(uint8_t val);
 
     void ReadDeltaSettings(DeltaCountFunction OnDeltaSetCount, DeltaReadWriteFunction OnDeltaRead); // читаем настройки дельт 
     void WriteDeltaSettings(DeltaCountFunction OnDeltaGetCount, DeltaReadWriteFunction OnDeltaWrite); // пишем настройки дельт 

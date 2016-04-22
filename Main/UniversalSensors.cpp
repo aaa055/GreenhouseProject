@@ -313,8 +313,7 @@ bool UniRegDispatcher::RegisterSensor(UniSensorType type, UniSensorState& result
 }
 uint8_t UniRegDispatcher::GetControllerID()
 {
-  //TODO: Тут возвращать записанный через конфигуратор индекс контроллера !!!
-  return UNIQUE_CONTROLLER_ID; 
+  return mainController->GetSettings()->GetControllerID(); 
 }
 
 

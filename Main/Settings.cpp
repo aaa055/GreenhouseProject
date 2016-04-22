@@ -173,10 +173,21 @@ void GlobalSettings::ResetToDefault()
   wateringTime = 0;
   startWateringTime = 12;
   wifiState = 0x01; // первый бит устанавливаем, говорим, что мы коннектимся к роутеру
+  controllerID = 0; // по умолчанию 0 как ID контроллера
+}
+void GlobalSettings::SetControllerID(uint8_t val)
+{
+  controllerID = val;
+  EEPROM.write(CONTROLLER_ID_EEPROM_ADDR,controllerID);
 }
 void GlobalSettings::Load()
 {  
   uint16_t readPtr = 0; // сбрасываем указатель чтения на начало памяти
+
+  // читаем ID контроллера
+  uint8_t cid = EEPROM.read(CONTROLLER_ID_EEPROM_ADDR);
+  if(cid != 0xFF)
+    controllerID = cid;
 
   // читаем заголовок
   uint8_t h1,h2;
@@ -324,6 +335,8 @@ void GlobalSettings::Load()
       if(!routerID.length()) // если нет названия точки доступа роутера - не коннектимся к нему
         wifiState = 0; 
    }
+
+   
   // читаем другие настройки!
 
   

@@ -4,6 +4,8 @@
 #include "RemoteModule.h"
 #endif
 
+#include "UniversalSensors.h"
+
 void(* resetFunc) (void) = 0;
 
 void ZeroStreamListener::Setup()
@@ -51,6 +53,29 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton = PONG;
           PublishSingleton.AddModuleIDToAnswer = false;
         } // if
+        else
+        if(t == ID_COMMAND)
+        {
+          PublishSingleton.Status = true;
+          PublishSingleton.AddModuleIDToAnswer = false;
+          PublishSingleton = ID_COMMAND; 
+          PublishSingleton << PARAM_DELIMITER << mainController->GetSettings()->GetControllerID();
+        }
+        else
+        if(t == WIRED_COMMAND)
+        {
+          PublishSingleton.Status = true;
+          PublishSingleton.AddModuleIDToAnswer = false;
+          PublishSingleton = WIRED_COMMAND;
+
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniTemp);
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniHumidity);
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniLuminosity);
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniSoilMoisture);
+          //TODO: Тут остальные типы датчиков указывать !!!
+           
+            
+        }
         else
         if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по СМС
         {
@@ -579,6 +604,15 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton = SMS_NUMBER_COMMAND; 
           PublishSingleton << PARAM_DELIMITER << REG_SUCC;
           
+       }
+       else if(t == ID_COMMAND)
+       {
+          String newID = command.GetArg(1);
+          mainController->GetSettings()->SetControllerID(newID.toInt());
+          PublishSingleton.Status = true;
+          PublishSingleton = ID_COMMAND; 
+          PublishSingleton << PARAM_DELIMITER << REG_SUCC;
+        
        }
        #ifdef USE_DS3231_REALTIME_CLOCK
        else if(t == SETTIME_COMMAND)
