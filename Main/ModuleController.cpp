@@ -1,6 +1,9 @@
 #include "ModuleController.h"
 #include "InteropStream.h"
+
+#ifdef USE_UNIVERSAL_SENSORS
 #include "UniversalSensors.h"
+#endif
 
 PublishStruct PublishSingleton;
 
@@ -21,7 +24,10 @@ void ModuleController::begin()
 {
  // тут можно написать код, который выполнится непосредственно перед началом работы
  
+ #ifdef USE_UNIVERSAL_SENSORS
  UniDispatcher.Setup(this); // настраиваем диспетчера универсальных датчиков
+ #endif
+ 
 }
 void ModuleController::Setup()
 {

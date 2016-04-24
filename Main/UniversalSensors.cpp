@@ -48,7 +48,7 @@ void UniRegDispatcher::Setup(ModuleController* controller)
     
     humidityModule = mainController->GetModuleByID(F("HUMIDITY"));
     if(humidityModule)
-      hardCodedHumidityCount = humidityModule->State.GetStateCount(StateTemperature);
+      hardCodedHumidityCount = humidityModule->State.GetStateCount(StateHumidity);
     
     luminosityModule = mainController->GetModuleByID(F("LIGHT"));
     if(luminosityModule)
@@ -81,6 +81,7 @@ void UniRegDispatcher::ReadState()
   val = EEPROM.read(addr++);
   if(val != 0xFF)
     currentSoilMoistureCount = val;
+
       
 }
 void UniRegDispatcher::RestoreState()
@@ -231,12 +232,15 @@ bool UniRegDispatcher::RegisterSensor(UniSensorType type, UniSensorState& result
        // добавляем новый датчик температуры в систему
        resultStates.State1 = temperatureModule->State.AddState(StateTemperature,hardCodedTemperatureCount + currentTemperatureCount);
 
-       // передаём датчику его виртуальный индекс
-       assignedIndex = currentTemperatureCount;
-
-
-      // запоминаем индекс, который будет использоваться в дальнейшем 
-       currentTemperatureCount++;
+       if(resultStates.State1)
+       {
+          // передаём датчику его виртуальный индекс
+          assignedIndex = currentTemperatureCount;
+ 
+          // запоминаем индекс, который будет использоваться в дальнейшем 
+          currentTemperatureCount++;
+        
+       } // if(resultStates.State1)
 
        // говорим, что добавили
        return (resultStates.State1 != NULL);
@@ -255,11 +259,15 @@ bool UniRegDispatcher::RegisterSensor(UniSensorType type, UniSensorState& result
        // добавляем новый датчик влажности в систему
        resultStates.State2 = humidityModule->State.AddState(StateHumidity,hardCodedHumidityCount + currentHumidityCount);
 
-       // передаём датчику его виртуальный индекс
-       assignedIndex = currentHumidityCount;
-
-      // запоминаем индекс, который будет использоваться в дальнейшем 
-       currentHumidityCount++;
+        if(resultStates.State1)
+        {
+           // передаём датчику его виртуальный индекс
+           assignedIndex = currentHumidityCount;
+    
+          // запоминаем индекс, который будет использоваться в дальнейшем 
+           currentHumidityCount++;
+           
+        } // if(resultStates.State1)
 
        // говорим, что добавили
        return (resultStates.State1 != NULL);
@@ -275,11 +283,15 @@ bool UniRegDispatcher::RegisterSensor(UniSensorType type, UniSensorState& result
        // добавляем новый датчик освещенности в систему
        resultStates.State1 = luminosityModule->State.AddState(StateLuminosity,hardCodedLuminosityCount + currentLuminosityCount);
 
-       // передаём датчику его виртуальный индекс
-       assignedIndex = currentLuminosityCount;
+       if(resultStates.State1)
+       {
+           // передаём датчику его виртуальный индекс
+           assignedIndex = currentLuminosityCount;
+    
+          // запоминаем индекс, который будет использоваться в дальнейшем 
+           currentLuminosityCount++;
 
-      // запоминаем индекс, который будет использоваться в дальнейшем 
-       currentLuminosityCount++;
+       } // if(resultStates.State1)
 
        // говорим, что добавили
        return (resultStates.State1 != NULL);
@@ -296,11 +308,15 @@ bool UniRegDispatcher::RegisterSensor(UniSensorType type, UniSensorState& result
        // добавляем новый датчик влажности почвы в систему
        resultStates.State1 = soilMoistureModule->State.AddState(StateSoilMoisture,hardCodedSoilMoistureCount + currentSoilMoistureCount);
 
-       // передаём датчику его виртуальный индекс
-       assignedIndex = currentSoilMoistureCount;
-
-      // запоминаем индекс, который будет использоваться в дальнейшем 
-       currentSoilMoistureCount++;
+       if(resultStates.State1)
+       {
+           // передаём датчику его виртуальный индекс
+           assignedIndex = currentSoilMoistureCount;
+    
+          // запоминаем индекс, который будет использоваться в дальнейшем 
+           currentSoilMoistureCount++;
+       
+       } // if(resultStates.State1)
 
        // говорим, что добавили
        return (resultStates.State1 != NULL);
@@ -347,19 +363,23 @@ bool AbstractUniSensor::ReadScratchpad() // читаем скратчпад
   isScratchpadReaded = false;
   
   if(!pin || !scratchpadAddress)
-    return isScratchpadReaded;  
+    return false;  
     
     OneWire ow(pin);
     
     if(!ow.reset()) // нет датчика на линии
-      return isScratchpadReaded; 
+      return false; 
       
     // сначала запускаем конвертацию, чтобы в следующий раз нам вернулись актуальные данные
-    ow.write(UNI_START_MEASURE); // посылаем команду на старт измерений
-    ow.reset(); // говорим, что команда послана полностью
+    ow.write(0xCC, 1);
+    ow.write(UNI_START_MEASURE,1); // посылаем команду на старт измерений
+    
+    if(!ow.reset()) // говорим, что команда послана полностью
+      return false; 
     
     // теперь читаем скратчпад
-    ow.write(UNI_READ_SCRATCHPAD); // посылаем команду на чтение скратчпада
+    ow.write(0xCC, 1);
+    ow.write(UNI_READ_SCRATCHPAD,1); // посылаем команду на чтение скратчпада
     
     // читаем скратчпад
     for(uint8_t i=0;i<UNI_SCRATCH_SIZE;i++)
@@ -375,26 +395,44 @@ bool AbstractUniSensor::WriteScratchpad() // пишем в скратчпад
 {
   if(!pin || !isScratchpadReaded || !scratchpadAddress)
     return false;
-    
-   OneWire ow(pin);
-   if(!ow.reset()) // нет датчика на линии
-    return false;
-    
+
   scratchpadAddress[CONTROLLER_ID_IDX] = UniDispatcher.GetControllerID(); // выставляем ID нашего контроллера
-  
-  //TODO: Тут включение или выключение радио в зависимости от флага rfEnabled !!!
+
+   uint8_t conf = scratchpadAddress[CONFIG_IDX];
+
+   //Тут включение или выключение радио в зависимости от флага rfEnabled
+   if(rfEnabled)
+    conf |= 1; // ставим младший бит
+  else
+    conf &= ~1; // убираем младший бит
+
+   scratchpadAddress[CONFIG_IDX] = conf;
 
 
   //TODO: Подсчёт контрольной суммы ????
-  
-  ow.write(UNI_WRITE_SCRATCHPAD); // говорим, что хотим записать скратчпад
+
+   
+   OneWire ow(pin);
+   
+   if(!ow.reset()) // нет датчика на линии
+    return false;
+    
+
+  ow.write(0xCC, 1);
+  ow.write(UNI_WRITE_SCRATCHPAD,1); // говорим, что хотим записать скратчпад
   
   // теперь пишем данные
    for(uint8_t i=0;i<UNI_SCRATCH_SIZE;i++)
     ow.write(scratchpadAddress[i]);
   
   // говорим, что всё записали
-  ow.reset();
+  if(ow.reset())
+  {
+    // записываем всё в EEPROM
+    ow.write(0xCC, 1);
+    ow.write(UNI_SAVE_EEPROM,1);
+    delay(100);    
+  }
   return true;    
 }
 bool AbstractUniSensor::SetRFState(bool enabled)
@@ -420,6 +458,7 @@ uint8_t AbstractUniSensor::GetID()
 {
   return scratchpadAddress[RF_ID_IDX];
 }
+
 void AbstractUniSensor::ReBindSensor(uint8_t scratchIndex,uint8_t newSensorIndex)
 {
   if(!isScratchpadReaded || !scratchpadAddress)
@@ -428,6 +467,23 @@ void AbstractUniSensor::ReBindSensor(uint8_t scratchIndex,uint8_t newSensorIndex
    // назначаем новый индекс для датчика в системе
    uint8_t idx = DATA_START_IDX + scratchIndex*6; // начало данных
    scratchpadAddress[idx] = newSensorIndex;    
+}
+void AbstractUniSensor::GetRawSensorData(uint8_t scratchIndex,uint8_t& sensorType,uint8_t& sensorIndex,uint8_t* outData)
+{
+  sensorType = uniNone;
+  sensorIndex = NO_SENSOR_REGISTERED;
+  if(!scratchpadAddress || !outData)
+    return;
+
+   uint8_t idx = DATA_START_IDX + scratchIndex*6; // начало данных
+   sensorIndex = scratchpadAddress[idx];
+   sensorType = scratchpadAddress[idx+1];
+
+   *outData++ = scratchpadAddress[idx+2];
+   *outData++ = scratchpadAddress[idx+3];
+   *outData++ = scratchpadAddress[idx+4];
+   *outData++ = scratchpadAddress[idx+5];
+  
 }
 bool AbstractUniSensor::GetSensorInfo(uint8_t scratchIndex,uint8_t& sensorType,uint8_t& sensorIndex)
 {
@@ -451,12 +507,20 @@ bool AbstractUniSensor::SensorSetup()
 
   for(uint8_t i=0;i<UNI_SENSORS_COUNT;i++, idx += 6)
   {
-      UniSensorType sensorType = (UniSensorType) scratchpadAddress[idx+1];
+      uint8_t sensorType = scratchpadAddress[idx+1];
       uint8_t sensorIndex = scratchpadAddress[idx];
       
-      if(uniNone != sensorType)
+      if(sensorType != NO_SENSOR_REGISTERED && sensorType != uniNone)
       {
-        if(UniDispatcher.GetRegisteredStates(sensorType,sensorIndex, States[i]))
+        /*
+        Serial.print("Setup sensor: ");
+        Serial.print(sensorType);
+
+        Serial.print("; ");
+        Serial.println(sensorIndex);
+        */
+        
+        if(UniDispatcher.GetRegisteredStates((UniSensorType)sensorType,sensorIndex, States[i]))
         {
           registeredSensorsCount++;
         }
@@ -504,9 +568,13 @@ void AbstractUniSensor::UpdateOneState(OneState* os, uint8_t* data, bool isSenso
         {
           data++; data++;
         }
+
+        int8_t dt = (int8_t) *data++;
+        uint8_t dt2 = *data;
         
-        int8_t b1 = isSensorOnline ? (int8_t)*data++ : NO_TEMPERATURE_DATA;
-        uint8_t b2 = isSensorOnline ? *data : 0;
+        int8_t b1 = isSensorOnline ? dt : NO_TEMPERATURE_DATA;             
+        uint8_t b2 = isSensorOnline ? dt2 : 0;
+        
         Temperature t(b1, b2);
         os->Update(&t);
         
@@ -516,8 +584,12 @@ void AbstractUniSensor::UpdateOneState(OneState* os, uint8_t* data, bool isSenso
       case StateHumidity:
       case StateSoilMoisture:
       {
-        int8_t b1 = isSensorOnline ? (int8_t)*data++ : NO_TEMPERATURE_DATA;
-        uint8_t b2 = isSensorOnline ? *data : 0;
+        int8_t dt = (int8_t) *data++;
+        uint8_t dt2 = *data;
+        
+        int8_t b1 = isSensorOnline ? dt : NO_TEMPERATURE_DATA;    
+        uint8_t b2 = isSensorOnline ? dt2 : 0;
+        
         Humidity h(b1, b2);
         os->Update(&h);        
       }
@@ -526,6 +598,7 @@ void AbstractUniSensor::UpdateOneState(OneState* os, uint8_t* data, bool isSenso
       case StateLuminosity:
       {
         unsigned long lum = NO_LUMINOSITY_DATA;
+        
         if(isSensorOnline)
           memcpy(&lum,data,4);
 
@@ -560,10 +633,16 @@ bool  AbstractUniSensor::SensorRegister(bool rfTransmitterEnabled)
   
   for(uint8_t i=0;i<UNI_SENSORS_COUNT;i++, idx += 6)
   {
-      UniSensorType sensorType = (UniSensorType) scratchpadAddress[idx+1];
-      if(uniNone != sensorType)
+      uint8_t sensorType = scratchpadAddress[idx+1];
+      
+      if(sensorType != NO_SENSOR_REGISTERED && sensorType != uniNone)
       {
-        if(UniDispatcher.RegisterSensor(sensorType,States[i],assignedIndex))
+        /*
+        Serial.print("register sensor: ");
+        Serial.println(sensorType);
+        */
+        
+        if(UniDispatcher.RegisterSensor((UniSensorType) sensorType,States[i],assignedIndex))
         {
           scratchpadAddress[idx] = assignedIndex;
           registeredSensorsCount++;
@@ -606,12 +685,18 @@ void UniPermanentSensor::Update(uint16_t dt)
     {
       isSensorInited = true;
       // не настраивали, настраиваем
+/*
+      Serial.print("Sensor registration ID: ");
+      Serial.println(GetRegistrationID());
+*/      
       if(IsRegistered())
       {
          // датчик зарегистрирован у нас, просто читаем состояния
          canWork = SensorSetup();
+         
          if(canWork)
           SetRFState(false); // выключаем радиопередатчик
+         
       }
       else
       {

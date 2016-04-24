@@ -4,7 +4,23 @@
 #include "RemoteModule.h"
 #endif
 
+#ifdef USE_UNIVERSAL_SENSORS
 #include "UniversalSensors.h"
+
+UniRegistrationLine uniRegistrator(UNI_REGISTRATION_PIN,
+#ifdef UNI_AUTO_REGISTRATION_MODE
+true
+#else
+false
+#endif
+);
+
+#if UNI_WIRED_SENSORS_COUNT > 0
+  UniPermanentSensor uniWiredSensors[UNI_WIRED_SENSORS_COUNT] = { UNI_WIRED_SENSORS };
+#endif
+
+
+#endif // USE_UNIVERSAL_SENSORS
 
 void(* resetFunc) (void) = 0;
 
@@ -14,7 +30,18 @@ void ZeroStreamListener::Setup()
  }
 
 void ZeroStreamListener::Update(uint16_t dt)
-{ 
+{
+#ifdef USE_UNIVERSAL_SENSORS
+
+  uniRegistrator.Update(dt);
+
+  #if UNI_WIRED_SENSORS_COUNT > 0
+    for(uint8_t i=0;i<UNI_WIRED_SENSORS_COUNT;i++)
+      uniWiredSensors[i].Update(dt);
+  #endif
+  
+#endif
+
   UNUSED(dt);
   // обновление модуля тут
 
@@ -61,6 +88,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton = ID_COMMAND; 
           PublishSingleton << PARAM_DELIMITER << mainController->GetSettings()->GetControllerID();
         }
+        #ifdef USE_UNIVERSAL_SENSORS
         else
         if(t == WIRED_COMMAND)
         {
@@ -76,6 +104,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
            
             
         }
+        #endif
+        
         else
         if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по СМС
         {
