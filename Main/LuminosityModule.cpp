@@ -61,10 +61,12 @@ long BH1750Support::GetCurrentLuminosity()
 void LuminosityModule::Setup()
 {
 
+ #if LIGHT_SENSORS_COUNT > 0
   for(uint8_t i=0;i<LIGHT_SENSORS_COUNT;i++)
   {
     State.AddState(StateLuminosity,i); // добавляем в состояние нужные индексы датчиков
   } // for
+  #endif
   
   #if LIGHT_SENSORS_COUNT > 0
   lightMeter.begin(); // запускаем первый датчик освещенности
@@ -355,22 +357,6 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
            PublishSingleton << NO_LUMINOSITY_DATA;
          } // for
         
-        /*
-        PublishSingleton = 
-     #if LIGHT_SENSORS_COUNT > 0
-      (lightMeter.GetCurrentLuminosity());
-      #else
-        NO_LUMINOSITY_DATA;
-      #endif
-      
-     PublishSingleton << PARAM_DELIMITER;
-     PublishSingleton << 
-      #if LIGHT_SENSORS_COUNT > 1
-        (lightMeter2.GetCurrentLuminosity());
-      #else
-        NO_LUMINOSITY_DATA;
-      #endif
-      */
       }
     }
     else // есть аргументы

@@ -124,7 +124,9 @@ class AbstractUniSensor
     bool GetSensorInfo(uint8_t scratchIndex,uint8_t& sensorType,uint8_t& sensorIndex); // возвращает информацию о сенсоре у датчика
     bool IsRegistered(); // проверяет, зарегистрирован ли сенсор у нас?
     bool SetRFState(bool enabled); // включает или выключает радиопередатчик, если это необходимо
+
     bool SensorRegister(bool rfTransmitterEnabled); // регистрирует датчик в системе
+    bool SensorSetup(); // настраивает датчик по ранее сохранённым в его скратчпаде данным
 
     // возвращает сырые данные
     void GetRawSensorData(uint8_t scratchIndex,uint8_t& sensorType,uint8_t& sensorIndex,uint8_t* outData);
@@ -138,7 +140,6 @@ class AbstractUniSensor
     bool ReadScratchpad(); // читает скратчпад
     bool WriteScratchpad(); // пишет скратчпад
     
-    bool SensorSetup(); // настраивает датчик по ранее сохранённым данным
 
     void ReBindSensor(uint8_t scratchIndex,uint8_t newSensorIndex); // переназначает привязки для сенсоров в скратчпаде
     

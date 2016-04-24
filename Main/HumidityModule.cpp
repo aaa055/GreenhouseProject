@@ -1,25 +1,30 @@
 #include "HumidityModule.h"
 #include "ModuleController.h"
 
+#if SUPPORTED_HUMIDITY_SENSORS > 0
 static HumiditySensorRecord HUMIDITY_SENSORS_ARRAY[] = { HUMIDITY_SENSORS };
-
+#endif
 
 void HumidityModule::Setup()
 {
   // настройка модуля тут
 
+
+  #if SUPPORTED_HUMIDITY_SENSORS > 0
+
   si7021.begin(); // настраиваем датчик Si7021
-
   dummyAnswer.IsOK = false;
-
+  
   for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
    {
     State.AddState(StateHumidity,i); // поддерживаем и влажность,
     State.AddState(StateTemperature,i); // и температуру
     // запускаем конвертацию с датчиков при старте, через 2 секунды нам вернётся измеренная влажность и температура
     QuerySensor(HUMIDITY_SENSORS_ARRAY[i].pin,HUMIDITY_SENSORS_ARRAY[i].type);
-   }  
+   }
+   #endif  
  }
+#if SUPPORTED_HUMIDITY_SENSORS > 0
 const HumidityAnswer& HumidityModule::QuerySensor(uint8_t pin, HumiditySensorType type)
 {
   switch(type)
@@ -44,6 +49,7 @@ const HumidityAnswer& HumidityModule::QuerySensor(uint8_t pin, HumiditySensorTyp
   }
   return dummyAnswer;
 }
+#endif
 void HumidityModule::Update(uint16_t dt)
 { 
   // обновление модуля тут
@@ -55,6 +61,7 @@ void HumidityModule::Update(uint16_t dt)
     lastUpdateCall = 0; 
 
   // получаем данные с датчиков влажности
+  #if SUPPORTED_HUMIDITY_SENSORS > 0
   Humidity h;
   Temperature t;
   for(uint8_t i=0;i<SUPPORTED_HUMIDITY_SENSORS;i++)
@@ -74,6 +81,7 @@ void HumidityModule::Update(uint16_t dt)
       State.UpdateState(StateTemperature,i,(void*)&t);
       State.UpdateState(StateHumidity,i,(void*)&h);
    }  // for
+   #endif
 
 }
 

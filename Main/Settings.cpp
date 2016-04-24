@@ -394,6 +394,7 @@ void GlobalSettings::Save()
    EEPROM.write(addr++,WATER_RELAYS_COUNT);
 
    // пишем настройки каналов полива
+   #if WATER_RELAYS_COUNT > 0
    for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
    {
       EEPROM.write(addr++,wateringChannelsOptions[i].wateringWeekDays);
@@ -402,6 +403,7 @@ void GlobalSettings::Save()
       EEPROM.write(addr++,*readAddr);
       EEPROM.write(addr++,wateringChannelsOptions[i].startWateringTime);
    } // for
+   #endif
 
  // сохраняем настройки Wi-Fi
  EEPROM.write(addr++,wifiState);

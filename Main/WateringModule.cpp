@@ -2,14 +2,16 @@
 #include "ModuleController.h"
 #include <EEPROM.h>
 
+#if WATER_RELAYS_COUNT > 0
 static uint8_t WATER_RELAYS[] = { WATER_RELAYS_PINS }; // объявляем массив пинов реле
+#endif
 
 void WateringModule::Setup()
 {
   // настройка модуля тут
 
   settings = mainController->GetSettings();
-
+  
    #ifdef USE_DS3231_REALTIME_CLOCK
     bIsRTClockPresent = true; // есть часы реального времени
     DS3231Clock watch =  mainController->GetClock();
@@ -23,9 +25,13 @@ void WateringModule::Setup()
 #endif
 
   workMode = wwmAutomatic; // автоматический режим работы
+
+  #if WATER_RELAYS_COUNT > 0
+  internalNeedChange = false;
   dummyAllChannels.WateringTimer = 0; // обнуляем таймер полива для всех каналов
   dummyAllChannels.WateringDelta = 0;
   dummyAllChannels.SetRelayOn(false); // все реле выключены
+  #endif
 
   #ifdef USE_DS3231_REALTIME_CLOCK
     // смотрим, не поливали ли мы на всех каналах сегодня
@@ -41,12 +47,16 @@ void WateringModule::Setup()
     *writeAddr++ = EEPROM.read(curReadAddr++);
     *writeAddr = EEPROM.read(curReadAddr++);
 
-   // Serial.println(savedWorkTime);
+   
     
     if(savedDOW != 0xFF && savedWorkTime != 0xFFFFFFFF) // есть сохранённое время работы всех каналов на сегодня
     {
       if(savedDOW == today) // поливали на всех каналах сегодня, выставляем таймер канала так, как будто он уже поливался сколько-то времени
+      {
+        #if WATER_RELAYS_COUNT > 0
         dummyAllChannels.WateringTimer = savedWorkTime + 1;
+        #endif
+      }
       
     }
 
@@ -79,6 +89,7 @@ void WateringModule::Setup()
 
     
   // выключаем все реле
+  #if WATER_RELAYS_COUNT > 0
   for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
   {
     pinMode(WATER_RELAYS[i],OUTPUT);
@@ -124,6 +135,7 @@ void WateringModule::Setup()
       }
     #endif
   } // for
+  #endif // #if WATER_RELAYS_COUNT > 0
 
 #ifdef USE_PUMP_RELAY
   // выключаем реле насоса  
@@ -152,8 +164,10 @@ void WateringModule::Setup()
       
 
 }
+#if WATER_RELAYS_COUNT > 0
 void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, uint16_t dt)
 {
+  
    if(!bIsRTClockPresent)
    {
      // в системе нет модуля часов, в таких условиях мы можем работать только в ручном режиме.
@@ -240,16 +254,16 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
       else
         channel->SetRelayOn(true); // ещё можем работать, продолжаем поливать
      } // else
-
-  
+     
 }
 void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channel)
 {
     uint8_t state = channel->IsChannelRelayOn() ? RELAY_ON : RELAY_OFF;
 
+
     if(channelIdx == -1) // работаем со всеми каналами, пишем в пин только тогда, когда состояние реле поменялось
     {
-      if(channel->IsChanged())
+      if(channel->IsChanged() || internalNeedChange)
         for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
         {
           digitalWrite(WATER_RELAYS[i],state);
@@ -267,13 +281,14 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
            }
            #endif
         
-        } // for   
+        } // for
         
       return;
     } // if
 
     // работаем с одним каналом, пишем в пин только тогда, когда состояние реле поменялось
-    if(channel->IsChanged())
+    
+    if(channel->IsChanged() || internalNeedChange)
       digitalWrite(WATER_RELAYS[channelIdx],state);
 
      #ifdef SAVE_RELAY_STATES 
@@ -287,8 +302,7 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
       bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn());
       os->Update((void*)&curRelayStates);
      }
-    #endif
-    
+    #endif    
 }
 
 bool WateringModule::IsAnyChannelActive(uint8_t wateringOption)
@@ -304,14 +318,18 @@ bool WateringModule::IsAnyChannelActive(uint8_t wateringOption)
       return dummyAllChannels.IsChannelRelayOn(); // смотрим состояние реле на всех каналах
 
     // тут мы рулим всеми каналами по отдельности, поэтому надо проверить - включено ли реле на каком-нибудь из каналов
+    #if WATER_RELAYS_COUNT > 0
     for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
     {
       if(wateringChannels[i].IsChannelRelayOn())
         return true;
     }
+    #endif
 
     return false;
 }
+#endif // #if WATER_RELAYS_COUNT > 0
+
 #ifdef USE_PUMP_RELAY
 void WateringModule::HoldPumpState(bool anyChannelActive)
 {
@@ -340,6 +358,8 @@ void WateringModule::Update(uint16_t dt)
 #ifdef USE_WATERING_MANUAL_MODE_DIODE
    blinker.update();
 #endif
+
+#if WATER_RELAYS_COUNT > 0
   
 uint8_t wateringOption = settings->GetWateringOption(); // получаем опцию управления поливом
 bool anyChActive = IsAnyChannelActive(wateringOption);
@@ -359,14 +379,6 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
     DS3231Clock watch =  mainController->GetClock();
     DS3231Time t =   watch.getTime();
 
-    // Выпилил, т.к. настраиваем это всё в Setup, плюс привёл всё к беззнаковым типам, как и положено
-    /*
-    if(currentDOW == -1) // если мы не сохраняли текущий день недели, то
-    {
-      currentDOW = t.dayOfWeek; // сохраним его, чтобы потом проверять переход через дни недели
-      lastDOW = t.dayOfWeek; // сохраним и как предыдущий день недели
-    }
-    */
 
     if(currentDOW != t.dayOfWeek)
     {
@@ -421,6 +433,8 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
 
       case wateringSeparateChannels: // рулим всеми каналами по отдельности
       {
+        dummyAllChannels.SetRelayOn(false); // выключаем реле на всех каналах
+        
         for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
         {
           UpdateChannel(i,&(wateringChannels[i]),dt); // обновляем канал
@@ -471,6 +485,12 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
   lastDOW = currentDOW; // сделаем вид, что мы ничего не знаем о переходе на новый день недели.
   // таким образом, код перехода на новый день недели выполнится всего один раз при каждом переходе
   // через день недели.
+
+  internalNeedChange = false;
+
+#else
+UNUSED(dt);
+#endif
   
 }
 bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
@@ -515,7 +535,10 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
               if(wateringOption == wateringOFF) // если выключено автоуправление поливом
               {
                 workMode = wwmManual; // переходим в ручной режим работы
+                #if WATER_RELAYS_COUNT > 0
                 dummyAllChannels.SetRelayOn(false); // принудительно гасим полив на всех каналах
+                #endif
+                
                 #ifdef USE_WATERING_MANUAL_MODE_DIODE
                 blinker.blink(WORK_MODE_BLINK_INTERVAL); // зажигаем диод
                 #endif
@@ -545,6 +568,7 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
         {
            if(argsCount > 4)
            {
+              #if WATER_RELAYS_COUNT > 0
                 uint8_t channelIdx = String(command.GetArg(1)).toInt();
                 if(channelIdx < WATER_RELAYS_COUNT)
                 {
@@ -567,6 +591,9 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
                   // плохой индекс
                   PublishSingleton = UNKNOWN_COMMAND;
                 }
+             #else
+              PublishSingleton = UNKNOWN_COMMAND;
+             #endif
            }
            else
            {
@@ -583,6 +610,8 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
            if(param == WM_AUTOMATIC)
            {
              workMode = wwmAutomatic; // переходим в автоматический режим работы
+             internalNeedChange = true; // говорим, что надо перезаписать в пины реле
+             
              #ifdef USE_WATERING_MANUAL_MODE_DIODE
              blinker.blink(); // гасим диод
              #endif
@@ -598,6 +627,8 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
               PublishSingleton.Status = true;
               PublishSingleton = WORK_MODE; 
               PublishSingleton << PARAM_DELIMITER << param;
+
+              
         
         } // WORK_MODE
         else 
@@ -617,7 +648,9 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
           // Хотя это - неправильно, должна быть возможность в автоматическом
           // режиме включать/выключать полив из модуля ALERT, без мигания диодом.
 
+          #if WATER_RELAYS_COUNT > 0
           dummyAllChannels.SetRelayOn(true); // включаем реле на всех каналах
+          #endif
 
           PublishSingleton.Status = true;
           PublishSingleton = STATE_ON;
@@ -638,8 +671,10 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
           // в этом случае - надо переходить на ручное управление, мне кажется.
           // Хотя это - неправильно, должна быть возможность в автоматическом
           // режиме включать/выключать полив из модуля ALERT, без мигания диодом.
-
+          
+          #if WATER_RELAYS_COUNT > 0
           dummyAllChannels.SetRelayOn(false); // выключаем реле на всех каналах
+          #endif
 
           PublishSingleton.Status = true;
           PublishSingleton = STATE_OFF;
@@ -654,7 +689,11 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
     if(!argsCount) // нет аргументов, попросили вернуть статус полива
     {
       PublishSingleton.Status = true;
+      #if WATER_RELAYS_COUNT > 0
       PublishSingleton = (IsAnyChannelActive(settings->GetWateringOption()) ? STATE_ON : STATE_OFF);
+      #else
+      PublishSingleton = STATE_OFF;
+      #endif
       PublishSingleton << PARAM_DELIMITER << (workMode == wwmAutomatic ? WM_AUTOMATIC : WM_MANUAL);
     }
     else
@@ -696,6 +735,7 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
     
                 if(t == WATER_CHANNEL_SETTINGS)
                 {
+                  #if WATER_RELAYS_COUNT > 0
                   // запросили настройки канала
                   uint8_t idx = String(command.GetArg(1)).toInt();
                   
@@ -714,6 +754,9 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
                     // плохой индекс
                     PublishSingleton = UNKNOWN_COMMAND;
                   }
+                  #else
+                    PublishSingleton = UNKNOWN_COMMAND;
+                  #endif
                           
                 } // if
            } // if

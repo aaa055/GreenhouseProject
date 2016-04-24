@@ -36,8 +36,18 @@ class WateringModule : public AbstractModule // модуль управлени�
 {
   private:
 
+  #if WATER_RELAYS_COUNT > 0
+  
   WateringChannel wateringChannels[WATER_RELAYS_COUNT]; // каналы полива
   WateringChannel dummyAllChannels; // управляем всеми каналами посредством этой структуры
+  void UpdateChannel(int8_t channelIdx, WateringChannel* channel, uint16_t dt); // обновляем состояние канала
+  void HoldChannelState(int8_t channelIdx, WateringChannel* channel);  // поддерживаем состояние реле для канала.
+  bool IsAnyChannelActive(uint8_t wateringOption); // возвращает true, если хотя бы один из каналов активен
+
+  bool internalNeedChange;
+
+  #endif
+
 
   GlobalSettings* settings; // настройки
 
@@ -53,16 +63,13 @@ class WateringModule : public AbstractModule // модуль управлени�
   BlinkModeInterop blinker;
 #endif
 
-  void UpdateChannel(int8_t channelIdx, WateringChannel* channel, uint16_t dt); // обновляем состояние канала
 
-  void HoldChannelState(int8_t channelIdx, WateringChannel* channel);  // поддерживаем состояние реле для канала.
 
 #ifdef USE_PUMP_RELAY   
    void HoldPumpState(bool anyChannelActive); // поддерживаем состояние реле насоса
    bool bPumpIsOn;
 #endif
 
-   bool IsAnyChannelActive(uint8_t wateringOption); // возвращает true, если хотя бы один из каналов активен
     
   public:
     WateringModule() : AbstractModule(F("WATER")) {}

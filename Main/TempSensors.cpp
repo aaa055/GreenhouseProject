@@ -1,7 +1,9 @@
 #include "TempSensors.h"
 #include "ModuleController.h"
 
+#if SUPPORTED_SENSORS > 0
 static TempSensorSettings TEMP_SENSORS[] = { TEMP_SENSORS_PINS };
+#endif
 
 #ifndef USE_WINDOWS_SHIFT_REGISTER
 static uint8_t WINDOWS_RELAYS[] = { WINDOWS_RELAYS_PINS };
@@ -271,7 +273,7 @@ void TempSensors::Setup()
   smallSensorsChange = 0;
   
    // добавляем датчики температуры
-   
+   #if SUPPORTED_SENSORS > 0
    tempData.Whole = 0;
    tempData.Fract = 0;
    for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
@@ -284,6 +286,7 @@ void TempSensors::Setup()
     
     tempSensor.readTemperature(&tempData,(DSSensorType)TEMP_SENSORS[i].type);
    }
+   #endif
 
    #ifdef SAVE_RELAY_STATES   
    // добавляем N восьмиканальных состояний реле
@@ -372,6 +375,7 @@ void TempSensors::Update(uint16_t dt)
     lastUpdateCall = 0;
 
   // опрашиваем наши датчики
+  #if SUPPORTED_SENSORS > 0
   Temperature t;
   for(uint8_t i=0;i<SUPPORTED_SENSORS;i++)
   {
@@ -391,6 +395,7 @@ void TempSensors::Update(uint16_t dt)
     }
     State.UpdateState(StateTemperature,i,(void*)&t); // обновляем состояние температуры, индексы датчиков у нас идут без дырок, поэтому с итератором цикла вызывать можно
   } // for
+  #endif
 
   smallSensorsChange = 0;
 
