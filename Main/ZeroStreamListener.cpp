@@ -4,9 +4,11 @@
 #include "RemoteModule.h"
 #endif
 
-#ifdef USE_UNIVERSAL_SENSORS
 #include "UniversalSensors.h"
 
+#ifdef USE_UNIVERSAL_SENSORS
+
+#ifdef UNI_USE_REGISTRATION_LINE
 UniRegistrationLine uniRegistrator(UNI_REGISTRATION_PIN,
 #ifdef UNI_AUTO_REGISTRATION_MODE
 true
@@ -14,6 +16,8 @@ true
 false
 #endif
 );
+
+#endif // UNI_USE_REGISTRATION_LINE
 
 #if UNI_WIRED_SENSORS_COUNT > 0
   UniPermanentSensor uniWiredSensors[UNI_WIRED_SENSORS_COUNT] = { UNI_WIRED_SENSORS };
@@ -33,14 +37,16 @@ void ZeroStreamListener::Update(uint16_t dt)
 {
 #ifdef USE_UNIVERSAL_SENSORS
 
+  #ifdef UNI_USE_REGISTRATION_LINE
   uniRegistrator.Update(dt);
+  #endif
 
   #if UNI_WIRED_SENSORS_COUNT > 0
     for(uint8_t i=0;i<UNI_WIRED_SENSORS_COUNT;i++)
       uniWiredSensors[i].Update(dt);
   #endif
   
-#endif
+#endif // USE_UNIVERSAL_SENSORS
 
   UNUSED(dt);
   // обновление модуля тут
@@ -80,6 +86,40 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton = PONG;
           PublishSingleton.AddModuleIDToAnswer = false;
         } // if
+        #if defined(USE_UNIVERSAL_SENSORS) && defined(UNI_USE_REGISTRATION_LINE)
+        else
+        if(t == UNI_SEARCH) // поиск универсального модуля на линии регистрации
+        {
+          PublishSingleton.AddModuleIDToAnswer = false;
+          
+          if(uniRegistrator.IsSensorPresent())
+          {
+            // датчик найден, отправляем его внутреннее состояние
+            PublishSingleton.Status = true;
+
+            uint8_t sensorType, sensorIndex;
+            
+            PublishSingleton = uniRegistrator.GetRegistrationID();
+            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetID();
+            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetConfig();
+            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetCalibrationFactor();
+            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetCalibrationFactor(1);
+            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetQueryInterval();
+
+            for(uint8_t tt = 0;tt<UNI_SENSORS_COUNT;tt++)
+            {
+              uniRegistrator.GetSensorInfo(tt,sensorType,sensorIndex);
+              PublishSingleton << PARAM_DELIMITER << sensorType << PARAM_DELIMITER << sensorIndex;
+            }
+        
+          } // if
+          else
+          {
+            // датчика нету
+            PublishSingleton = UNI_NOT_FOUND;
+          } // else
+        }
+        #endif // UNI_USE_REGISTRATION_LINE
         else
         if(t == ID_COMMAND)
         {
@@ -88,9 +128,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton = ID_COMMAND; 
           PublishSingleton << PARAM_DELIMITER << mainController->GetSettings()->GetControllerID();
         }
-        #ifdef USE_UNIVERSAL_SENSORS
         else
-        if(t == WIRED_COMMAND)
+        if(t == WIRED_COMMAND) // получить количество жёстко указанных в прошивке обычных датчиков
         {
           PublishSingleton.Status = true;
           PublishSingleton.AddModuleIDToAnswer = false;
@@ -101,10 +140,23 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniLuminosity);
           PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniSoilMoisture);
           //TODO: Тут остальные типы датчиков указывать !!!
-           
-            
+                     
         }
-        #endif
+        else
+        if(t == UNI_COUNT_COMMAND) // получить количество зарегистрированных универсальных датчиков
+        {
+          PublishSingleton.Status = true;
+          PublishSingleton.AddModuleIDToAnswer = false;
+          PublishSingleton = UNI_COUNT_COMMAND;
+
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetUniSensorsCount(uniTemp);
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetUniSensorsCount(uniHumidity);
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetUniSensorsCount(uniLuminosity);
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetUniSensorsCount(uniSoilMoisture);
+          //TODO: Тут остальные типы датчиков указывать !!!
+                     
+        }
+
         
         else
         if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по СМС
@@ -173,8 +225,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               uint8_t lightCount = mod->State.GetStateCount(StateLuminosity);
               uint8_t waterflowCountInstant = mod->State.GetStateCount(StateWaterFlowInstant);
               uint8_t waterflowCount = mod->State.GetStateCount(StateWaterFlowIncremental);
+              uint8_t soilMoistureCount = mod->State.GetStateCount(StateSoilMoisture); 
+              
+              //TODO: тут другие типы датчиков!!!
 
-              if((tempCount + humCount + lightCount + waterflowCountInstant + waterflowCount) < 1) // пустой модуль, без интересующих нас датчиков
+              if((tempCount + humCount + lightCount + waterflowCountInstant + waterflowCount + StateSoilMoisture) < 1) // пустой модуль, без интересующих нас датчиков
                 continue;
 
               uint8_t flags = 0;
@@ -183,6 +238,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               if(lightCount) flags |= StateLuminosity;
               if(waterflowCountInstant) flags |= StateWaterFlowInstant;
               if(waterflowCount) flags |= StateWaterFlowIncremental;
+              if(soilMoistureCount) flags |= StateSoilMoisture;
 
             // показание каждого модуля идут так:
             
@@ -347,6 +403,37 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
 
                 } // for
              } // waterflowCount > 0
+
+             // затем идут датчики влажности почвы
+             if(soilMoistureCount)
+            {
+            // 1 байт - кол-во датчиков влажности почвы
+              pStream->write(WorkStatus::ToHex(soilMoistureCount).c_str());
+
+              for(uint8_t cntr=0;cntr<soilMoistureCount;cntr++)
+              {
+                yield(); // немного даём поработать другим модулям
+                
+                OneState* os = mod->State.GetStateByOrder(StateSoilMoisture,cntr);
+                // потом идут пакеты влажности. каждый пакет состоит из:
+                // 1 байт - индекс датчика
+                pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
+                HumidityPair tp = *os;
+                if(tp.Current.Value != NO_TEMPERATURE_DATA)
+                {
+                  pStream->write(WorkStatus::ToHex(tp.Current.Value).c_str());
+                  pStream->write(WorkStatus::ToHex(tp.Current.Fract).c_str());
+                }
+                else
+                {
+                  // датчика нет на линии, пишем FFFF
+                  pStream->write(noDataByte);
+                  pStream->write(noDataByte);
+                }
+                 
+              } // for
+            } // soilMoistureCount > 0
 
 
             
@@ -593,6 +680,31 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           resetFunc(); // ресетимся, писать в ответ ничего не надо
         } // RESET_COMMAND
         
+        #if defined(USE_UNIVERSAL_SENSORS) && defined(UNI_USE_REGISTRATION_LINE)
+        else
+        if(t == UNI_REGISTER) // автоматически зарегистрировать универсальный модуль, висящий на линии
+        {
+          PublishSingleton.AddModuleIDToAnswer = false;
+          
+          if(uniRegistrator.IsSensorPresent())
+          {
+            // модуль есть на линии
+            if(!uniRegistrator.IsRegistered()) // если не был зарегистрирован у нас
+              uniRegistrator.SensorRegister(true); // регистрируем его в системе
+            
+            PublishSingleton.Status = true;
+            PublishSingleton = REG_SUCC;
+            
+          } // if
+          else
+          {
+            // модуля нет на линии
+            PublishSingleton = UNI_NOT_FOUND;
+          }
+          
+        } // UNI_REGISTER
+        #endif // UNI_USE_REGISTRATION_LINE
+        
       } // if
       else
       {
@@ -644,6 +756,80 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton << PARAM_DELIMITER << REG_SUCC;
         
        }
+       
+       #if defined(USE_UNIVERSAL_SENSORS) && defined(UNI_USE_REGISTRATION_LINE)
+       else if(t == UNI_REBIND) // переназначить индексы универсальному модулю, и зарегистрировать его в системе
+       {
+          PublishSingleton.AddModuleIDToAnswer = false;
+          if(argsCnt < 7)
+          {
+            PublishSingleton = PARAMS_MISSED;
+          }
+          else
+          {
+              if(uniRegistrator.IsSensorPresent())
+              {
+                 // модуль есть на линии, можно с ним работать
+                 // при записи информации в модуль ему косвенно привязывается ID нашего контроллера.
+
+                 String idxHolder = command.GetArg(1);
+                 int iVal = idxHolder.toInt();
+
+                 if(iVal != 0xFF)
+                  uniRegistrator.SetConfig(iVal);
+                 
+                 
+                 idxHolder = command.GetArg(2);
+                 iVal = idxHolder.toInt();
+                 if(iVal != 0xFF)
+                  uniRegistrator.SetCalibrationFactor(0,iVal);
+
+                 idxHolder = command.GetArg(3);
+                 iVal = idxHolder.toInt();
+                 if(iVal != 0xFF)
+                  uniRegistrator.SetCalibrationFactor(1,iVal);
+
+                 idxHolder = command.GetArg(4);
+                 iVal = idxHolder.toInt();
+                 if(iVal != 0xFF)
+                  uniRegistrator.SetQueryInterval(iVal);
+
+                 idxHolder = command.GetArg(5);
+                 iVal = idxHolder.toInt();
+                 if(iVal != 0xFF)
+                  uniRegistrator.SetSensorIndex(0,iVal);
+                  
+                 idxHolder = command.GetArg(6);
+                 iVal = idxHolder.toInt();
+                 if(iVal != 0xFF)
+                  uniRegistrator.SetSensorIndex(1,iVal);
+
+                 idxHolder = command.GetArg(7);
+                 iVal = idxHolder.toInt(); 
+                 if(iVal != 0xFF)
+                  uniRegistrator.SetSensorIndex(2,iVal);
+
+                 // индексы датчиков мы назначили, можем работать дальше. 
+                 // сначала сохраняем конфигурацию в модуле
+                  uniRegistrator.SaveConfiguration();
+                  // настраивать внутренние состояния модуля нам не нужно, потому что линия регистрации работает только для беспроводных датчиков.
+                 // uniRegistrator.SensorSetup();
+
+                  // здесь мы должны иметь уже настроенный датчик, с перепривязанными индексами, настройкой интервала опроса и факторами калибровки.
+
+                 PublishSingleton.Status = true;
+                 PublishSingleton = REG_SUCC;
+
+              }
+              else
+              {
+                // модуля нет на линии
+                PublishSingleton = UNI_NOT_FOUND;
+              }
+          } // else
+       }
+       #endif // UNI_USE_REGISTRATION_LINE
+       
        #ifdef USE_DS3231_REALTIME_CLOCK
        else if(t == SETTIME_COMMAND)
        {

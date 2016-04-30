@@ -23,6 +23,79 @@ UniRegDispatcher::UniRegDispatcher()
   hardCodedSoilMoistureCount = 0;
     
 }
+void UniRegDispatcher::AddUniSensors(UniSensorType type, uint8_t cnt)
+{
+   switch(type)
+  {
+    case uniNone: 
+    break;
+    
+    case uniTemp: 
+      if(temperatureModule)
+      {
+        uint8_t cntr = 0;
+        while(cntr < cnt)
+        {
+          temperatureModule->State.AddState(StateTemperature,hardCodedTemperatureCount + currentTemperatureCount + cntr);
+          cntr++; 
+        }
+        currentTemperatureCount += cnt;
+      }
+    break;
+    
+    case uniHumidity: 
+    if(humidityModule)
+      {
+        uint8_t cntr = 0;
+        while(cntr < cnt)
+        {
+          humidityModule->State.AddState(StateTemperature, hardCodedHumidityCount + currentHumidityCount + cntr);
+          humidityModule->State.AddState(StateHumidity, hardCodedHumidityCount + currentHumidityCount + cntr);
+          cntr++; 
+        }
+        currentHumidityCount += cnt;
+      }    break;
+    
+    case uniLuminosity: 
+    if(luminosityModule)
+      {
+        uint8_t cntr = 0;
+        while(cntr < cnt)
+        {
+          luminosityModule->State.AddState(StateLuminosity, hardCodedLuminosityCount + currentLuminosityCount + cntr);
+          cntr++; 
+        }
+        currentLuminosityCount += cnt;
+      }    
+    break;
+    
+    case uniSoilMoisture: 
+       if(soilMoistureModule)
+      {
+        uint8_t cntr = 0;
+        while(cntr < cnt)
+        {
+          soilMoistureModule->State.AddState(StateSoilMoisture,hardCodedSoilMoistureCount + currentSoilMoistureCount + cntr);
+          cntr++; 
+        }
+        currentSoilMoistureCount += cnt;
+      } 
+    break;
+  } 
+}
+uint8_t UniRegDispatcher::GetUniSensorsCount(UniSensorType type)
+{
+  switch(type)
+  {
+    case uniNone: return 0;
+    case uniTemp: return currentTemperatureCount;
+    case uniHumidity: return currentHumidityCount;
+    case uniLuminosity: return currentLuminosityCount;
+    case uniSoilMoisture: return currentSoilMoistureCount;
+  }
+
+  return 0;  
+}
 uint8_t UniRegDispatcher::GetHardCodedSensorsCount(UniSensorType type)
 {
   switch(type)
@@ -449,9 +522,38 @@ bool AbstractUniSensor::IsRegistered()
   return (isScratchpadReaded && (GetRegistrationID() == UniDispatcher.GetControllerID()));
 }
 
+uint8_t AbstractUniSensor::GetQueryInterval()
+{
+  return scratchpadAddress[QUERY_INTERVAL_IDX];
+}
+
+void AbstractUniSensor::SetQueryInterval(uint8_t val)
+{
+  scratchpadAddress[QUERY_INTERVAL_IDX] = val;
+}
+
+uint8_t AbstractUniSensor::GetCalibrationFactor(uint8_t offset)
+{
+  return scratchpadAddress[CALIBRATION_IDX + offset];  
+}
+
+void AbstractUniSensor::SetCalibrationFactor(uint8_t offset, uint8_t val)
+{
+  scratchpadAddress[CALIBRATION_IDX + offset] = val;
+}
+
 uint8_t AbstractUniSensor::GetRegistrationID()
 {
   return scratchpadAddress[CONTROLLER_ID_IDX];
+}
+uint8_t AbstractUniSensor::GetConfig()
+{
+  return scratchpadAddress[CONFIG_IDX];  
+}
+void AbstractUniSensor::SetConfig(uint8_t val)
+{
+  scratchpadAddress[CONFIG_IDX] = val;
+  rfEnabled = (val & 1) == 1;
 }
 
 uint8_t AbstractUniSensor::GetID()
@@ -459,14 +561,31 @@ uint8_t AbstractUniSensor::GetID()
   return scratchpadAddress[RF_ID_IDX];
 }
 
-void AbstractUniSensor::ReBindSensor(uint8_t scratchIndex,uint8_t newSensorIndex)
+bool AbstractUniSensor::ReBindSensor(uint8_t scratchIndex,uint8_t newSensorIndex)
 {
   if(!isScratchpadReaded || !scratchpadAddress)
-    return;
+    return false;
 
    // назначаем новый индекс для датчика в системе
    uint8_t idx = DATA_START_IDX + scratchIndex*6; // начало данных
-   scratchpadAddress[idx] = newSensorIndex;    
+   scratchpadAddress[idx] = newSensorIndex;
+
+  bool dispatcherStateChanged = false;
+  // проверяем, находимся ли мы в пределах уже выданных индексов для типа датчика.
+  UniSensorType sensorType = (UniSensorType) scratchpadAddress[idx+1];
+  uint8_t sensCount = UniDispatcher.GetUniSensorsCount(sensorType);
+  // если да - то ничего не делаем.
+  // если нет - то надо обновить состояние диспетчера для нужного типа датчика.
+  if(newSensorIndex >= sensCount)
+  {
+    // индекс датчика равен последнему выданному индексу датчика переданного типа в системе.
+    // значит, мы должны передать этот индекс диспетчеру, чтобы он у себя его сохранил.
+    UniDispatcher.AddUniSensors(sensorType,(newSensorIndex - sensCount) + 1);
+    dispatcherStateChanged = true; // говорим, что мы изменили состояние диспетчера.
+    // после прохода по всем датчикам мы попросим диспетчер сохранить и обновить своё состояние.
+  }
+
+  return dispatcherStateChanged;
 }
 void AbstractUniSensor::GetRawSensorData(uint8_t scratchIndex,uint8_t& sensorType,uint8_t& sensorIndex,uint8_t* outData)
 {
@@ -654,6 +773,7 @@ bool  AbstractUniSensor::SensorRegister(bool rfTransmitterEnabled)
    if(registeredSensorsCount)
    {
       UniDispatcher.SaveState(); // сохраняем состояние
+      
       return WriteScratchpad();
    }
 
@@ -705,7 +825,7 @@ void UniPermanentSensor::Update(uint16_t dt)
         
       } // else
       
-    } // !isSensorInited
+    } // if(!isSensorInited)
 
     if(canWork)
     {
@@ -717,6 +837,8 @@ void UniPermanentSensor::Update(uint16_t dt)
   else
   {
     // данные прочитать не удалось, возможно, датчик отвалился
+    isSensorInited = false; // говорим, что мы не инициализировали модуль, и как только на линии появится новый - мы пройдём его настройку по новой
+    canWork = false; // сбрасываем флаг возможности обновления данных
     // тупо обновляем данные, говоря, что датчика нет на линии
     UpdateData(false);   
 
@@ -785,24 +907,35 @@ void UniRegistrationLine::Update(uint16_t dt)
 }
 void UniRegistrationLine::SetSensorIndex(uint8_t scrathIndex, uint8_t sensorIndex)
 {
-  if(scrathIndex < UNI_SENSORS_COUNT)
+  if(scrathIndex < UNI_SENSORS_COUNT && sensorIndex < 0xFF)
     rebindedSensorIndicies[scrathIndex] = sensorIndex;
 }
 void UniRegistrationLine::SaveConfiguration()
 {
   bool anyRebinded = false;
+  int dispatcherStateChanges = 0;
   for(uint8_t i=0;i<UNI_SENSORS_COUNT;i++)
   {
     if(rebindedSensorIndicies[i] != NO_SENSOR_REGISTERED)
     {
       anyRebinded = true;
-      ReBindSensor(i, rebindedSensorIndicies[i]);
+      if(ReBindSensor(i, rebindedSensorIndicies[i]))
+        dispatcherStateChanges++;
     }
       
   } // for
 
   if(anyRebinded)
+  {
+    
+    if(dispatcherStateChanges > 0) // били изменения в диспетчере
+    {
+      // сохраняем нужное состояние
+      UniDispatcher.SaveState();
+    }
+    
     WriteScratchpad();
+  }
 }
 bool UniRegistrationLine::IsSensorPresent()
 {

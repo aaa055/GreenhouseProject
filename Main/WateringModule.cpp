@@ -318,13 +318,11 @@ bool WateringModule::IsAnyChannelActive(uint8_t wateringOption)
       return dummyAllChannels.IsChannelRelayOn(); // смотрим состояние реле на всех каналах
 
     // тут мы рулим всеми каналами по отдельности, поэтому надо проверить - включено ли реле на каком-нибудь из каналов
-    #if WATER_RELAYS_COUNT > 0
     for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
     {
       if(wateringChannels[i].IsChannelRelayOn())
         return true;
     }
-    #endif
 
     return false;
 }

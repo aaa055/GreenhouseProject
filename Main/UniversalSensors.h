@@ -10,8 +10,9 @@ rf_id - 1 байт, уникальный идентификатор датчик
 battery_status - 1 байт, статус заряда батареи
 calibration_factor1 - 1 байт, фактор калибровки
 calibration_factor2 - 1 байт, фактор калибровки
-config - 1 байт, конфигурация (бит 0 - вкл/выкл передатчик)
-reserved - 5 байт, резерв
+config - 1 байт, конфигурация (бит 0 - вкл/выкл передатчик, бит 1 - поддерживается ли фактор калибровки)
+query_interval - 1 байт, интервал обновления показаний (старшие 4 бита - минуты, младшие 4 бита - секунды)
+reserved - 4 байт, резерв
 index1 - 1 байт, индекс первого датчика в системе
 type1 - 1 байт, тип первого датчика
 data1 - 4 байта, данные первого датчика
@@ -29,7 +30,9 @@ crc8 - 1 байт, контрольная сумма скратчпада
 #define UNI_SCRATCH_SIZE 30 // размер скратчпада к вычитке
 #define CONTROLLER_ID_IDX 0 // индекс ID контроллера в скратчпаде
 #define RF_ID_IDX 1 // индекс уникального идентификатора модуля
+#define CALIBRATION_IDX 3 // начало байтов калибровки
 #define CONFIG_IDX 5 // индекс байта конфигурации
+#define QUERY_INTERVAL_IDX 6 // индекс байта интервала опроса
 #define DATA_START_IDX 11 // с какого индекса начинаются данные с датчиков в скратчпаде
 #define NO_SENSOR_REGISTERED 0xFF // значение, которое сообщает нам, что датчик в системе не зарегистрирован (например, в прошивке нет модуля, в который помещать данные)
 #define UNI_SENSORS_COUNT 3 // сколько датчиков максимум может быть внутри одного универсального
@@ -74,6 +77,10 @@ typedef struct
 
     // возвращает кол-во жёстко прописанных в прошивке датчиков того или иного типа
     uint8_t GetHardCodedSensorsCount(UniSensorType type); 
+    // возвращает кол-во зарегистрированных универсальных модулей нужного типа
+    uint8_t GetUniSensorsCount(UniSensorType type);
+
+    void AddUniSensors(UniSensorType type, uint8_t cnt);
 
     uint8_t GetControllerID(); // возвращает уникальный ID контроллера
 
@@ -120,6 +127,13 @@ class AbstractUniSensor
 
     uint8_t GetRegistrationID(); // возвращает сохранённый ID контроллера в скратчпаде
     uint8_t GetID(); // возвращает уникальный индекс датчика
+    uint8_t GetConfig(); // возвращает байт конфигурации
+    uint8_t GetQueryInterval(); // возвращает интервал опроса
+    uint8_t GetCalibrationFactor(uint8_t offset=0); // возвращает фактор калибровки
+
+    void SetQueryInterval(uint8_t val);
+    void SetCalibrationFactor(uint8_t offset, uint8_t val);
+    void SetConfig(uint8_t val);
 
     bool GetSensorInfo(uint8_t scratchIndex,uint8_t& sensorType,uint8_t& sensorIndex); // возвращает информацию о сенсоре у датчика
     bool IsRegistered(); // проверяет, зарегистрирован ли сенсор у нас?
@@ -141,7 +155,7 @@ class AbstractUniSensor
     bool WriteScratchpad(); // пишет скратчпад
     
 
-    void ReBindSensor(uint8_t scratchIndex,uint8_t newSensorIndex); // переназначает привязки для сенсоров в скратчпаде
+    bool ReBindSensor(uint8_t scratchIndex,uint8_t newSensorIndex); // переназначает привязки для сенсоров в скратчпаде
     
     void UpdateData(bool isSensorOnline); // обновляет данные в контроллере, если isSensorOnline == false, то вместо актуальных данных показывает <нет данных>
     
