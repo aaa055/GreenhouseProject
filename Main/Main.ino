@@ -73,6 +73,10 @@
 #include "CompositeCommandsModule.h"
 #endif
 
+#ifdef USE_SOIL_MOISTURE_MODULE
+#include "SoilMoistureModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 #ifdef USE_READY_DIODE
@@ -215,6 +219,11 @@ WaterflowModule waterflowModule;
 #ifdef USE_COMPOSITE_COMMANDS_MODULE
 // модуль составных команд
 CompositeCommandsModule compositeCommands;
+#endif
+
+#ifdef USE_SOIL_MOISTURE_MODULE
+// модуль датчиков влажности почвы
+SoilMoistureModule soilMoistureModule;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -369,6 +378,10 @@ void setup()
 
   #ifdef USE_COMPOSITE_COMMANDS_MODULE
   controller.RegisterModule(&compositeCommands);
+  #endif
+  
+  #ifdef USE_SOIL_MOISTURE_MODULE
+  controller.RegisterModule(&soilMoistureModule);
   #endif
 
   #ifdef USE_LOG_MODULE

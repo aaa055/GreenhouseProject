@@ -229,7 +229,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               
               //TODO: тут другие типы датчиков!!!
 
-              if((tempCount + humCount + lightCount + waterflowCountInstant + waterflowCount + StateSoilMoisture) < 1) // пустой модуль, без интересующих нас датчиков
+              if((tempCount + humCount + lightCount + waterflowCountInstant + waterflowCount + soilMoistureCount) < 1) // пустой модуль, без интересующих нас датчиков
                 continue;
 
               uint8_t flags = 0;

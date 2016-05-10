@@ -197,6 +197,39 @@ bool AlertRule::HasAlert()
     }
     break;
 
+   case rtSoilMoisture: // следим за влажностью почвы
+    {
+     if(!linkedModule->State.HasState(StateSoilMoisture))  // не поддерживаем влажность
+        return false;
+
+       OneState* os = linkedModule->State.GetState(StateSoilMoisture,sensorIdx);
+       if(!os) // не срослось
+        return false;
+
+     if(!os->IsChanged() && !bFirstCall) // ничего не изменилось
+        return false;
+
+       bFirstCall = false;
+
+       HumidityPair hp = *os;
+       int8_t curHumidity = hp.Current.Value;
+
+       if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
+        return false;
+
+
+       switch(operand)
+       {
+          case roLessThan: return curHumidity < dataAlert;
+          case roLessOrEqual: return curHumidity <= dataAlert;
+          case roGreaterThan: return curHumidity > dataAlert;
+          case roGreaterOrEqual: return curHumidity >= dataAlert;
+          default: return false;
+       } // switch
+      
+    }
+    break;    
+
     case rtPinState: // следим за статусом пина
     {
        pinMode(sensorIdx,INPUT);
@@ -247,6 +280,10 @@ String AlertRule::GetAlertRule() // конструируем правило, к�
 
       case rtPinState:
       result += PROP_PIN;
+      break;
+
+      case rtSoilMoisture:
+      result += PROP_SOIL;
       break;
 
       case rtUnknown:
@@ -554,6 +591,9 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   else
   if(curArg == PROP_PIN)
     target = rtPinState; // следим за состоянием пина
+  else
+  if(curArg == PROP_SOIL)
+    target = rtSoilMoisture; // следим за влажностью почвы
 
   sensorIdx = String(command.GetArg(curArgIdx++)).toInt();
   curArg = command.GetArg(curArgIdx++);
