@@ -4,6 +4,7 @@
 var DeltaView = function(controller, list)
 {
   this.OnDeleteDelta = null; // событие "запрошено удаление дельты"
+  this.OnEditDelta = null; // событие "запрошено редактирование дельты"
   
   this.Controller = controller;
   this.List = list;
@@ -45,16 +46,26 @@ DeltaView.prototype.buildRow = function(delta, row_id,typeName,mname1,index1,mna
         if(addActions)
         {
               var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
-              var editAction = $('<span/>',{'class': 'action pointer link'}).appendTo(actions).html("удалить").click({row: row, delta : delta, view: view}, function(ev){
+              $('<div/>',{'class': 'action pointer link delete_button', title: 'Удалить'}).appendTo(actions).click({row: row, delta : delta, view: view}, function(ev){
               
                 if(ev.data.view.OnDeleteDelta != null)
                 {
                   var cont = ev.data.view.Controller;
                   ev.data.view.OnDeleteDelta(cont, ev.data.delta, ev.data.row);
                 }
-              
-              
+      
               });
+              
+              $('<div/>',{'class': 'action pointer link edit_button', title: 'Редактировать'}).appendTo(actions).click({row: row, delta : delta, view: view}, function(ev){
+              
+                if(ev.data.view.OnEditDelta != null)
+                {
+                  var cont = ev.data.view.Controller;
+                  ev.data.view.OnEditDelta(cont, ev.data.delta, ev.data.row);
+                }
+      
+              });
+                          
         }
         
    return row;
@@ -88,50 +99,15 @@ DeltaView.prototype.fillList = function(parentElement)
     
     var row = this.buildRow(
         delta
-      , child_id,delta.getDisplayName()
+      , child_id
+      , delta.getDisplayName()
       , ModuleNamesBindings[delta.ModuleName1]
       , this.Controller.SensorsNames.getMnemonicName(new Sensor(delta.Index1,delta.ModuleName1))
       , ModuleNamesBindings[delta.ModuleName2]
       , this.Controller.SensorsNames.getMnemonicName(new Sensor(delta.Index2,delta.ModuleName2))
       , true
       );
-    
-    /*
-   
-      // надо добавить в таблицу
-        var row = $('<div/>',{'class': 'row', id: child_id});
-        
-        var type = $('<div/>',{'class': 'row_item module_name', id: 'type'}).appendTo(row);
-        type.html(delta.getDisplayName());
-        
-        var module1 = $('<div/>',{'class': 'row_item module_name', id: 'module1'}).appendTo(row);
-        module1.html(ModuleNamesBindings[delta.ModuleName1]);
-        
-        var idx1 = $('<div/>',{'class': 'row_item sensor_index', id : 'index1'}).appendTo(row);
-        idx1.html(this.Controller.SensorsNames.getMnemonicName(new Sensor(delta.Index1,delta.ModuleName1)));
-
-        var module2 = $('<div/>',{'class': 'row_item module_name', id: 'module2'}).appendTo(row);
-        module2.html(ModuleNamesBindings[delta.ModuleName2]);
-        
-        var idx2 = $('<div/>',{'class': 'row_item sensor_index', id : 'index2'}).appendTo(row);
-        idx2.html(this.Controller.SensorsNames.getMnemonicName(new Sensor(delta.Index2,delta.ModuleName2)));
-
-                
-        var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
-        var editAction = $('<span/>',{'class': 'action pointer link'}).appendTo(actions).html("удалить").click({row: row, delta : delta, view: view}, function(ev){
-        
-          if(ev.data.view.OnDeleteDelta != null)
-          {
-            var cont = ev.data.view.Controller;
-            ev.data.view.OnDeleteDelta(cont, ev.data.delta, ev.data.row);
-          }
-        
-        
-        });
-        
-     */   
-        
-     
+         
      row.appendTo(parentElement);
   
       

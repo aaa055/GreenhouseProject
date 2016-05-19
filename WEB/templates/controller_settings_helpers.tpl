@@ -12,13 +12,17 @@ var deltaList = new DeltaList();
 var deltaView = new DeltaView(controller, deltaList);
 {literal}
 //-----------------------------------------------------------------------------------------------------
+// запрошено редактирование дельты
+deltaView.OnEditDelta = function(controllerObject, delta, row)
+{
+  alert('Пока не реализовано :(');
+}
+//-----------------------------------------------------------------------------------------------------
 // запрошено удаление дельты
 deltaView.OnDeleteDelta = function(controllerObject, delta, row)
 {
   deltaList.List.remove(delta); // удаляем дельту из списка
-  row.remove(); // удаляем строку из таблицы
-  
-  alert('Send delete comand to controller!');
+  row.remove(); // удаляем строку из таблицы  
 }
 //-----------------------------------------------------------------------------------------------------
 // получаем список дельт с контроллера
@@ -45,7 +49,6 @@ function queryDeltasList()
             
                   controller.queryCommand(true,'DELTA|VIEW|' + i.toString(), function(obj,deltaInfo) {
                   
-                    //alert(deltaInfo.Params);
                     var delta = new Delta(deltaInfo.Params[3],deltaInfo.Params[4],deltaInfo.Params[5],deltaInfo.Params[6],deltaInfo.Params[7]);
                     deltaList.Add(delta);
                     if(deltaList.List.length == cnt)

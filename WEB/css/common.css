@@ -18,6 +18,37 @@ font-size:150%;
 .controller_info_box {
 
 }
+/* ссылка на главную страницу */
+.back_link {
+text-transform:uppercase;
+font-weight:bold;
+}
+
+/* кнопка "редактировать" в ячейке действий  */
+.edit_button {
+float: left;
+margin-left:6px;
+background-position: -64px -112px;
+background-image:url(/images/ui-icons_228ef1_256x240.png);
+background-repeat:no-repeat;
+
+top: 50%;
+width: 16px;
+height: 16px;
+}
+
+/* кнопка "удалить" в ячейке действий */
+.delete_button {
+float: left;
+margin-left:6px;
+background-position: -96px -128px;
+background-image:url(/images/ui-icons_228ef1_256x240.png);
+background-repeat:no-repeat;
+
+top: 50%;
+width: 16px;
+height: 16px;
+}
 
 .left_menu {
   float:left;

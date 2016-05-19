@@ -44,6 +44,12 @@ if($selected_controller_id > 0)
       break;
     }
   }
+  
+  if($selected_controller == null) // если запросили ID контроллера и он не найден в БД - перенаправляем на главную страницу
+  {
+    header('Location: /');
+    exit;
+  }
 }
 
 
