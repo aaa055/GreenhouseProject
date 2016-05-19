@@ -8,8 +8,7 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-templates_c/
-WEB/templates_c/
+*.tpl.php
 
 # Windows Installer files
 *.cab
