@@ -1,0 +1,172 @@
+BODY {
+  font-family: Verdana;
+  font-size:14px;
+}
+
+H1, H2, H3, H4, H5, H6 {
+margin-top: 0px;
+padding:6px;
+background-color: #F0F0F0;
+padding-left:10px;
+}
+
+LEGEND {
+font-weight:bold;
+font-size:150%;
+}
+/* класс отображения ошибки */
+.error {
+  padding: 6px;
+  background-color:coral;
+  font-size:120%;
+  padding-left:10px;
+}
+
+/* класс для установки курсора в виде руки */
+.pointer {
+cursor: pointer;
+}
+
+/* класс, имитирующий оформление ссылки */
+.link {
+  color:#909090;
+  text-decoration:underline;
+}
+/* класс для скрытых объектов */
+.hdn
+{
+  display: none;
+}
+
+.no-close .ui-dialog-titlebar-close {
+  display: none;
+}
+
+/* класс пункта меню слева */
+.menuitem {
+cursor: pointer;
+border:1px solid #D0D0F0;
+margin-bottom:6px;
+padding:4px;
+}
+
+/* класс выделенного пункта меню слева */
+.menuitem_selected {
+background-color:#b0b0b0;
+font-weight:bold;
+color:#FFFFFF;
+}
+
+/* класс "нет данных" от датчика */
+.no_data {
+color: #D00000;
+}
+
+/* класс "ручной режим работы" */
+.manual_mode {
+color: #D00000;
+}
+
+/* класс "автоматический режим работы" */
+.auto_mode {
+color: #00D000;
+}
+
+/* DIV-заголовок таблицы */
+.header {
+font-weight:bold;
+background-color:#b0b0b0;
+color:#FFFFFF;
+}
+
+/* DIV-ячейка таблицы */
+.row_item {
+display: table;
+float:left;
+border:1px solid #D0D0F0;
+min-width:50px;
+}
+
+/* DIV-строка таблицы */
+.row {
+clear: left;
+}
+
+/* класс "индекс датчика" */
+.sensor_index {
+text-align:center;
+color: #808080;
+}
+
+/* класс "имя модуля" */
+.module_name {
+font-style:italic;
+}
+
+/* класс "данные с датчика" */
+.sensor_data {
+}
+
+/* класс жирного шрифта */
+.bold {
+  font-weight:bold;
+}
+/* класс главного контента страницы */
+.page_content {
+margin-left:20px;
+}
+
+/* ширина столбцов в списке температур */
+#TEMPERATURE_LIST .row .row_item {
+width:200px;
+}
+
+/* ширина столбцов в заголовке списка температур */
+#TEMPERATURE_HEADER .row_item {
+width:200px;
+}
+
+/* ширина столбцов в списке влажностей */
+#HUMIDITY_LIST .row .row_item {
+width:200px;
+}
+
+/* ширина столбцов в заголовке списка влажностей */
+#HUMIDITY_HEADER .row_item {
+width:200px;
+}
+
+/* ширина столбцов в списке освещённостей */
+#LUMINOSITY_LIST .row .row_item {
+width:200px;
+}
+
+/* ширина столбцов в заголовке списка освещённостей */
+#LUMINOSITY_HEADER .row_item {
+width:200px;
+}
+
+/* ширина столбцов в списке влажностей почвы */
+#SOIL_LIST .row .row_item {
+width:200px;
+}
+
+/* ширина столбцов в заголовке списка влажностей почвы */
+#SOIL_HEADER .row_item {
+width:200px;
+}
+
+/* ширина столбца "действия" в списках */
+#TEMPERATURE_LIST .row .actions,
+#HUMIDITY_LIST .row .actions,
+#LUMINOSITY_LIST .row .actions,
+#SOIL_LIST .row .actions
+{
+  width: 80px;
+}
+
+/* класс верхнего меню на странице просмотра статуса контроллера */
+.controller_menu {
+padding: 6px;
+margin-bottom: 10px;
+}

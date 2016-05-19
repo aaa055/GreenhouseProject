@@ -1,0 +1,11 @@
+php_value display_errors 1
+php_value error_reporting 2047
+
+php_value memory_limit 128M
+
+
+DirectoryIndex index.php
+Options -Indexes
+
+
+
