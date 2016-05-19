@@ -60,6 +60,7 @@ function editController(controller_id)
                 $("#controller_status" + old_id).attr("id","controller_status" + new_id);
 
                 $("#controller_view_link" + old_id).attr("href","controller.php?id=" + new_id);
+                $("#controller_settings_link" + old_id).attr("href","controller_settings.php?id=" + new_id);
 
                 $("#controller_edit_link" + old_id).attr("href","javascript:editController(" + new_id + ");");
                 $("#controller_edit_link" + old_id).attr("id","controller_edit_link" + new_id);

@@ -14,6 +14,28 @@ LEGEND {
 font-weight:bold;
 font-size:150%;
 }
+/* класс бокса отображения информации по контроллеру */
+.controller_info_box {
+
+}
+
+.left_menu {
+  float:left;
+  width:200px;
+  padding-right:20px;
+}
+
+.content {
+  float: left;
+  width: calc(100% - 240px);
+}
+
+/* класс рисунка логотипа */
+.logo {
+  vertical-align:middle;
+  padding-right:10px;
+}
+
 /* класс отображения ошибки */
 .error {
   padding: 6px;
@@ -50,6 +72,14 @@ margin-bottom:6px;
 padding:4px;
 }
 
+.menuitem:hover {
+
+background-color:#b0b0b0;
+color:#FFFFFF;
+
+
+}
+
 /* класс выделенного пункта меню слева */
 .menuitem_selected {
 background-color:#b0b0b0;
@@ -77,6 +107,7 @@ color: #00D000;
 font-weight:bold;
 background-color:#b0b0b0;
 color:#FFFFFF;
+text-align:center;
 }
 
 /* DIV-ячейка таблицы */
@@ -98,6 +129,11 @@ text-align:center;
 color: #808080;
 }
 
+/* класс "тип показания" */
+.type {
+font-weight: bold;
+}
+
 /* класс "имя модуля" */
 .module_name {
 font-style:italic;
@@ -114,11 +150,18 @@ font-style:italic;
 /* класс главного контента страницы */
 .page_content {
 margin-left:20px;
+float:left:
+width: calc(100%-220px);
+}
+
+/* ширина столбцов в списке дельт */
+#DELTA_LIST .row .row_item{
+width: 15%;
+
 }
 
 /* ширина столбцов в списке температур */
 #TEMPERATURE_LIST .row .row_item {
-width:200px;
 }
 
 /* ширина столбцов в заголовке списка температур */
@@ -160,9 +203,11 @@ width:200px;
 #TEMPERATURE_LIST .row .actions,
 #HUMIDITY_LIST .row .actions,
 #LUMINOSITY_LIST .row .actions,
-#SOIL_LIST .row .actions
+#SOIL_LIST .row .actions,
+#DELTA_LIST .row .actions
 {
-  width: 80px;
+  width: auto;
+  text-align: center;
 }
 
 /* класс верхнего меню на странице просмотра статуса контроллера */

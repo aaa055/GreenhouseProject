@@ -31,7 +31,24 @@ $res = $dbengine->query("SELECT * FROM controllers;");
     $controllers[] = $array;
   } 
 
+
+$selected_controller = null;
+$selected_controller_id = intval(@$_GET['id']);
+if($selected_controller_id > 0)
+{
+  foreach($controllers as $k => $v)
+  {
+    if($v['controller_id'] == $selected_controller_id)
+    {
+      $selected_controller = $v;
+      break;
+    }
+  }
+}
+
+
 $tplEngine->assign("controllers",$controllers);
+$tplEngine->assign("selected_controller", $selected_controller);
 
 
 

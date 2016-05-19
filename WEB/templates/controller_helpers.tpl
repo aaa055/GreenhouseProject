@@ -10,8 +10,6 @@ var controller = new Controller({$selected_controller.controller_id},'{$selected
 var view = new View(controller);
 {literal}
 //-----------------------------------------------------------------------------------------------------
-var lastSelectedMenuItem = null; // последний выбранный пункт меню
-var lastVisibleContent = null; // последний видимый контент
 var tempAndMotorDataRequested = false; // флаг, что мы запросили настройки температур и моторов
 //-----------------------------------------------------------------------------------------------------
 // обрабатываем запрос на редактирование имени
@@ -202,7 +200,8 @@ function updateLightState()
 // обновляем данные с контроллера
 function updateControllerData()
 {
-  controller.queryState();
+  //if(controller.IsOnline())
+    controller.queryState();
 }
 //-----------------------------------------------------------------------------------------------------
 $(document).ready(function(){
@@ -216,30 +215,6 @@ updateControllerData();
 window.setInterval(updateControllerData,5000); // повторяем опрос состояния каждые 5 секунд
 
 });
-//-----------------------------------------------------------------------------------------------------
-// показываем тот или иной контент по клику на пункт меню
-function content(elem)
-{
-  var jElem = $(elem);
-  var eId = jElem.attr("id");
-  
-  if(lastSelectedMenuItem != null)
-  {
-    lastSelectedMenuItem.removeClass("menuitem_selected");
-  }
-  
-  if(lastVisibleContent != null)
-      lastVisibleContent.hide();
-    
-  var contentItem = $("#" + eId + "_CONTENT");
-  contentItem.show();
-  
-  lastSelectedMenuItem = jElem;
-  lastSelectedMenuItem.addClass("menuitem_selected");
-  
-  lastVisibleContent = contentItem;
-  
-}
 //-----------------------------------------------------------------------------------------------------
 // редактируем настройки температур и времени открытия моторов
 function editTempSettings()

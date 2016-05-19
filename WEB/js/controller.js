@@ -1,4 +1,9 @@
 //-----------------------------------------------------------------------------------------------------
+// отображаем данные контроллера
+//-----------------------------------------------------------------------------------------------------
+var ModuleNamesBindings = {'STATE' : 'Модуль температур', 'HUMIDITY' : 'Модуль влажности', 'LIGHT' : 'Модуль освещенности', 'DELTA' : 'Модуль дельт', 'SOIL' : 'Модуль влажности почвы'}
+var NO_DATA = "<span class='no_data'>&lt;нет данных&gt;</span>";
+//-----------------------------------------------------------------------------------------------------
 // функция-хелпер для просмотра объекта
 //-----------------------------------------------------------------------------------------------------
 function print_r(printthis, returnoutput) 
@@ -94,6 +99,7 @@ SensorMnemonics.prototype.Add = function(mnemonic)
     if(obj.IsMatch(mnemonic))
     {
       canAdd = false;
+      obj.DisplayName = mnemonic.DisplayName;
       break;
     }
     
@@ -150,6 +156,18 @@ var Sensor = function(idx,module,data,hasData)
 var SensorsList = function()
 {
   this.List = new Array();
+}
+//-----------------------------------------------------------------------------------------------------
+SensorsList.prototype.find = function(sensorIdx, moduleName)
+{
+  for(var i=0;i<this.List.length;i++)
+  {
+    var t = this.List[i];
+    if(t.ModuleName == moduleName && t.Index == sensorIdx)
+      return t;
+  }
+  
+  return null;
 }
 //-----------------------------------------------------------------------------------------------------
 SensorsList.prototype.Add = function(sensorIdx, moduleName, data, hasData)
@@ -727,7 +745,7 @@ Controller.prototype.parseControllerState = function(answer)
   
   } // is ok
 
-  if(answer.IsOK && this.OnUpdate != null)
+  if(this.OnUpdate != null)
     this.OnUpdate(this,answer);
     
 }

@@ -7,7 +7,7 @@ if($selected_controller_id < 1)
   exit;
 }
 
-$tplEngine->assign("page","controller");
+$tplEngine->assign("page","controller_settings");
 $tplEngine->display("index.tpl");
 
 ?>
