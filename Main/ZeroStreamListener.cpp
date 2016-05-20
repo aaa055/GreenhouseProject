@@ -749,8 +749,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
        }
        else if(t == ID_COMMAND)
        {
-          String newID = command.GetArg(1);
-          mainController->GetSettings()->SetControllerID(newID.toInt());
+          //String newID = command.GetArg(1);
+          mainController->GetSettings()->SetControllerID((uint8_t)atoi(command.GetArg(1)));//newID.toInt());
           PublishSingleton.Status = true;
           PublishSingleton = ID_COMMAND; 
           PublishSingleton << PARAM_DELIMITER << REG_SUCC;
@@ -772,40 +772,40 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                  // модуль есть на линии, можно с ним работать
                  // при записи информации в модуль ему косвенно привязывается ID нашего контроллера.
 
-                 String idxHolder = command.GetArg(1);
-                 int iVal = idxHolder.toInt();
+                 //String idxHolder = command.GetArg(1);
+                 int iVal = atoi(command.GetArg(1));//idxHolder.toInt();
 
                  if(iVal != 0xFF)
                   uniRegistrator.SetConfig(iVal);
                  
                  
-                 idxHolder = command.GetArg(2);
-                 iVal = idxHolder.toInt();
+                 //idxHolder = command.GetArg(2);
+                 iVal = atoi(command.GetArg(2));//idxHolder.toInt();
                  if(iVal != 0xFF)
                   uniRegistrator.SetCalibrationFactor(0,iVal);
 
-                 idxHolder = command.GetArg(3);
-                 iVal = idxHolder.toInt();
+                 //idxHolder = command.GetArg(3);
+                 iVal = atoi(command.GetArg(3));//idxHolder.toInt();
                  if(iVal != 0xFF)
                   uniRegistrator.SetCalibrationFactor(1,iVal);
 
-                 idxHolder = command.GetArg(4);
-                 iVal = idxHolder.toInt();
+                 //idxHolder = command.GetArg(4);
+                 iVal = atoi(command.GetArg(4));//idxHolder.toInt();
                  if(iVal != 0xFF)
                   uniRegistrator.SetQueryInterval(iVal);
 
-                 idxHolder = command.GetArg(5);
-                 iVal = idxHolder.toInt();
+                 //idxHolder = command.GetArg(5);
+                 iVal = atoi(command.GetArg(5));//idxHolder.toInt();
                  if(iVal != 0xFF)
                   uniRegistrator.SetSensorIndex(0,iVal);
                   
-                 idxHolder = command.GetArg(6);
-                 iVal = idxHolder.toInt();
+                 //idxHolder = command.GetArg(6);
+                 iVal = atoi(command.GetArg(6));//idxHolder.toInt();
                  if(iVal != 0xFF)
                   uniRegistrator.SetSensorIndex(1,iVal);
 
-                 idxHolder = command.GetArg(7);
-                 iVal = idxHolder.toInt(); 
+                 //idxHolder = command.GetArg(7);
+                 iVal = atoi(command.GetArg(7));//idxHolder.toInt(); 
                  if(iVal != 0xFF)
                   uniRegistrator.SetSensorIndex(2,iVal);
 

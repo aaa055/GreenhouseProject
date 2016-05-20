@@ -407,6 +407,10 @@ void setup()
   // Печатаем в Serial готовность
   Serial.print(READY);
 
+  #ifdef USE_LOG_MODULE
+    controller.Log(&logModule,READY); // печатаем в файл действий строчку Ready, которая скажет нам, что мега стартовала
+  #endif
+
   // тест часов реального времени
   #ifdef USE_DS3231_REALTIME_CLOCK
   

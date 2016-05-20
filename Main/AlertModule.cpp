@@ -595,7 +595,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   if(curArg == PROP_SOIL)
     target = rtSoilMoisture; // следим за влажностью почвы
 
-  sensorIdx = String(command.GetArg(curArgIdx++)).toInt();
+  sensorIdx = (uint8_t) atoi(command.GetArg(curArgIdx++));//String(command.GetArg(curArgIdx++)).toInt();
   curArg = command.GetArg(curArgIdx++);
 
   
@@ -626,11 +626,11 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   // дошли до температуры, после неё - настройки срабатывания
 
   // следом идёт час начала работы
-  whichTime = String(command.GetArg(curArgIdx++)).toInt();
+  whichTime = (uint8_t) atoi(command.GetArg(curArgIdx++)); //String(command.GetArg(curArgIdx++)).toInt();
 
   
   // дальше идёт продолжительность работы
-  workTime = String(command.GetArg(curArgIdx++)).toInt();
+  workTime = (unsigned long) atol(command.GetArg(curArgIdx++));//String(command.GetArg(curArgIdx++)).toInt();
 
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
@@ -1198,7 +1198,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                     }
                     else
                     {
-                        uint8_t idx = command.GetArg(1).toInt();
+                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));//command.GetArg(1).toInt();
                           
                         PublishSingleton.Status = true;
                         PublishSingleton = VIEW_ALERT_COMMAND; 
@@ -1216,7 +1216,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                     }
                     else
                     {
-                        uint8_t idx = String(command.GetArg(1)).toInt();
+                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));//String(command.GetArg(1)).toInt();
                         if(idx < rulesCnt) // норм индекс
                         {
                           AlertRule* rule = alertRules[idx];
@@ -1243,7 +1243,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                     }
                     else
                     {
-                        uint8_t idx = String(command.GetArg(1)).toInt();
+                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));//String(command.GetArg(1)).toInt();
                         if(idx <= rulesCnt) // норм индекс
                         {
                           AlertRule* rule = alertRules[idx];

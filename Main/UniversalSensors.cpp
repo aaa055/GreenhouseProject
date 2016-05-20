@@ -482,7 +482,8 @@ bool AbstractUniSensor::WriteScratchpad() // пишем в скратчпад
    scratchpadAddress[CONFIG_IDX] = conf;
 
 
-  //TODO: Подсчёт контрольной суммы ????
+  //Подсчитываем контрольную сумму и записываем её в последний байт скратчпада
+  scratchpadAddress[UNI_SCRATCH_SIZE-1] = OneWire::crc8(scratchpadAddress, UNI_SCRATCH_SIZE-1);
 
    
    OneWire ow(pin);

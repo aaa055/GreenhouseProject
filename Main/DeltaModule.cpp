@@ -315,8 +315,8 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
          } // argsCount < 2
          else
          {
-           arg = command.GetArg(1);
-           size_t deltaIdx = arg.toInt();
+           //arg = command.GetArg(1);
+           size_t deltaIdx = atoi(command.GetArg(1));// arg.toInt();
            if(deltaIdx >= deltas.size())
            {
             if(wantAnswer)
@@ -426,12 +426,12 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
               ds.SensorType = StateLuminosity; // дельта освещенности
 
             String moduleName1 = command.GetArg(readIdx++); // читаем имя первого модуля
-            arg = command.GetArg(readIdx++); // читаем индекс первого датчика
-            ds.SensorIndex1 = arg.toInt();
+            //arg = command.GetArg(readIdx++); // читаем индекс первого датчика
+            ds.SensorIndex1 = (uint8_t) atoi(command.GetArg(readIdx++));//arg.toInt();
             
             String moduleName2 = command.GetArg(readIdx++); // читаем имя второго модуля
-            arg = command.GetArg(readIdx++); // читаем индекс второго датчика
-            ds.SensorIndex2 = arg.toInt();
+            //arg = command.GetArg(readIdx++); // читаем индекс второго датчика
+            ds.SensorIndex2 = (uint8_t) atoi(command.GetArg(readIdx++));// arg.toInt();
 
             ds.Module1 = mainController->GetModuleByID(moduleName1);
             ds.Module2 = mainController->GetModuleByID(moduleName2);

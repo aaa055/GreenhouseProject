@@ -245,7 +245,7 @@ bool  CompositeCommandsModule::ExecCommand(const Command& command, bool wantAnsw
           if(argsCount > 1)
           {
             // хватает аргументов
-            uint8_t cmd = abs(String(command.GetArg(1)).toInt());
+            uint8_t cmd = abs(atoi(command.GetArg(1)));//String(command.GetArg(1)).toInt());
             ProcessCommand(cmd); // выполняем составную команду
             
             if(wantAnswer)
@@ -265,9 +265,9 @@ bool  CompositeCommandsModule::ExecCommand(const Command& command, bool wantAnsw
       {
         if(argsCount > 3)
         {
-          uint8_t listIdx = abs(String(command.GetArg(1)).toInt());
-          uint8_t action = abs(String(command.GetArg(2)).toInt());
-          uint8_t param = abs(String(command.GetArg(3)).toInt());
+          uint8_t listIdx = abs(atoi(command.GetArg(1)));//String(command.GetArg(1)).toInt());
+          uint8_t action = abs(atoi(command.GetArg(2)));//String(command.GetArg(2)).toInt());
+          uint8_t param = abs(atoi(command.GetArg(3)));//String(command.GetArg(3)).toInt());
           
           AddCommand(listIdx,action,param); // добавляем команду
 
