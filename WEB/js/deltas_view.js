@@ -17,27 +17,27 @@ DeltaView.prototype.buildRow = function(delta, row_id,typeName,mname1,index1,mna
 
         var row = $('<div/>',{'class': 'row', id: row_id});
         
-        var add_class = addActions ?  'type ' : 'header ';
+        var add_class = addActions ?  'type ' : 'ui-widget-header ';
         
         var type = $('<div/>',{'class': add_class + 'row_item', id: 'type'}).appendTo(row);
         type.html(typeName);
         
-        add_class = addActions ?  'module_name ' : 'header ';
+        add_class = addActions ?  'module_name ' : 'ui-widget-header ';
         
         var module1 = $('<div/>',{'class': add_class + 'row_item', id: 'module1'}).appendTo(row);
         module1.html(mname1);
         
-        add_class = addActions ?  'sensor_index ' : 'header ';
+        add_class = addActions ?  'sensor_index ' : 'ui-widget-header ';
         
         var idx1 = $('<div/>',{'class': add_class + 'row_item', id : 'index1'}).appendTo(row);
         idx1.html(index1);
         
-        add_class = addActions ?  'module_name ' : 'header ';
+        add_class = addActions ?  'module_name ' : 'ui-widget-header ';
 
         var module2 = $('<div/>',{'class': add_class + 'row_item', id: 'module2'}).appendTo(row);
         module2.html(mname2);
         
-         add_class = addActions ?  'sensor_index ' : 'header ';
+         add_class = addActions ?  'sensor_index ' : 'ui-widget-header ';
         
         var idx2 = $('<div/>',{'class': add_class + 'row_item', id : 'index2'}).appendTo(row);
         idx2.html(index2);
@@ -46,7 +46,11 @@ DeltaView.prototype.buildRow = function(delta, row_id,typeName,mname1,index1,mna
         if(addActions)
         {
               var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
-              $('<div/>',{'class': 'action pointer link delete_button', title: 'Удалить'}).appendTo(actions).click({row: row, delta : delta, view: view}, function(ev){
+              $('<div/>',{'class': 'action', title: 'Удалить'}).appendTo(actions).button({
+      icons: {
+        primary: "ui-icon-close"
+      }, text: false
+    }).click({row: row, delta : delta, view: view}, function(ev){
               
                 if(ev.data.view.OnDeleteDelta != null)
                 {
@@ -56,7 +60,12 @@ DeltaView.prototype.buildRow = function(delta, row_id,typeName,mname1,index1,mna
       
               });
               
-              $('<div/>',{'class': 'action pointer link edit_button', title: 'Редактировать'}).appendTo(actions).click({row: row, delta : delta, view: view}, function(ev){
+   
+              $('<div/>',{'class': 'action', title: 'Редактировать'}).appendTo(actions).button({
+      icons: {
+        primary: "ui-icon-pencil"
+      }, text: false
+    }).click({row: row, delta : delta, view: view}, function(ev){
               
                 if(ev.data.view.OnEditDelta != null)
                 {

@@ -47,7 +47,11 @@ View.prototype.fillSensorsList = function(parentElement, list, add, pattern = {i
         }
         
         var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
-        var editAction = $('<div/>',{'class': 'action pointer link edit_button', title: 'Редактировать имя датчика'}).appendTo(actions).click({row: row, sensor : sensor, view: view}, function(ev){
+        var editAction = $('<div/>',{'class': 'action', title: 'Редактировать имя датчика'}).appendTo(actions).button({
+      icons: {
+        primary: "ui-icon-pencil"
+      }, text: false
+    }).click({row: row, sensor : sensor, view: view}, function(ev){
         
           if(ev.data.view.OnEditSensorName != null)
           {

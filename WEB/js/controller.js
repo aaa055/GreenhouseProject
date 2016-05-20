@@ -336,6 +336,8 @@ if(this._currentAction != null || !this._queue.length)
    
           _this.processRequestResult(data);
      
+        }).fail(function(){
+          _this.processRequestResult({query_result : 'ER=FAIL', online: 0});
         });    
     
 

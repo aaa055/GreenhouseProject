@@ -15,26 +15,26 @@
 
     <div class='left_menu'>
     
-      <div class='menuitem hdn' id='DELTA_MENU' onclick="content(this);">Список дельт</div>
+      <div class='menuitem ui-corner-all hdn' id='DELTA_MENU' onclick="content(this);">Список дельт</div>
 
     </div>
     
     
-    <div class='page_content'>
+    <div class="page_content">
       
                   <div class='content hdn' id='DELTA_MENU_CONTENT'>
-                    <h3>Список виртуальных датчиков дельт</h3>
+                    <h3 class='ui-widget-header ui-corner-all'>Список виртуальных датчиков дельт</h3>
                     
                     <div id='DELTA_LIST'></div>
                     <br clear='left'/>
-                    <div><br/><br/><input type='button' id='get_delta_button' value='Получить список дельт' onclick='queryDeltasList();'/></div>
+                    <div><br/><br/><button id='get_delta_button' onclick='queryDeltasList();'>Получить список дельт</button></div>
                     
                   </div>
     
     
                   <div class='content' id='welcome'>
 
-                    <h3>Настройки контроллера</h3>
+                    <h3 class='ui-widget-header ui-corner-all'>Настройки контроллера</h3>
                     
                       Для редактирования настроек контроллера выберите пункт меню слева.
  

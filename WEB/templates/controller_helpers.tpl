@@ -174,18 +174,19 @@ controller.OnUpdate = function(obj, answer)
 //-----------------------------------------------------------------------------------------------------
 function updateWindowsState()
 {
+
     $('#window_state').html( controller.IsWindowsOpen ? $('#window_state_on').html() : $('#window_state_off').html());
     $('#window_mode').html( controller.IsWindowsAutoMode ? $('#mode_auto').html() : $('#mode_manual').html());
-    $('#toggler_windows_mode').val( !controller.IsWindowsAutoMode ? $('#mode_auto_switch').html() : $('#mode_manual_switch').html());
-    $('#toggler_windows').val(controller.IsWindowsOpen ? $('#toggle_close').html() : $('#toggle_open').html());
+    $('#toggler_windows_mode').button({ label: !controller.IsWindowsAutoMode ? $('#mode_auto_switch').html() : $('#mode_manual_switch').html() });
+    $('#toggler_windows').button({ label: controller.IsWindowsOpen ? $('#toggle_close').html() : $('#toggle_open').html() } );
 }
 //-----------------------------------------------------------------------------------------------------
 function updateWaterState()
 {
     $('#water_state').html( controller.IsWaterOn ? $('#water_state_on').html() : $('#water_state_off').html());
     $('#water_mode').html( controller.IsWaterAutoMode ? $('#mode_auto').html() : $('#mode_manual').html());
-    $('#toggler_water_mode').val( !controller.IsWaterAutoMode ? $('#mode_auto_switch').html() : $('#mode_manual_switch').html());
-    $('#toggler_water').val(controller.IsWaterOn ? $('#toggle_off').html() : $('#toggle_on').html());
+    $('#toggler_water_mode').button({ label: !controller.IsWaterAutoMode ? $('#mode_auto_switch').html() : $('#mode_manual_switch').html() });
+    $('#toggler_water').button({ label:controller.IsWaterOn ? $('#toggle_off').html() : $('#toggle_on').html() });
 
 }
 //-----------------------------------------------------------------------------------------------------
@@ -193,8 +194,8 @@ function updateLightState()
 {
     $('#light_state').html( controller.IsLightOn ? $('#light_state_on').html() : $('#light_state_off').html());
     $('#light_mode').html( controller.IsLightAutoMode ? $('#mode_auto').html() : $('#mode_manual').html());
-    $('#toggler_light_mode').val( !controller.IsLightAutoMode ? $('#mode_auto_switch').html() : $('#mode_manual_switch').html());
-    $('#toggler_light').val(controller.IsLightOn ? $('#toggle_off').html() : $('#toggle_on').html());
+    $('#toggler_light_mode').button({ label: !controller.IsLightAutoMode ? $('#mode_auto_switch').html() : $('#mode_manual_switch').html() });
+    $('#toggler_light').button({ label:controller.IsLightOn ? $('#toggle_off').html() : $('#toggle_on').html() } );
 }
 //-----------------------------------------------------------------------------------------------------
 // обновляем данные с контроллера
@@ -213,6 +214,20 @@ controller.queryModules(); // запрашиваем модули у контр�
 
 updateControllerData();
 window.setInterval(updateControllerData,5000); // повторяем опрос состояния каждые 5 секунд
+
+
+  $( "#toggler_windows, #toggler_light, #toggler_water, #temp_motors_settings" ).button({
+      icons: {
+        primary: "ui-icon-gear"
+      }
+    });
+
+  $( "#toggler_windows_mode, #toggler_light_mode, #toggler_water_mode" ).button({
+      icons: {
+        primary: "ui-icon-refresh"
+      }
+    });
+    
 
 });
 //-----------------------------------------------------------------------------------------------------

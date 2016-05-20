@@ -13,6 +13,8 @@ padding-left:10px;
 LEGEND {
 font-weight:bold;
 font-size:150%;
+padding-left:10px;
+padding-right:10px;
 }
 /* класс бокса отображения информации по контроллеру */
 .controller_info_box {
@@ -22,32 +24,6 @@ font-size:150%;
 .back_link {
 text-transform:uppercase;
 font-weight:bold;
-}
-
-/* кнопка "редактировать" в ячейке действий  */
-.edit_button {
-float: left;
-margin-left:6px;
-background-position: -64px -112px;
-background-image:url(/images/ui-icons_228ef1_256x240.png);
-background-repeat:no-repeat;
-
-top: 50%;
-width: 16px;
-height: 16px;
-}
-
-/* кнопка "удалить" в ячейке действий */
-.delete_button {
-float: left;
-margin-left:6px;
-background-position: -96px -128px;
-background-image:url(/images/ui-icons_228ef1_256x240.png);
-background-repeat:no-repeat;
-
-top: 50%;
-width: 16px;
-height: 16px;
 }
 
 .left_menu {
@@ -70,8 +46,6 @@ height: 16px;
 /* класс отображения ошибки */
 .error {
   padding: 6px;
-  background-color:coral;
-  font-size:120%;
   padding-left:10px;
 }
 
@@ -133,20 +107,13 @@ color: #D00000;
 color: #00D000;
 }
 
-/* DIV-заголовок таблицы */
-.header {
-font-weight:bold;
-background-color:#b0b0b0;
-color:#FFFFFF;
-text-align:center;
-}
-
 /* DIV-ячейка таблицы */
 .row_item {
 display: table;
 float:left;
 border:1px solid #D0D0F0;
 min-width:50px;
+padding:2px;
 }
 
 /* DIV-строка таблицы */

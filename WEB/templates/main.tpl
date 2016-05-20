@@ -36,10 +36,11 @@ controllers.push(new Controller({$controller.controller_id},'{$controller.contro
       $("#controller_status" + controller.getId()).html(stat);
     };
   }
+  
 {/literal}
 </script>
 
-<h1>Список контроллеров</h1>
+<h1 class='ui-widget-header ui-corner-all'>Список контроллеров</h1>
 {foreach key=k item=controller from=$controllers}
 {include file='controller_info.tpl'}
 {/foreach}

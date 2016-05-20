@@ -41,6 +41,11 @@ function queryDeltasList()
               
      controller.queryCommand(true,'DELTA|CNT',function(obj,answer){
      
+            if(!answer.IsOK)
+            {
+              $("#data_requested_dialog" ).dialog('close');
+              return;
+            }
      
             var cnt = answer.Params[2];
             
@@ -49,6 +54,12 @@ function queryDeltasList()
             
                   controller.queryCommand(true,'DELTA|VIEW|' + i.toString(), function(obj,deltaInfo) {
                   
+                    if(!deltaInfo.IsOK)
+                    {
+                      $("#data_requested_dialog" ).dialog('close');
+                      return;
+                    }                  
+                          
                     var delta = new Delta(deltaInfo.Params[3],deltaInfo.Params[4],deltaInfo.Params[5],deltaInfo.Params[6],deltaInfo.Params[7]);
                     deltaList.Add(delta);
                     if(deltaList.List.length == cnt)
@@ -109,6 +120,13 @@ $(document).ready(function(){
 
   controller.querySensorNames(); // получаем имена датчиков
   controller.queryModules(); // запрашиваем модули у контроллера
+  
+  
+  $( "#get_delta_button" ).button({
+      icons: {
+        primary: "ui-icon-arrowthickstop-1-s"
+      }
+    });
 
 });
 //-----------------------------------------------------------------------------------------------------
