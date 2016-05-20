@@ -40,6 +40,11 @@ var DeltaList = function()
   return this;
 }
 //-----------------------------------------------------------------------------------------------------
+DeltaList.prototype.clear = function()
+{
+  this.List = new Array();
+}
+//-----------------------------------------------------------------------------------------------------
 DeltaList.prototype.Add = function(delta)
 {
   var canAdd = true;

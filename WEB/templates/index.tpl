@@ -16,6 +16,12 @@
 <script type="text/javascript" src="js/jquery.js"></script>
 <script type="text/javascript" src="js/jquery-ui.js"></script>
 
+<script type='text/javascript'>
+{literal}
+  $(document).ready(function() { numericExtension(); } );
+{/literal}
+</script>
+
 <link rel="stylesheet" href="css/common.css"  type="text/css"/>
 <link rel="stylesheet" href="css/visualize.css"  type="text/css"/>
 <link rel="stylesheet" href="css/jquery-ui.css"  type="text/css"/>
@@ -33,5 +39,8 @@
 <body>
 
 {include file="$page.tpl"}
+
+
+
 </body>
 </html>

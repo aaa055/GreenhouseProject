@@ -15,7 +15,7 @@ var deltaView = new DeltaView(controller, deltaList);
 // запрошено редактирование дельты
 deltaView.OnEditDelta = function(controllerObject, delta, row)
 {
-  alert('Пока не реализовано :(');
+
 }
 //-----------------------------------------------------------------------------------------------------
 // запрошено удаление дельты
@@ -23,6 +23,88 @@ deltaView.OnDeleteDelta = function(controllerObject, delta, row)
 {
   deltaList.List.remove(delta); // удаляем дельту из списка
   row.remove(); // удаляем строку из таблицы  
+}
+//-----------------------------------------------------------------------------------------------------
+// добавляем дельту
+function newDelta()
+{
+  
+ $("#new_delta_dialog").dialog({modal:true, buttons: [{text: "Добавить", click: function(){
+  
+      var delta_type = $('#delta_type').val();
+      var delta_module1 = $('#delta_module1').val();
+      var delta_module2 = $('#delta_module2').val();
+      var delta_index1 = parseInt($('#delta_index1').val());
+      var delta_index2 = parseInt($('#delta_index2').val());
+      
+      if(isNaN(delta_index1)) delta_index1 = 0;
+      if(isNaN(delta_index2)) delta_index2 = 0;
+      
+      var delta = new Delta(delta_type,delta_module1,delta_index1,delta_module2,delta_index2);
+      if(!deltaList.Add(delta))
+      {
+        alert('Такая дельта уже существует!');
+        return;
+      }
+      
+      deltaView.fillList('#DELTA_LIST');            
+      $(this).dialog("close");
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });     
+  
+}
+//-----------------------------------------------------------------------------------------------------
+// сохраняем список дельт в контроллер
+function saveDeltasList()
+{
+
+  $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+              
+              
+    controller.queryCommand(false,'DELTA|DEL',function(obj,answer){
+    
+        if(!answer.IsOK)
+        {
+           $("#data_requested_dialog" ).dialog('close');
+           return;
+        } 
+        
+          
+          for(var i=0;i<deltaList.List.length;i++)
+          {
+            var delta = deltaList.List[i];
+            var cmd = 'DELTA|ADD|' + delta.Type + '|' + delta.ModuleName1 + '|' + delta.Index1 + '|' + delta.ModuleName2 + '|' + delta.Index2;
+
+            
+              controller.queryCommand(false,cmd,function(obj,addResult){
+              
+                                   
+              
+              });
+            
+              
+          } // for
+          
+                    controller.queryCommand(false,'DELTA|SAVE',function(obj,saveResult){
+                    
+                      $("#data_requested_dialog" ).dialog('close');
+                      
+                    });
+          
+      
+    
+    });
+
 }
 //-----------------------------------------------------------------------------------------------------
 // получаем список дельт с контроллера
@@ -47,7 +129,14 @@ function queryDeltasList()
               return;
             }
      
-            var cnt = answer.Params[2];
+            var cnt = parseInt(answer.Params[2]);
+            deltaList.clear();
+            
+            if(!cnt)
+            {
+              $("#data_requested_dialog" ).dialog('close');
+              return;
+            }
             
             for(var i=0;i<cnt;i++)
             {
@@ -78,20 +167,10 @@ function queryDeltasList()
 
 }
 //-----------------------------------------------------------------------------------------------------
-var lastIsOnline = controller.IsOnline();
 // обработчик онлайн-статуса контроллера
 controller.OnStatus = function(obj)
 {
-  var is_online = controller.IsOnline();
-  
-  if(!lastIsOnline && is_online)
-  {
-    controller.queryModules(); // запрашиваем модули у контроллера
-  }
-  
-  lastIsOnline = is_online; 
-  
-  
+  var is_online = controller.IsOnline();  
   
   if(is_online)
   {  
@@ -119,7 +198,6 @@ $(document).ready(function(){
   lastVisibleContent = $('#welcome');
 
   controller.querySensorNames(); // получаем имена датчиков
-  controller.queryModules(); // запрашиваем модули у контроллера
   
   
   $( "#get_delta_button" ).button({
@@ -127,6 +205,53 @@ $(document).ready(function(){
         primary: "ui-icon-arrowthickstop-1-s"
       }
     });
+    
+  $( "#save_delta_button" ).button({
+      icons: {
+        primary: "ui-icon-arrowthickstop-1-n"
+      }
+    }); 
+    
+  $( "#new_delta_button" ).button({
+      icons: {
+        primary: "ui-icon-document"
+      }
+    });   
+    
+    $('#delta_index1').forceNumericOnly();     
+    $('#delta_index2').forceNumericOnly();
+    
+    $('#delta_type').change(function() {
+    
+      var delta_type = $(this).val();
+      
+       $('#delta_module1').empty().text('');
+       $('#delta_module2').empty().text('');
+       
+        if(delta_type == 'TEMP')
+        {
+          $('#delta_module1').append($('<option/>',{value: 'STATE'}).text('Модуль температур'));
+          $('#delta_module2').append($('<option/>',{value: 'STATE'}).text('Модуль температур'));
+          
+          $('#delta_module1').append($('<option/>',{value: 'HUMIDITY'}).text('Модуль влажности'));
+          $('#delta_module2').append($('<option/>',{value: 'HUMIDITY'}).text('Модуль влажности'));
+                   
+        } // if TEMP
+        else if(delta_type == 'HUMIDITY')
+        {
+          $('#delta_module1').append($('<option/>',{value: 'HUMIDITY'}).text('Модуль влажности'));
+          $('#delta_module2').append($('<option/>',{value: 'HUMIDITY'}).text('Модуль влажности'));
+        } // HUMIDITY
+        else if(delta_type == 'LIGHT')
+        {
+          $('#delta_module1').append($('<option/>',{value: 'LIGHT'}).text('Модуль освещенности'));
+          $('#delta_module2').append($('<option/>',{value: 'LIGHT'}).text('Модуль освещенности'));
+        } // LIGHT
+       
+    
+    });   
+    
+    $('#delta_type').trigger('change');  
 
 });
 //-----------------------------------------------------------------------------------------------------

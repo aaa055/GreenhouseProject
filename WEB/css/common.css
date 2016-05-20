@@ -16,6 +16,25 @@ font-size:150%;
 padding-left:10px;
 padding-right:10px;
 }
+
+/* бокс отображения статистики с контроллера */
+.controller_stats {
+padding: 2px;
+margin-bottom:10px;
+
+}
+/* бокс отображения свободной памяти*/
+.freeram {
+float: left;
+}
+
+/* бокс отображения времени работы*/
+.uptime {
+  margin-left:10px;
+float: right;
+}
+
+
 /* класс бокса отображения информации по контроллеру */
 .controller_info_box {
 

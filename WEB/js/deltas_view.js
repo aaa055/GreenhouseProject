@@ -59,7 +59,7 @@ DeltaView.prototype.buildRow = function(delta, row_id,typeName,mname1,index1,mna
                 }
       
               });
-              
+              /*
    
               $('<div/>',{'class': 'action', title: 'Редактировать'}).appendTo(actions).button({
       icons: {
@@ -74,6 +74,7 @@ DeltaView.prototype.buildRow = function(delta, row_id,typeName,mname1,index1,mna
                 }
       
               });
+              */
                           
         }
         
