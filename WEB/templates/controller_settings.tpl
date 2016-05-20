@@ -4,6 +4,30 @@
   <p>Пожалуйста, подождите, пока данные обрабатываются...</p>
 </div>
 
+<div id='phone_number_dialog' title='Номер телефона' class='hdn'>
+  <form>
+    Номер телефона:<br/>
+    <input type='text' id='edit_phone_number' maxlength='20' value='' style='width:100%;'/><br/>
+  </form>
+</div>
+
+
+<div id='wifi_dialog' title='Настройки Wi-Fi' class='hdn'>
+  <form>
+    SSID роутера:<br/>
+    <input type='text' id='router_id' maxlength='50' value='' style='width:100%;'/><br/>
+    Пароль роутера:<br/>
+    <input type='text' id='router_pass' maxlength='50' value='' style='width:100%;'/><br/>
+    <input type='checkbox' id='connect_to_router' value='1'/>
+    <label for='connect_to_router'>Коннектиться к роутеру</label><br/><br/>
+    SSID модуля ESP:<br/>
+    <input type='text' id='station_id' maxlength='50' value='' style='width:100%;'/><br/>
+    Пароль модуля ESP:<br/>
+    <input type='text' id='station_pass' maxlength='50' value='' style='width:100%;'/><br/>
+    
+  </form>
+</div>
+
 <div id="new_delta_dialog" title="Новая дельта" class='hdn'>
 
   <form>
@@ -38,6 +62,8 @@
     <div class='left_menu'>
     
       <div class='menuitem ui-corner-all hdn' id='DELTA_MENU' onclick="content(this);">Список дельт</div>
+      <div class='ui-corner-all hdn' id='phone_number' onclick="editPhoneNumber();">Номер телефона для SMS</div>
+      <div class='ui-corner-all hdn' id='wifi_menu' onclick="editWiFiSettings();">Настройки Wi-Fi</div>
 
     </div>
     

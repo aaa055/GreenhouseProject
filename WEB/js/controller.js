@@ -274,7 +274,7 @@ var Controller = function(id, name, address)
              self.updateStatus(); 
          }
      })(this)
-  ,5000);
+  ,10000);
   
   this._queueTimer = window.setInterval(
   (function(self) {         
@@ -968,6 +968,29 @@ Controller.prototype.saveSensorName = function(mnemonic)
           
      
         });  
+}
+//-----------------------------------------------------------------------------------------------------
+// запрашивает серверный скрипт и возвращает результат запроса
+Controller.prototype.queryServerScript = function(script_name,params,doneFunc)
+{  
+  params.controller_id = this._id;
+  params.posted = 1;
+  
+  var _this = this;
+  
+  $.ajax( 
+ { 
+    method: "GET"
+  , url: script_name
+  , dataType: "json" 
+  , data: params
+    
+ }  ).done(function(data) 
+        {
+          doneFunc(_this,data);
+        });      
+       
+  
 }
 //-----------------------------------------------------------------------------------------------------
 // редактирует данные контроллера и отправляет их на сервер в обход очереди

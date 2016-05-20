@@ -28,18 +28,15 @@
 
 <div id='online_block' class='hdn'>
 
-  <div class='controller_menu'>
-    <a href="javascript:editTempSettings();" id='temp_motors_settings' class='hdn'>Настройки температур и моторов</a>
-  </div>
-
-
   <div class='left_menu'>
-      <div class='menuitem ui-corner-all hdn' id='STATUS_MENU' onclick="content(this);">Статус</div>
+      <div class='menuitem ui-corner-all hdn' id='STATUS_MENU' onclick="content(this);">Статус</div>      
       <div class='menuitem ui-corner-all hdn' id='TEMPERATURE_MENU' onclick="content(this);">Температура</div>
       <div class='menuitem ui-corner-all hdn' id='HUMIDITY_MENU' onclick="content(this);">Влажность</div>
       <div class='menuitem ui-corner-all hdn' id='LIGHT_MENU' onclick="content(this);">Освещенность</div>
       <div class='menuitem ui-corner-all hdn' id='SOIL_MENU' onclick="content(this);">Влажность почвы</div>
       <div class='menuitem ui-corner-all hdn' id='FLOW_MENU' onclick="content(this);">Расход воды</div>
+      <div class='ui-corner-all hdn' id='temp_motors_settings' onclick="editTempSettings();">Температуры и моторы</div>
+
   </div>
 
   <div class='page_content'>
@@ -100,8 +97,26 @@
                   <div class='content hdn' id='FLOW_MENU_CONTENT'>
 
                     <h3 class='ui-widget-header ui-corner-all'>Расход воды</h3>
-                    Мгновенный: <span id='flow_instant' class='bold'>0</span> литров<br/>
-                    Накопительный: <span id='flow_incremental' class='bold'>0</span> литров<br/>
+                      <div class='half'>
+                          <div class='half_box half_left'>
+                              <div class='ui-widget-header ui-corner-all'>Мгновенный</div>
+                              <div class='ui-widget-content'> 
+                              
+                                <div><img src='/images/water_meter_icon.png'/></div>
+                                <span id='flow_instant' class='bold big'>0</span><br/>литров<br/><br/>
+                              </div>
+                           </div>
+                      </div>
+                    
+                      <div class='half'>
+                        <div class='half_box half_right'>
+                            <div class='ui-widget-header ui-corner-all'>Накопительный</div>
+                            <div class='ui-widget-content'>
+                              <div><img src='/images/water_meter_icon.png'/></div>
+                              <span id='flow_incremental' class='bold big'>0</span><br/>литров<br/><br/>
+                            </div>
+                        </div>
+                      </div>
                     
                   </div>
 
@@ -111,12 +126,14 @@
                   <div class='content hdn' id='STATUS_MENU_CONTENT'>
 
                     <h3 class='ui-widget-header ui-corner-all'>Состояние контроллера</h3>
+                    
 
-                    <span id='mode_auto' class='hdn'><span class='auto_mode'>автоматический</span></span>
-                    <span id='mode_manual' class='hdn'><span class='manual_mode'>ручной</span></span>
+                        <span id='mode_auto' class='hdn'><span class='auto_mode'>автоматический</span></span>
+                        <span id='mode_manual' class='hdn'><span class='manual_mode'>ручной</span></span>
+                      
 
-                    <span id='mode_auto_switch' class='hdn'>Переключиться в автоматический режим</span>
-                    <span id='mode_manual_switch' class='hdn'>Переключиться в ручной режим</span>
+                    <span id='mode_auto_switch' class='hdn'>Автоматический режим</span>
+                    <span id='mode_manual_switch' class='hdn'>Ручной режим</span>
 
                     <span id='toggle_open' class='hdn'>Открыть</span>
                     <span id='toggle_close' class='hdn'>Закрыть</span>
@@ -135,22 +152,47 @@
                     
                     
 
-                    Окна: <span class='bold' id='window_state'></span><br/>
-                    Режим: <span class='bold' id='window_mode'></span><br/>
-                    <button id='toggler_windows' onclick='controller.toggleWindows();updateWindowsState();'></button>
-                    <button id='toggler_windows_mode' onclick='controller.toggleWindowsMode();updateWindowsState();'></button>
+                      <div class='ui-widget-header ui-corner-all padding_around8px'>Окна</div>   
+                      <div class='ui-widget-content ui-corner-all padding_around8px'>
+
+                        <div class='padding_around8px'>
+                          Статус: <span class='bold' id='window_state'></span><br/>
+                          Режим: <span class='bold' id='window_mode'></span>
+                        </div>
+                        
+                        <button id='toggler_windows' onclick='controller.toggleWindows();updateWindowsState();'></button>
+                        <button id='toggler_windows_mode' onclick='controller.toggleWindowsMode();updateWindowsState();'></button>
+
+                      </div>
+                      
                     <br/><br/>
                     
-                    Полив: <span class='bold' id='water_state'></span><br/>
-                    Режим: <span class='bold' id='water_mode'></span><br/>
-                    <button id='toggler_water' onclick='controller.toggleWater();updateWaterState();'></button>
-                    <button id='toggler_water_mode' onclick='controller.toggleWaterMode();updateWaterState();'></button>
+                    <div class='ui-widget-header ui-corner-all padding_around8px'>Полив</div> 
+                    <div class='ui-widget-content ui-corner-all padding_around8px'>
+
+                       <div class='padding_around8px'>
+                          Статус: <span class='bold' id='water_state'></span><br/>
+                          Режим: <span class='bold' id='water_mode'></span>
+                       </div>
+                        
+                        <button id='toggler_water' onclick='controller.toggleWater();updateWaterState();'></button>
+                        <button id='toggler_water_mode' onclick='controller.toggleWaterMode();updateWaterState();'></button>
+                    </div>
+                    
                     <br/><br/>
 
-                    Досветка: <span class='bold' id='light_state'></span><br/>
-                    Режим: <span class='bold' id='light_mode'></span><br/>
-                    <button id='toggler_light' onclick='controller.toggleLight();updateLightState();'></button>
-                    <button id='toggler_light_mode' onclick='controller.toggleLightMode();updateLightState();'></button>
+                    <div class='ui-widget-header ui-corner-all padding_around8px'>Досветка</div>
+                    <div class='ui-widget-content ui-corner-all padding_around8px'>
+                    
+                        <div class='padding_around8px'>
+                            Статус: <span class='bold' id='light_state'></span><br/>
+                            Режим: <span class='bold' id='light_mode'></span>
+                        </div>
+                        
+                        <button id='toggler_light' onclick='controller.toggleLight();updateLightState();'></button>
+                        <button id='toggler_light_mode' onclick='controller.toggleLightMode();updateLightState();'></button>
+                    </div>
+                    
                     <br/><br/>
                     
                   </div>

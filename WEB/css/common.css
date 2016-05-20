@@ -17,32 +17,50 @@ padding-left:10px;
 padding-right:10px;
 }
 
+.padding_around8px {
+  padding:8px;
+}
+
+.half {
+  width:50%;
+  float:left;
+  text-align:center;
+
+}
+
+.half_box {
+  padding:5px;
+}
+
+.half_right {
+  padding-right:0px;
+}
+
+.half_left {
+  padding-left:0px;
+}
+
+
+
+.big {
+  font-size:300%;
+}
+
 /* бокс отображения статистики с контроллера */
 .controller_stats {
-padding: 2px;
-margin-bottom:10px;
-
 }
 /* бокс отображения свободной памяти*/
 .freeram {
-float: left;
 }
 
 /* бокс отображения времени работы*/
 .uptime {
-  margin-left:10px;
-float: right;
 }
 
 
 /* класс бокса отображения информации по контроллеру */
 .controller_info_box {
 
-}
-/* ссылка на главную страницу */
-.back_link {
-text-transform:uppercase;
-font-weight:bold;
 }
 
 .left_menu {
@@ -53,7 +71,7 @@ font-weight:bold;
 
 .content {
   float: left;
-  width: calc(100% - 240px);
+  width: calc(100% - 200px);
 }
 
 /* класс рисунка логотипа */
@@ -225,10 +243,4 @@ width:200px;
 {
   width: auto;
   text-align: center;
-}
-
-/* класс верхнего меню на странице просмотра статуса контроллера */
-.controller_menu {
-padding: 6px;
-margin-bottom: 10px;
 }

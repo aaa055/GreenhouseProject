@@ -209,6 +209,10 @@ $(document).ready(function(){
 
 lastVisibleContent = $('#welcome');
 
+$('#edit_motor_time').forceNumericOnly();
+$('#edit_t_open').forceNumericOnly();
+$('#edit_t_close').forceNumericOnly();
+
 controller.querySensorNames(); // запрашиваем список имён датчиков из БД
 controller.queryModules(); // запрашиваем модули у контроллера
 
@@ -221,6 +225,8 @@ window.setInterval(updateControllerData,5000); // повторяем опрос 
         primary: "ui-icon-gear"
       }
     });
+    
+    $('#temp_motors_settings').css('width','100%');
 
   $( "#toggler_windows_mode, #toggler_light_mode, #toggler_water_mode" ).button({
       icons: {

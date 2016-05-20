@@ -107,6 +107,95 @@ function saveDeltasList()
 
 }
 //-----------------------------------------------------------------------------------------------------
+// редактируем настройки Wi-Fi
+function editWiFiSettings()
+{
+ $("#wifi_dialog").dialog({modal:true, buttons: [{text: "Изменить", click: function(){
+
+      
+      var shouldConnect = $('#connect_to_router').is(':checked') ? 1 : 0;
+      
+      var data = {
+      
+        connect_to_router: shouldConnect,
+        router_id: $('#router_id').val(),
+        router_pass: $('#router_pass').val(),
+        station_id: $('#station_id').val(),
+        station_pass: $('#station_pass').val()
+        
+        };
+        
+        if(data.router_id == '' || data.router_pass == '' || data.station_id == '' || data.station_pass == '')
+          return;
+      
+        $(this).dialog("close");
+
+      
+      $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+                    
+        controller.queryServerScript("/x_save_wifi_settings.php",data, function(obj,answer){
+        
+            var cmd = 'WIFI|T_SETT|' + data.connect_to_router + '|' + data.router_id + '|' 
+            + data.router_pass + '|' + data.station_id + '|' + data.station_pass;
+        
+            controller.queryCommand(false,cmd,function(obj,answer){
+           
+                $("#data_requested_dialog" ).dialog('close');
+        
+            });
+        
+           
+            
+        });      
+      
+  
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });  
+
+}
+//-----------------------------------------------------------------------------------------------------
+// редактируем номер телефона
+function editPhoneNumber()
+{
+ $("#phone_number_dialog").dialog({modal:true, buttons: [{text: "Изменить", click: function(){
+
+      $(this).dialog("close");
+
+      var num = $('#edit_phone_number').val();
+      
+      $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+                    
+      controller.queryCommand(false,'0|PHONE|' + num,function(obj,answer){
+      
+      $("#data_requested_dialog" ).dialog('close');
+      
+      });
+      
+  
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });  
+}
+//-----------------------------------------------------------------------------------------------------
 // получаем список дельт с контроллера
 function queryDeltasList()
 {
@@ -190,6 +279,45 @@ controller.OnStatus = function(obj)
 controller.OnGetModulesList = function(obj)
 {
     $('#DELTA_MENU').toggle(controller.Modules.includes('DELTA'));
+    
+    if(controller.Modules.includes('SMS'))
+    {
+        controller.queryCommand(true,'0|PHONE',function(obj,answer){
+           
+          $('#phone_number').toggle(answer.IsOK);
+          
+          if(answer.IsOK)
+          {
+            $('#edit_phone_number').val(answer.Params[1]);
+          }
+        
+        });
+    }
+    
+    
+    if(controller.Modules.includes('WIFI'))
+    {
+        controller.queryServerScript("/x_get_wifi_settings.php",{}, function(obj,result){
+           
+          $('#wifi_menu').toggle(true);
+          
+          var answer = result.wifi;
+          
+            var checked = false;
+            if(answer.connect_to_router && answer.connect_to_router == 1)
+              checked = true;
+              
+            $('#router_id').val(answer.router_id);
+            $('#router_pass').val(answer.router_pass);
+            $('#station_id').val(answer.station_id);
+            $('#station_pass').val(answer.station_pass);
+            if(checked)
+              $('#connect_to_router').attr('checked', 'checked');
+        
+        });
+    }
+    
+    
   
 };
 //-----------------------------------------------------------------------------------------------------
@@ -216,7 +344,19 @@ $(document).ready(function(){
       icons: {
         primary: "ui-icon-document"
       }
-    });   
+    });
+    
+      $( "#phone_number" ).button({
+      icons: {
+        primary: "ui-icon-note"
+      }
+    }).hide().css('width','100%');
+    
+ $( "#wifi_menu" ).button({
+      icons: {
+        primary: "ui-icon-signal"
+      }
+    }).hide().css('width','100%');       
     
     $('#delta_index1').forceNumericOnly();     
     $('#delta_index2').forceNumericOnly();

@@ -1,10 +1,6 @@
 {* Smarty *}
-<p>
-<a href="/" id='back_link' class='back_link'>На список контроллеров</a>
-</p>
 
-<h1 class='ui-widget-header ui-corner-all'>Контроллер "{$selected_controller.controller_name}"</h1>
-<div class='ui-state-highlight ui-corner-all hdn' style='padding:10px;padding-top:0px;' id='controller_stats'>
+<div class='ui-state-highlight ui-corner-all hdn' style='padding:10px;padding-top:0px;margin-bottom:0px;float:right;' id='controller_stats'>
   <div class='controller_stats'>
     
     <div class='freeram hdn' id='freeram_box'>
@@ -17,7 +13,15 @@
     
   </div>
 </div>
-<br clear='left'/>
+
+<p>
+<a href="/" id='back_link'>На главную</a>
+<a href="/controller.php?id={$selected_controller.controller_id}" id='view_link'>Показания</a>
+<a href="/controller_settings.php?id={$selected_controller.controller_id}" id='settings_link'>Настройки</a>
+</p>
+
+
+<h2 class='ui-widget-header ui-corner-all'>Контроллер "{$selected_controller.controller_name}"</h2>
 
 <script type='text/javascript'>
 {literal}
@@ -113,7 +117,19 @@ $(document).ready(function(){ldelim}
         primary: "ui-icon-seek-prev"
       {rdelim}
     {rdelim});
+ 
+  $( "#view_link" ).button({ldelim}
+      icons: {ldelim}
+        primary: "ui-icon-info"
+      {rdelim}
+    {rdelim});
     
+  $( "#settings_link" ).button({ldelim}
+      icons: {ldelim}
+        primary: "ui-icon-gear"
+      {rdelim}
+    {rdelim});
+            
     
     if(typeof(controller) != 'undefined')
     {ldelim}
