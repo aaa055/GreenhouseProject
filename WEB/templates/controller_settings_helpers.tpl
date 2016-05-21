@@ -272,22 +272,20 @@ controller.OnStatus = function(obj)
   {  
     $('#offline_block').hide();
     $('#online_block').show();
-    $('#get_delta_button').removeAttr('disabled');
   }
   else
   {
     $('#offline_block').show();
     $('#online_block').hide();
-    $('#get_delta_button').attr('disabled','disabled');
   }
 };
 //-----------------------------------------------------------------------------------------------------
 // событие "Получен список модулей в прошивке"
 controller.OnGetModulesList = function(obj)
 {
-    $('#DELTA_MENU').toggle(controller.Modules.includes('DELTA'));
+    $('#DELTA_MENU').toggle(controller.Modules.includes('DELTA')); // работаем с дельтами только если в прошивке есть модуль дельт
     
-    if(controller.Modules.includes('SMS'))
+    if(controller.Modules.includes('SMS')) // если в прошивке есть модуль Neoway M590
     {
         controller.queryCommand(true,'0|PHONE',function(obj,answer){
            
@@ -302,7 +300,7 @@ controller.OnGetModulesList = function(obj)
     }
     
     
-    if(controller.Modules.includes('WIFI'))
+    if(controller.Modules.includes('WIFI')) // если в прошивке есть модуль wi-fi
     {
         controller.queryServerScript("/x_get_wifi_settings.php",{}, function(obj,result){
            
@@ -323,7 +321,8 @@ controller.OnGetModulesList = function(obj)
         
         });
     }
-    if(controller.Modules.includes('CC'))
+    
+    if(controller.Modules.includes('CC')) // если в прошивке есть модуль составных команд
     {
         controller.queryServerScript("/x_get_composite_commands.php",{}, function(obj,result){
            
@@ -340,14 +339,12 @@ controller.OnGetModulesList = function(obj)
           } // for
           
           // тут заполнение списка составных команд
-          
             for(var i=0;i<compositeCommands.List.length;i++)
             {
               var ccList = compositeCommands.List[i];
               $('#cc_lists').append($('<option/>',{value: ccList.Index }).text(ccList.Name));
             } // for
           
-          //alert(compositeCommands.List[0].List.length);
           $('#cc_lists').change(function(){
           
             var list_index = $(this).val();
@@ -362,8 +359,7 @@ controller.OnGetModulesList = function(obj)
           
           
         });
-    }
-    // compositeCommands
+    } // composite commands end
     
     
   
@@ -530,8 +526,6 @@ $("#select_cc_lists_dialog").dialog({modal:true, width:500, buttons: [{text: "З
               
       $('#select_cc_lists_dialog').dialog('close');
  
-
-
 
              $("#data_requested_dialog" ).dialog({
                             dialogClass: "no-close",

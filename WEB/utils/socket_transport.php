@@ -34,6 +34,7 @@ class SocketTransport
     $this->timeout = $tmio;
     
     $this->sock = @fsockopen($this->address, $this->port,$errno, $errstr,$this->timeout);
+    
 
     return $this->sock;
   }
@@ -61,6 +62,7 @@ class SocketTransport
         return false;
         
      @fwrite($this->sock, 'CTGET=' . $query . "\r\n");
+     @stream_set_timeout($this->sock,$this->timeout);
                
      return @fgets($this->sock, 1024);
   }
@@ -73,6 +75,7 @@ class SocketTransport
         return false;
         
      @fwrite($this->sock, 'CTSET=' . $query . "\r\n");
+     @stream_set_timeout($this->sock,$this->timeout);
                
      return @fgets($this->sock, 1024);
   }

@@ -14,102 +14,25 @@
   </div>
 </div>
 
+<div id="reset_controller_prompt" title="Перезагрузка" class='hdn'>
+  <p>Вы уверены, что хотите перезагрузить контроллер?</p>
+</div>
+
+<div id="reset_in_process" title="Перезагрузка" class='hdn'>
+  <p>Подождите, пока контроллер перезагрузится...</p>
+</div>
+
 <p>
 <a href="/" id='back_link'>На главную</a>
 <a href="/controller.php?id={$selected_controller.controller_id}" id='view_link'>Показания</a>
 <a href="/controller_settings.php?id={$selected_controller.controller_id}" id='settings_link'>Настройки</a>
+<a href="javascript:resetController();" id='reset_controller_link'>Перезагрузить</a>
 </p>
 
 
 <h2 class='ui-widget-header ui-corner-all'>Контроллер "{$selected_controller.controller_name}"</h2>
 
 <script type='text/javascript'>
-{literal}
-
-var freeRamCounter = 15000;
-var upTimeCounter = 60000;
-
-FREERAM_CHECK_INTERVAL = 500;
-UPTIME_CHECK_INTERVAL = 500;
-
-var controllerUptime = 0;
-
-function freeRam()
-{
-
-  if(!controller.IsOnline())
-    return;
-    
-  freeRamCounter += FREERAM_CHECK_INTERVAL;  
-
-  if(freeRamCounter < 15000)
-    return;
-    
-  freeRamCounter = 0;
-    
-  if(controller.Modules.includes('STAT'))
-  {
-  
-    controller.queryCommand(true,'STAT|FREERAM',function(obj,answer){
-    
-          if(answer.IsOK)
-          {
-            $('#controller_freeram').html(answer.Params[1]);
-            $('#freeram_box').show();
-            $('#controller_stats').show();
-            
-          }
-      });
-  }
-}
-
-function showUptime()
-{
-  var mins = parseInt(controllerUptime/60);
-  var c_hours = parseInt(mins/60);
-  var c_minutes = mins%60;
-  
-  
-  if(c_minutes < 10)
-    c_minutes = '0' + c_minutes;
-  
-  $('#controller_uptime').html(c_hours + ' ч ' + c_minutes + ' мин');
-}
-
-function upTime()
-{
-
-  if(!controller.IsOnline())
-    return;
-    
-  upTimeCounter += UPTIME_CHECK_INTERVAL;  
-
-  if(upTimeCounter < 60000)
-    return;
-    
-  upTimeCounter = 0;
-
-  if(controller.Modules.includes('STAT'))
-  {
-  
-    controller.queryCommand(true,'STAT|UPTIME',function(obj,answer){
-    
-          if(answer.IsOK)
-          {
-            
-            controllerUptime = parseInt(answer.Params[1]);
-            showUptime();
-  
-            $('#uptime_box').show();
-            $('#controller_stats').show();
-            
-          }
-            
-      });
-  }
-}
-{/literal}
-
 $(document).ready(function(){ldelim}
 
   $( "#back_link" ).button({ldelim}
@@ -129,7 +52,12 @@ $(document).ready(function(){ldelim}
         primary: "ui-icon-gear"
       {rdelim}
     {rdelim});
-            
+ 
+  $( "#reset_controller_link" ).button({ldelim}
+      icons: {ldelim}
+        primary: "ui-icon-refresh"
+      {rdelim}
+    {rdelim}).css('background','#ff794d');            
     
     if(typeof(controller) != 'undefined')
     {ldelim}

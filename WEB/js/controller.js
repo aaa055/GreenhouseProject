@@ -201,6 +201,8 @@ var Answer = function(data)
 //-----------------------------------------------------------------------------------------------------
 Answer.prototype.Parse = function(data)
 {
+  data = data.toString();
+  
   this.RawData = data;
   this.IsOK = data.indexOf("OK=") == 0;
   this.Params = new Array();
