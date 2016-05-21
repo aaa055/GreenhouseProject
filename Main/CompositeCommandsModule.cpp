@@ -105,7 +105,7 @@ void CompositeCommandsModule::Update(uint16_t dt)
 void CompositeCommandsModule::AddCommand(uint8_t listIdx, uint8_t action, uint8_t param)
 {
   // проверяем, есть ли такой индекс в списке
-  if(commands.size() <= listIdx)
+  while(commands.size() <= listIdx) // в цикле, потому что могут передать индекс списка с дыркой, например, передадут 2, а у нас ничего нет в списке
   {
     // если нет - то добавляем пустой список
     CompositeCommands* cc = new CompositeCommands;

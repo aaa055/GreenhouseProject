@@ -4,12 +4,19 @@
 <script type="text/javascript" src="js/deltas.js"></script>
 <script type="text/javascript" src="js/deltas_view.js"></script>
 
+<script type="text/javascript" src="js/cc.js"></script>
+
+
 <script type='text/javascript'>
 //-----------------------------------------------------------------------------------------------------
 // наш контроллер
 var controller = new Controller({$selected_controller.controller_id},'{$selected_controller.controller_name}','{$selected_controller.controller_address}');
+
 var deltaList = new DeltaList();
 var deltaView = new DeltaView(controller, deltaList);
+
+var compositeCommands = new CompositeCommands();
+
 {literal}
 //-----------------------------------------------------------------------------------------------------
 // запрошено редактирование дельты
@@ -316,10 +323,295 @@ controller.OnGetModulesList = function(obj)
         
         });
     }
+    if(controller.Modules.includes('CC'))
+    {
+        controller.queryServerScript("/x_get_composite_commands.php",{}, function(obj,result){
+           
+          
+          var answer = result.composite_commands;
+          compositeCommands.Clear();
+          
+          for(var i=0;i<answer.length;i++)
+          {            
+            var cc = answer[i];
+           
+            compositeCommands.Add(cc.list_index, cc.list_name, cc.command_action, cc.command_param);
+            
+          } // for
+          
+          // тут заполнение списка составных команд
+          
+            for(var i=0;i<compositeCommands.List.length;i++)
+            {
+              var ccList = compositeCommands.List[i];
+              $('#cc_lists').append($('<option/>',{value: ccList.Index }).text(ccList.Name));
+            } // for
+          
+          //alert(compositeCommands.List[0].List.length);
+          $('#cc_lists').change(function(){
+          
+            var list_index = $(this).val();
+            compositeCommands.fillList('#CC_LIST',list_index);
+          
+          });
+          
+          $('#CC_MENU').toggle(true);
+          $('#cc_lists_box').toggle(true);
+          
+           $('#cc_lists').trigger('change');
+          
+          
+        });
+    }
+    // compositeCommands
     
     
   
 };
+//-----------------------------------------------------------------------------------------------------
+// создаём новый список составных команд
+function newCCList()
+{
+
+$("#new_cc_list_dialog").dialog({modal:true, buttons: [{text: "Добавить", click: function(){
+
+
+      var list_name = $('#cc_list_name').val();
+      
+      if(list_name == '')
+        return;
+
+      $(this).dialog("close");
+      
+      var newList = compositeCommands.addNewList(list_name);
+      $('#cc_lists').append($('<option/>',{value: newList.Index }).text(newList.Name));
+    
+      $(this ).dialog('close');
+      
+ 
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });  
+}
+//-----------------------------------------------------------------------------------------------------
+// создаём новую команду в списке составных команд
+function newCCCommand()
+{
+  var idx = $('#cc_lists').val();
+  if(idx === null)
+  {
+    alert('Создайте список составных команд!');
+    return;
+  }
+
+
+$("#new_cc_command_dialog").dialog({modal:true, buttons: [{text: "Добавить", click: function(){
+
+
+      var cc_action = $('#cc_type').val();
+      var cc_param = parseInt($('#cc_param').val());
+      if(isNaN(cc_param))
+        cc_param = 0;
+                
+        compositeCommands.Add(idx,'',cc_action,cc_param);
+        $('#cc_lists').trigger('change');
+              
+      $(this ).dialog('close');
+ 
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });  
+
+
+}
+//-----------------------------------------------------------------------------------------------------
+// сохраняем все списки составных команд в БД
+function saveCCLists()
+{
+  $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+      
+   var totalCommands = compositeCommands.List.length;
+   var commandsProcessed = 0;
+   var currentListIndex = 0;  
+            
+   for(var i=0;i<compositeCommands.List.length;i++)
+   {
+    var ccList = compositeCommands.List[i];
+    totalCommands += ccList.List.length;
+   } // for
+   
+   controller.queryServerScript("/x_clear_cc_lists.php",{}, function(obj,result){
+ 
+ 
+      if(commandsProcessed == totalCommands)
+      {
+        $("#data_requested_dialog" ).dialog('close');
+      }
+ 
+       for(var i=0;i<compositeCommands.List.length;i++)
+       {
+          var ccList = compositeCommands.List[i];
+                    
+          controller.queryServerScript("/x_add_cc_list.php",{list_name: ccList.Name, list_index: ccList.Index }, function(obj,result){
+          
+            commandsProcessed++;
+            
+                  if(commandsProcessed == totalCommands)
+                  {
+                    $("#data_requested_dialog" ).dialog('close');
+                  }
+            
+                 var thisCCList = compositeCommands.List[currentListIndex++];
+            
+                for(var j=0;j<thisCCList.List.length;j++)
+                { 
+                  var cc = thisCCList.List[j];
+                  
+                  controller.queryServerScript("/x_add_cc_command.php",{list_index: cc.ParentList.Index, command_action: cc.Action, command_param: cc.Param }, function(obj,result){
+                  commandsProcessed++;
+                  
+                  if(commandsProcessed == totalCommands)
+                  {
+                    $("#data_requested_dialog" ).dialog('close');
+                  }
+                  
+                  });
+                } // for
+          });
+       } // for   
+   
+   });
+   
+
+}
+//-----------------------------------------------------------------------------------------------------
+// загружаем составные команды в контроллер
+function uploadCCCommands()
+{
+
+  // cc_list_selector
+  $('#cc_list_selector').empty();
+  var selectedLists = new Array();
+  var listCounter = 0;
+ 
+  for(var i=0;i<compositeCommands.List.length;i++)
+  {
+    var ccList = compositeCommands.List[i];
+    var row = $('<div/>');
+    $('<input/>',{type: 'checkbox', id: 'cc_list_checkbox', value: ccList.Index}).appendTo(row);
+    $('<label/>').appendTo(row).html(ccList.Name);
+    
+    row.appendTo('#cc_list_selector');
+  } // for
+  
+
+$("#select_cc_lists_dialog").dialog({modal:true, width:500, buttons: [{text: "Загрузить", click: function(){
+
+
+      var lst = $('#cc_list_selector').find('div #cc_list_checkbox');
+      for(var i=0;i<lst.length;i++)
+      {
+        var elem = lst.get(i);
+        if(elem.checked)
+          selectedLists.push(parseInt(elem.value));
+      }
+
+              
+      $('#select_cc_lists_dialog').dialog('close');
+ 
+
+
+
+             $("#data_requested_dialog" ).dialog({
+                            dialogClass: "no-close",
+                            modal: true,
+                            closeOnEscape: false,
+                            draggable: false,
+                            resizable: false,
+                            buttons: []
+                          });
+                          
+                          
+                controller.queryCommand(false,'CC|DEL',function(obj,answer){
+                
+                    if(!answer.IsOK)
+                    {
+                       $("#data_requested_dialog" ).dialog('close');
+                       return;
+                    } 
+                    
+                      
+                      for(var i=0;i<compositeCommands.List.length;i++)
+                      {
+                        var ccList = compositeCommands.List[i];
+                        
+                        
+                        if(!selectedLists.includes(ccList.Index))
+                          continue;
+                        
+                          for(var j=0;j<ccList.List.length;j++)
+                          {
+                            var cc = ccList.List[j];
+                              
+                            var cmd = 'CC|ADD|' + listCounter + '|' + cc.Action + '|' + cc.Param;
+
+                        
+                            controller.queryCommand(false,cmd,function(obj,addResult){
+                                                
+                          
+                              });                
+                          } // for
+                        
+                          listCounter++;
+                        
+                        
+                          
+                      } // for
+                      
+                                controller.queryCommand(false,'CC|SAVE',function(obj,saveResult){
+                                
+                                  $("#data_requested_dialog" ).dialog('close');
+                                  
+                                });
+                      
+                  
+                
+                });
+                
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });  
+                
+
+}
+//-----------------------------------------------------------------------------------------------------
+// удаляем список составных команд
+function deleteCCList()
+{
+  var idx = $('#cc_lists').val();
+
+  
+  compositeCommands.remove(idx);
+  
+  var index = $('#cc_lists').get(0).selectedIndex;
+  $('#cc_lists option:eq(' + index + ')').remove();
+  
+  $('#cc_lists').get(0).selectedIndex = 0;  
+  $('#cc_lists').trigger('change');
+}
 //-----------------------------------------------------------------------------------------------------
 $(document).ready(function(){
 
@@ -334,13 +626,13 @@ $(document).ready(function(){
       }
     });
     
-  $( "#save_delta_button" ).button({
+  $( "#save_delta_button, #save_cc_button" ).button({
       icons: {
         primary: "ui-icon-arrowthickstop-1-n"
       }
     }); 
     
-  $( "#new_delta_button" ).button({
+  $( "#new_delta_button, #new_cc_button" ).button({
       icons: {
         primary: "ui-icon-document"
       }
@@ -352,6 +644,25 @@ $(document).ready(function(){
       }
     }).hide().css('width','100%');
     
+    $('#new_cc_list').button({
+      icons: {
+        primary: "ui-icon-note"
+      }
+    });
+    
+    $('#delete_cc_list').button({
+      icons: {
+        primary: "ui-icon-close"
+      }
+    });  
+    
+    $('#save_cc_lists').button({
+      icons: {
+        primary: "ui-icon-disk"
+      }
+    });  
+      
+    
  $( "#wifi_menu" ).button({
       icons: {
         primary: "ui-icon-signal"
@@ -360,6 +671,12 @@ $(document).ready(function(){
     
     $('#delta_index1').forceNumericOnly();     
     $('#delta_index2').forceNumericOnly();
+    $('#cc_param').forceNumericOnly();
+    
+    for(var i=0;i<CompositeActionsNames.length;i++)
+    {
+      $('#cc_type').append($('<option/>',{value: i}).text(CompositeActionsNames[i]));
+    }
     
     $('#delta_type').change(function() {
     

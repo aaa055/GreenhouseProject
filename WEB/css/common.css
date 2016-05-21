@@ -21,6 +21,10 @@ padding-right:10px;
   padding:8px;
 }
 
+.padding_top8px {
+  padding-top:8px;
+}
+
 .half {
   width:50%;
   float:left;
@@ -171,7 +175,8 @@ font-weight: bold;
 
 /* класс "имя модуля" */
 .module_name {
-font-style:italic;
+font-weight:normal;
+
 }
 
 /* класс "данные с датчика" */
@@ -234,12 +239,17 @@ width:200px;
 width:200px;
 }
 
+#CC_LIST .row .row_item {
+width:300px;
+}
+
 /* ширина столбца "действия" в списках */
 #TEMPERATURE_LIST .row .actions,
 #HUMIDITY_LIST .row .actions,
 #LUMINOSITY_LIST .row .actions,
 #SOIL_LIST .row .actions,
-#DELTA_LIST .row .actions
+#DELTA_LIST .row .actions,
+#CC_LIST .row .actions
 {
   width: auto;
   text-align: center;
