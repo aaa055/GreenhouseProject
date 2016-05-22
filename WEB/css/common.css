@@ -17,8 +17,21 @@ padding-left:10px;
 padding-right:10px;
 }
 
+LABEL {
+  cursor: pointer;
+}
+
+
+.row:hover .row_item {
+    background-color: #E0E0E0;
+}
+
 .padding_around8px {
   padding:8px;
+}
+
+.left_align {
+text-align:left;
 }
 
 .padding_top8px {
@@ -153,7 +166,7 @@ color: #00D000;
 display: table;
 float:left;
 border:1px solid #D0D0F0;
-min-width:50px;
+min-width:20px;
 padding:2px;
 }
 
@@ -194,6 +207,20 @@ float:left:
 width: calc(100%-220px);
 }
 
+#WATER_CHANNELS_LIST .row .row_item:nth-child(1) {
+  width:30px;
+}
+#WATER_CHANNELS_LIST .row .row_item:nth-child(2) {
+  width:350px;
+}
+#WATER_CHANNELS_LIST .row .row_item:nth-child(3) {
+  width:100px;
+}
+#WATER_CHANNELS_LIST .row .row_item:nth-child(4) {
+  width:100px;
+}
+
+
 /* ширина столбцов в списке дельт */
 #DELTA_LIST .row .row_item{
 width: 15%;
@@ -202,6 +229,7 @@ width: 15%;
 
 /* ширина столбцов в списке температур */
 #TEMPERATURE_LIST .row .row_item {
+width:200px;
 }
 
 /* ширина столбцов в заголовке списка температур */
@@ -249,7 +277,8 @@ width:300px;
 #LUMINOSITY_LIST .row .actions,
 #SOIL_LIST .row .actions,
 #DELTA_LIST .row .actions,
-#CC_LIST .row .actions
+#CC_LIST .row .actions,
+#WATER_CHANNELS_LIST .row .actions
 {
   width: auto;
   text-align: center;

@@ -1,5 +1,10 @@
 {* Smarty *}
 
+
+<div id="message_dialog" title="Сообщение" class='hdn'>
+  <p id='message_dialog_message'></p>
+</div>
+
 <div id="data_requested_dialog" title="Обработка данных..." class='hdn'>
   <p>Пожалуйста, подождите, пока данные обрабатываются...</p>
 </div>
@@ -72,6 +77,32 @@
 
 </div>
 
+<div id="water_channel_settings_dialog" title="Настройки канала" class='hdn'>
+
+   Дни работы канала:
+   <div id='water_channels_days' class='padding_around8px'>
+    <div><input type='checkbox' id='watering_channel_day' value='1'/>Понедельник</div>
+    <div><input type='checkbox' id='watering_channel_day' value='2'/>Вторник</div>
+    <div><input type='checkbox' id='watering_channel_day' value='4'/>Среда</div>
+    <div><input type='checkbox' id='watering_channel_day' value='8'/>Четверг</div>
+    <div><input type='checkbox' id='watering_channel_day' value='16'/>Пятница</div>
+    <div><input type='checkbox' id='watering_channel_day' value='32'/>Суббота</div>
+    <div><input type='checkbox' id='watering_channel_day' value='64'/>Воскресенье</div>
+  </div>
+
+    <div>
+      Час начала работы:<br/>
+      <input type='text' maxlength='2' id='watering_start_hour' style='width:100%;'/>
+    </div>
+
+    <div>
+      Продолжительность полива, минут:<br/>
+      <input type='text' maxlength='5' id='watering_time' style='width:100%;'/>
+    </div>    
+
+  
+</div>
+
 
 
 {include file='controller_head.tpl'}
@@ -86,6 +117,8 @@
     
       <div class='menuitem ui-corner-all hdn' id='DELTA_MENU' onclick="content(this);">Список дельт</div>
       <div class='menuitem ui-corner-all hdn' id='CC_MENU' onclick="content(this);">Составные команды</div>
+      <div class='menuitem ui-corner-all hdn' id='WATER_MENU' onclick="content(this);">Настройки полива</div>
+
       <div class='ui-corner-all hdn' id='phone_number' onclick="editPhoneNumber();">Номер телефона для SMS</div>
       <div class='ui-corner-all hdn' id='wifi_menu' onclick="editWiFiSettings();">Настройки Wi-Fi</div>
 
@@ -135,7 +168,78 @@
                     
                   </div>
 
-    
+                  <div class='content hdn' id='WATER_MENU_CONTENT'>
+
+                    <h3 class='ui-widget-header ui-corner-all'>Настройки полива</h3>
+                    
+                    
+                    
+                         <div>
+                          Автоматическое управление поливом: <br/>
+                          <select id='watering_option' style='width:100%'>
+                            <option value='0'>Отключено</option>
+                            <option value='1'>По дням недели (все каналы одновременно)</option>
+                            <option value='2'>По дням недели (раздельное управление каналами)</option>
+                          </select>
+                         </div>
+                         
+                         <div id='watering_all_channels' class='hdn'>
+                          <p>
+                           
+                            <div class='half'>
+                                <div class='half_box half_left'>
+                                  <div class='ui-widget-header ui-corner-all'>Дни недели</div>
+                                  <div class='ui-widget-content padding_around8px left_align'id='all_watering_channels_days'>
+                                      <div><input type='checkbox' id='all_watering_channels_day' value='1'/>Понедельник</div>
+                                      <div><input type='checkbox' id='all_watering_channels_day' value='2'/>Вторник</div>
+                                      <div><input type='checkbox' id='all_watering_channels_day' value='4'/>Среда</div>
+                                      <div><input type='checkbox' id='all_watering_channels_day' value='8'/>Четверг</div>
+                                      <div><input type='checkbox' id='all_watering_channels_day' value='16'/>Пятница</div>
+                                      <div><input type='checkbox' id='all_watering_channels_day' value='32'/>Суббота</div>
+                                      <div><input type='checkbox' id='all_watering_channels_day' value='64'/>Воскресенье</div>
+                                  </div>
+                                </div>
+                            </div>    
+
+                            <div class='half'>
+                                <div class='half_box half_right'>
+
+                                  <div class='ui-widget-header ui-corner-all'>Настройки</div>
+                                  <div class='ui-widget-content padding_around8px left_align'>
+                                    <div>
+                                      Час начала работы:<br/>
+                                      <input type='text' maxlength='2' id='all_watering_start_hour' style='width:100%;'/>
+                                    </div>
+                                    
+                                    <div>
+                                      Продолжительность полива, минут:<br/>
+                                      <input type='text' maxlength='5' id='all_watering_time' style='width:100%;'/>
+                                    </div>
+                                  </div>
+
+                                </div>
+                            </div>    
+                           
+                          </p>
+                         </div>
+                         
+                         <div id='watering_separate_channels' class='hdn'>
+                          <p>
+                            <div id='WATER_CHANNELS_LIST'></div>
+                          </p>
+                         </div>
+                         
+                         <div id='turn_pump_box' class='hdn'><br clear='left'/><br/>
+                          <input type='checkbox' value='1' id='turn_on_pump'><label for='turn_on_pump'>Включать насос при поливе на любом из каналов</label>
+                         </div>
+                         
+                         <div><br clear='left'/><br/>
+                         
+                              <button id='save_watering_button' onclick="saveWateringSettings();">Сохранить в контроллер</button>
+
+                         </div>
+                     
+                  </div>        
     
                   <div class='content' id='welcome'>
 

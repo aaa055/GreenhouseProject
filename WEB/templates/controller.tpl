@@ -48,8 +48,9 @@
                       <div class='row_item ui-widget-header'>Название модуля</div>
                       <div class='row_item ui-widget-header'>Индекс датчика</div>
                       <div class='row_item ui-widget-header'>Температура</div>
-                      <div id='TEMPERATURE_LIST'></div>
                     </div>
+
+                    <div id='TEMPERATURE_LIST'></div>
 
                   </div>
 

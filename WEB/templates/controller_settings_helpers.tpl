@@ -3,8 +3,8 @@
 
 <script type="text/javascript" src="js/deltas.js"></script>
 <script type="text/javascript" src="js/deltas_view.js"></script>
-
 <script type="text/javascript" src="js/cc.js"></script>
+<script type="text/javascript" src="js/water_settings.js"></script>
 
 
 <script type='text/javascript'>
@@ -15,7 +15,8 @@ var controller = new Controller({$selected_controller.controller_id},'{$selected
 var deltaList = new DeltaList();
 var deltaView = new DeltaView(controller, deltaList);
 
-var compositeCommands = new CompositeCommands();
+var compositeCommands = new CompositeCommands(); // список составных команд
+var wateringSettings = new WateringSettings(); // настройки полива
 
 {literal}
 //-----------------------------------------------------------------------------------------------------
@@ -30,6 +31,15 @@ deltaView.OnDeleteDelta = function(controllerObject, delta, row)
 {
   deltaList.List.remove(delta); // удаляем дельту из списка
   row.remove(); // удаляем строку из таблицы  
+}
+//-----------------------------------------------------------------------------------------------------
+function showMessage(message)
+{
+  $('#message_dialog_message').html(message);
+
+  $("#message_dialog").dialog({modal:true, buttons: [
+    {text: "ОК", click: function(){$(this).dialog("close");} }
+  ] });     
 }
 //-----------------------------------------------------------------------------------------------------
 // добавляем дельту
@@ -50,7 +60,7 @@ function newDelta()
       var delta = new Delta(delta_type,delta_module1,delta_index1,delta_module2,delta_index2);
       if(!deltaList.Add(delta))
       {
-        alert('Такая дельта уже существует!');
+        showMessage('Такая дельта уже существует!');
         return;
       }
       
@@ -280,6 +290,230 @@ controller.OnStatus = function(obj)
   }
 };
 //-----------------------------------------------------------------------------------------------------
+// редактируем настройки канала
+function editWateringChannel(channel, row)
+{
+
+      var lst = $('#water_channels_days').find('div #watering_channel_day');
+
+      for(var i=0;i<lst.length;i++)
+      {
+         var elem = lst.get(i);
+          var dayMask = parseInt(elem.value);
+          elem.checked = (channel.WateringDays & dayMask) == dayMask;
+      } // for
+      
+      $('#watering_start_hour').val(channel.StartTime); 
+      $('#watering_time').val(channel.WateringTime); 
+
+
+
+ $("#water_channel_settings_dialog").dialog({modal:true, buttons: [{text: "Изменить", click: function(){
+
+      $(this).dialog("close");
+      
+      var watering_start_hour = parseInt($('#watering_start_hour').val());
+      if(isNaN(watering_start_hour))
+        watering_start_hour = channel.StartTime;
+      
+      watering_start_hour = Math.abs(watering_start_hour);
+      if(watering_start_hour > 23)
+        watering_start_hour = 23;
+        
+      channel.StartTime = watering_start_hour;
+      
+      
+      var watering_time = parseInt($('#watering_time').val());
+      if(isNaN(watering_time))
+        watering_time = channel.WateringTime;
+        
+       channel.WateringTime = Math.abs(watering_time);
+        
+       channel.WateringDays = 0;
+        
+       var lst = $('#water_channels_days').find('div #watering_channel_day');
+
+        for(var i=0;i<lst.length;i++)
+        {
+           var elem = lst.get(i);
+           if(elem.checked)
+           {
+            var dayMask = parseInt(elem.value);
+             channel.WateringDays |= dayMask;
+           }
+           
+        } // for 
+
+      row.find('#water_channel_days').html(channel.getWateringDaysString(true));
+      row.find('#water_channel_start').html(channel.StartTime + ' ч');
+      row.find('#water_channel_time').html(channel.WateringTime + ' мин');
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });
+}
+//-----------------------------------------------------------------------------------------------------
+// добавляет строку в таблицу настроек каналов
+function addWaterChannelRow(parentElement, channel, num)
+{
+  if(!channel)
+  {
+    // запросили заголовок
+    var row = $('<div/>',{'class': 'row', id: 'water_channels_header'});
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("#").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Дни недели").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Начало").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Время").appendTo(row);
+    
+    row.appendTo(parentElement);
+    return;
+  }
+  
+    var row = $('<div/>',{'class': 'row', id: 'water_channel_' + num});
+    $('<div/>',{'class': 'row_item', id: 'water_channel_index'}).html(num + 1).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'water_channel_days'}).html(channel.getWateringDaysString(true)).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'water_channel_start'}).html(channel.StartTime + ' ч').appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'water_channel_time'}).html(channel.WateringTime + ' мин').appendTo(row);
+    
+    var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
+    
+    $('<div/>',{'class': 'action', title: 'Редактировать настройки канала'}).appendTo(actions).button({
+      icons: {
+        primary: "ui-icon-pencil"
+      }, text: false
+    }).click({row: row, channel : channel, channel_index: num}, function(ev){
+              
+              editWateringChannel(ev.data.channel,ev.data.row);
+              
+      
+              });    
+    
+    row.appendTo(parentElement);
+  
+}
+//-----------------------------------------------------------------------------------------------------
+// заполняем таблицу настроек каналов полива
+function fillWaterChannelsList()
+{
+  addWaterChannelRow('#WATER_CHANNELS_LIST', null);
+  
+  for(var i=0;i<wateringSettings.Channels.length;i++)
+  {
+    var channel = wateringSettings.Channels[i];
+    addWaterChannelRow('#WATER_CHANNELS_LIST', channel, i);
+  } // for
+}
+//-----------------------------------------------------------------------------------------------------
+// сохраняем настройки для всех каналов полива одновременно
+var wateringTotalCommands = 1;
+var wateringProcessedCommands = 0;
+
+function saveAllChannelsWateringOptions(watering_option)
+{
+  wateringSettings.WateringOption = watering_option;
+  wateringTotalCommands = 1;
+  wateringProcessedCommands = 0;
+    
+  if(watering_option == 1) // все каналы сразу
+  {
+      var wTime = parseInt($('#all_watering_time').val());
+      if(!isNaN(wTime))
+        wateringSettings.WateringTime = Math.abs(wTime);
+      else
+        $('#all_watering_time').val(wateringSettings.WateringTime);
+        
+      var wStart = parseInt($('#all_watering_start_hour').val());
+      if(!isNaN(wStart))
+      {
+        wStart = Math.abs(wStart);
+        if(wStart > 23)
+          wStart = 23;
+          
+          $('#all_watering_start_hour').val(wStart);
+          wateringSettings.StartTime = wStart;
+          
+      } // if(!isNaN(wStart))
+      else
+        $('#all_watering_start_hour').val(wateringSettings.StartTime);
+      
+
+      // теперь сохраняем дни недели
+      wateringSettings.WateringDays = 0;
+      
+      var lst = $('#all_watering_channels_days').find('div #all_watering_channels_day');
+
+      for(var i=0;i<lst.length;i++)
+      {
+         var elem = lst.get(i);
+         if(elem.checked)
+         {
+          var dayMask = parseInt(elem.value);
+           wateringSettings.WateringDays |= dayMask;
+         }
+      } // for 
+
+   } // watering_option == 1 
+   
+    $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });   
+   
+   if(watering_option == 2)
+   {
+      wateringTotalCommands += wateringSettings.Channels.length;
+    
+     
+     for(var i=0;i<wateringSettings.Channels.length;i++)
+     {
+        var channel = wateringSettings.Channels[i];
+        var cmd = "WATER|CH_SETT|" + i + '|' + channel.WateringDays + '|' + channel.WateringTime + '|' + channel.StartTime;
+        
+        controller.queryCommand(false,cmd,function(obj,answer){
+                
+                      wateringProcessedCommands++;
+                      
+                      if(wateringProcessedCommands >= wateringTotalCommands)
+                        $("#data_requested_dialog" ).dialog('close');
+                                      
+                });         
+        
+     } // for
+
+    
+   } // if(watering_option == 2)
+   
+   wateringSettings.TurnOnPump = $('#turn_on_pump').get(0).checked ? 1 : 0;
+              
+    // теперь можем загружать всё это добро в контроллер
+    var cmd = "WATER|T_SETT|" + wateringSettings.WateringOption + '|' +   wateringSettings.WateringDays + '|' +
+               wateringSettings.WateringTime + '|' + wateringSettings.StartTime + '|' + wateringSettings.TurnOnPump;
+                                  
+                controller.queryCommand(false,cmd,function(obj,answer){
+                
+                      wateringProcessedCommands++;
+                      
+                      if(wateringProcessedCommands >= wateringTotalCommands)
+                        $("#data_requested_dialog" ).dialog('close');
+                                      
+                }); 
+    
+    
+    
+}
+//-----------------------------------------------------------------------------------------------------
+// сохраняем настройки полива
+function saveWateringSettings()
+{
+  var watering_option = parseInt($('#watering_option').val());  
+   saveAllChannelsWateringOptions(watering_option);
+}
+//-----------------------------------------------------------------------------------------------------
 // событие "Получен список модулей в прошивке"
 controller.OnGetModulesList = function(obj)
 {
@@ -361,6 +595,79 @@ controller.OnGetModulesList = function(obj)
         });
     } // composite commands end
     
+    if(controller.Modules.includes('WATER')) // если есть модуль полива в прошивке
+    {
+       
+       //$('#WATER_MENU').toggle(true);
+       
+       var channelsToRetrieve = 0;
+       var retrievedChannels = 0;
+       
+        controller.queryCommand(true,'WATER|T_SETT',function(obj,answer){
+        
+              //$('#WATER_MENU').toggle(answer.IsOK);
+              
+              if(answer.IsOK)
+              {              
+              
+                  wateringSettings = new WateringSettings(answer.Params[2],answer.Params[3],answer.Params[4],answer.Params[5],answer.Params[6]);
+                  
+                  $('#all_watering_start_hour').val(wateringSettings.StartTime);
+                  $('#all_watering_time').val(wateringSettings.WateringTime);
+                  
+                  var lst = $('#all_watering_channels_days').find('div #all_watering_channels_day');
+
+                  for(var i=0;i<lst.length;i++)
+                  {
+                     var elem = lst.get(i);
+                     var dayMask = parseInt(elem.value);
+                     elem.checked = (wateringSettings.WateringDays & dayMask) == dayMask;
+                      
+                  } // for
+                  
+                  controller.queryCommand(true,'WATER|CHANNELS',function(obj,cntChannels){
+                  
+                      if(cntChannels.IsOK)
+                      {
+                        channelsToRetrieve = parseInt(cntChannels.Params[2]);
+                        
+                        if(!channelsToRetrieve)
+                          return;
+                          
+                        for(var i=0;i<channelsToRetrieve;i++)
+                        {
+                            controller.queryCommand(true,'WATER|CH_SETT|' + i,function(obj,channelData){
+                            retrievedChannels++;
+                            
+                                if(channelData.IsOK)
+                                {
+                                  var channel = new WaterChannelSettings(channelData.Params[3], channelData.Params[4], channelData.Params[5]);
+                                  wateringSettings.Add(channel);
+                                } // if
+                            
+                                if(retrievedChannels >= channelsToRetrieve)
+                                {
+                                  $('#WATER_MENU').toggle(true);
+                                  $('#watering_option').val(wateringSettings.WateringOption);
+                                  $('#watering_option').trigger('change');
+                                  
+                                  $('#turn_pump_box').toggle(wateringSettings.WateringOption > 0);
+                                  
+                                  $('#turn_on_pump').get(0).checked = wateringSettings.TurnOnPump == 1;
+                                  
+                                  fillWaterChannelsList(); // заполняем таблицу настроек каналов полива 
+                                } // if
+                            
+                            });
+                        } // for
+                      } // if(cntChannels.IsOK)
+                  
+                  });
+              } // answer.IsOK
+        
+        });
+    } // water
+    
     
   
 };
@@ -398,7 +705,7 @@ function newCCCommand()
   var idx = $('#cc_lists').val();
   if(idx === null)
   {
-    alert('Создайте список составных команд!');
+    showMessage('Создайте список составных команд!');
     return;
   }
 
@@ -620,7 +927,7 @@ $(document).ready(function(){
       }
     });
     
-  $( "#save_delta_button, #save_cc_button" ).button({
+  $( "#save_delta_button, #save_cc_button, #save_watering_button" ).button({
       icons: {
         primary: "ui-icon-arrowthickstop-1-n"
       }
@@ -666,11 +973,38 @@ $(document).ready(function(){
     $('#delta_index1').forceNumericOnly();     
     $('#delta_index2').forceNumericOnly();
     $('#cc_param').forceNumericOnly();
+    $('#all_watering_start_hour').forceNumericOnly();
+    $('#all_watering_time').forceNumericOnly();
+    $('#watering_start_hour').forceNumericOnly(); 
+    $('#watering_time').forceNumericOnly(); 
     
     for(var i=0;i<CompositeActionsNames.length;i++)
     {
       $('#cc_type').append($('<option/>',{value: i}).text(CompositeActionsNames[i]));
     }
+    
+    $('#watering_option').change(function() {
+    
+      var watering_option = parseInt($(this).val());
+      $('#watering_all_channels').toggle(false);
+      $('#watering_separate_channels').toggle(false);
+      $('#turn_pump_box').toggle(false);
+      
+      switch(watering_option)
+      {
+        case 1:
+          $('#watering_all_channels').toggle(true);
+          $('#turn_pump_box').toggle(true);
+        break;
+        
+        case 2:
+          $('#watering_separate_channels').toggle(true);
+          $('#turn_pump_box').toggle(true);
+        break;
+      } // switch
+    
+    });
+    
     
     $('#delta_type').change(function() {
     
