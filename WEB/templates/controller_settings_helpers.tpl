@@ -45,6 +45,12 @@ function showMessage(message)
 // добавляем дельту
 function newDelta()
 {
+
+  if(deltaList.List.length >= MAX_DELTAS)
+  {
+    showMessage("Достигнуто максимальное количество дельт: " + MAX_DELTAS);
+    return;
+  }
   
  $("#new_delta_dialog").dialog({modal:true, buttons: [{text: "Добавить", click: function(){
   
@@ -58,6 +64,7 @@ function newDelta()
       if(isNaN(delta_index2)) delta_index2 = 0;
       
       var delta = new Delta(delta_type,delta_module1,delta_index1,delta_module2,delta_index2);
+      
       if(!deltaList.Add(delta))
       {
         showMessage('Такая дельта уже существует!');

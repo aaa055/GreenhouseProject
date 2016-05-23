@@ -486,7 +486,7 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
  
   // читаем длину команды, которую надо отправить другому модулю при срабатывании правила
   targetCommand = F("");
-  namelen = EEPROM.read(curReadAddr++); readed++;//targetCommand.length();
+  namelen = EEPROM.read(curReadAddr++); readed++;
  
   // читаем саму команду
   for(uint8_t i=0;i<namelen;i++)
@@ -595,7 +595,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   if(curArg == PROP_SOIL)
     target = rtSoilMoisture; // следим за влажностью почвы
 
-  sensorIdx = (uint8_t) atoi(command.GetArg(curArgIdx++));//String(command.GetArg(curArgIdx++)).toInt();
+  sensorIdx = (uint8_t) atoi(command.GetArg(curArgIdx++));
   curArg = command.GetArg(curArgIdx++);
 
   
@@ -626,11 +626,11 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   // дошли до температуры, после неё - настройки срабатывания
 
   // следом идёт час начала работы
-  whichTime = (uint8_t) atoi(command.GetArg(curArgIdx++)); //String(command.GetArg(curArgIdx++)).toInt();
+  whichTime = (uint8_t) atoi(command.GetArg(curArgIdx++));
 
   
   // дальше идёт продолжительность работы
-  workTime = (unsigned long) atol(command.GetArg(curArgIdx++));//String(command.GetArg(curArgIdx++)).toInt();
+  workTime = (unsigned long) atol(command.GetArg(curArgIdx++));
 
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
@@ -802,7 +802,6 @@ void AlertModule::Setup()
   lastUpdateCall = 0;
 
   cParser = mainController->GetCommandParser();
-  controllerID = mainController->GetControllerID();  
 }
 void AlertModule::InitRules()
 {
@@ -876,13 +875,13 @@ void AlertModule::Update(uint16_t dt)
     if(tc.length()) // надо отправлять команду
     {
       Command cmd;
-      if(cParser->ParseCommand(tc, /*controllerID,*/ cmd))
+      if(cParser->ParseCommand(tc, cmd))
       {
          cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
 
         // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
         //cmd.SetIncomingStream(pStream);
-        mainController->ProcessModuleCommand(cmd,NULL);//,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой
+        mainController->ProcessModuleCommand(cmd,NULL);
 
         // дёргаем функцию обновления других вещей - типа, кооперативная работа
         yield();
@@ -1198,7 +1197,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                     }
                     else
                     {
-                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));//command.GetArg(1).toInt();
+                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));
                           
                         PublishSingleton.Status = true;
                         PublishSingleton = VIEW_ALERT_COMMAND; 
@@ -1216,7 +1215,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                     }
                     else
                     {
-                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));//String(command.GetArg(1)).toInt();
+                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));
                         if(idx < rulesCnt) // норм индекс
                         {
                           AlertRule* rule = alertRules[idx];
@@ -1243,7 +1242,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                     }
                     else
                     {
-                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));//String(command.GetArg(1)).toInt();
+                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));
                         if(idx <= rulesCnt) // норм индекс
                         {
                           AlertRule* rule = alertRules[idx];

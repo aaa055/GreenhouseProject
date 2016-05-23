@@ -107,7 +107,6 @@ class AlertModule : public AbstractModule
     NamesVector paramsArray; // всякие общие имена храним здесь
 
     unsigned long lastUpdateCall;
-    String controllerID;
     CommandParser* cParser;
 
     uint8_t rulesCnt;

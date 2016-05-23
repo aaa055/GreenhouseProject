@@ -72,12 +72,9 @@ bool TCPClient::Prepare(const char* command)
   CommandParser* cParser = controller->GetCommandParser();
 
  COMMAND_TYPE cType = ctUNKNOWN;
-
- //static String _ctget = F("CTGET=");
-// static String _ctset = F("CTSET=");
  
- const char* strGET = strstr_P(command,(const char*) F("CTGET="));//_ctget.c_str());
- const char* strSET = strstr_P(command,(const char*) F("CTSET="));//_ctset.c_str());
+ const char* strGET = strstr_P(command,(const char*) F("CTGET="));
+ const char* strSET = strstr_P(command,(const char*) F("CTSET="));
  
  if(strGET == command)
   cType = ctGET;
@@ -91,7 +88,7 @@ bool TCPClient::Prepare(const char* command)
   // у нас асинхронная посылка данных, поэтому надо быть уверенным, что данные всегда доступны.
   
    Command cmd;
-   if(cParser->ParseCommand(command, /*OUR_ID,*/ cmd))
+   if(cParser->ParseCommand(command, cmd))
    {
      
      // команду разобрали, надо назначить поток вывода в неё
@@ -157,9 +154,8 @@ void TCPClient::OpenSDFile()
 
   char file_name[13];
   sprintf_P(file_name,(const char*) F("%u.TCP"),tcpClientID);
-  //String fname = String(tcpClientID); fname += F(".TCP");
   // открываем файл на запись
-  workFile = SD.open(/*fname.c_str()*/file_name, FILE_WRITE | O_TRUNC); // открываем файл и усекаем его до нуля   
+  workFile = SD.open(file_name, FILE_WRITE | O_TRUNC); // открываем файл и усекаем его до нуля   
     
 }
 void TCPClient::WriteErrorToFile()

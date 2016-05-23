@@ -5,7 +5,7 @@
 
 PublishStruct PublishSingleton;
 
-ModuleController::ModuleController(/*uint8_t wAs, */const String& id) : /*workAs(wAs),*/ ourID(id), cParser(NULL)
+ModuleController::ModuleController() : cParser(NULL)
 #ifdef USE_LOG_MODULE
 ,logWriter(NULL)
 #endif
@@ -147,22 +147,11 @@ AbstractModule* ModuleController::GetModuleByID(const String& id)
 
 void ModuleController::ProcessModuleCommand(const Command& c, AbstractModule* mod)//, bool checkDestination)
 {
-/*  
-  if(checkDestination && (c.GetDestination() != workAs) ) // команда не для нас! 
-  {
-    return;
-  }
-*/
 
 #ifdef _DEBUG
 ///Serial.println("called: " +  c.GetTargetModuleID() + PARAM_DELIMITER + c.GetRawArguments());
 #endif  
-  /*
-   * например, контроллер работает в режиме дочернего модуля, тогда он отзывается только на команды
-   * с префиксом CD, тогда как в режиме работы как контроллер - префикс CT.
-   * 
-   */
-  
+
 if(!mod) // ничего не передали, надо искать модуль
   mod =  GetModuleByID(c.GetTargetModuleID());
   

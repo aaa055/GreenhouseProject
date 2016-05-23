@@ -102,7 +102,7 @@ void CommandParser::Clear()
 
 }
 
-bool CommandParser::ParseCommand(const String& command,/*const String& ourID,*/Command& outCommand)
+bool CommandParser::ParseCommand(const String& command, Command& outCommand)
 {
   Clear(); // clear first
 

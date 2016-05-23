@@ -664,13 +664,13 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
            if(argsCount > 4)
            {
               #if WATER_RELAYS_COUNT > 0
-                uint8_t channelIdx = (uint8_t) atoi(command.GetArg(1));//String(command.GetArg(1)).toInt();
+                uint8_t channelIdx = (uint8_t) atoi(command.GetArg(1));
                 if(channelIdx < WATER_RELAYS_COUNT)
                 {
                   // нормальный индекс
-                  uint8_t wDays = (uint8_t) atoi(command.GetArg(2));//String(command.GetArg(2)).toInt();
-                  uint16_t wTime =(uint16_t) atoi(command.GetArg(3));//String(command.GetArg(3)).toInt();
-                  uint8_t sTime = (uint8_t) atoi(command.GetArg(4));//String(command.GetArg(4)).toInt();
+                  uint8_t wDays = (uint8_t) atoi(command.GetArg(2));
+                  uint16_t wTime =(uint16_t) atoi(command.GetArg(3));
+                  uint8_t sTime = (uint8_t) atoi(command.GetArg(4));
                   
                   settings->SetChannelWateringWeekDays(channelIdx,wDays);
                   settings->SetChannelWateringTime(channelIdx,wTime);
@@ -832,7 +832,7 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
                 {
                   #if WATER_RELAYS_COUNT > 0
                   // запросили настройки канала
-                  uint8_t idx = (uint8_t) atoi(command.GetArg(1));//String(command.GetArg(1)).toInt();
+                  uint8_t idx = (uint8_t) atoi(command.GetArg(1));
                   
                   if(idx < WATER_RELAYS_COUNT)
                   {

@@ -7,11 +7,8 @@
 #include "CommandBuffer.h"
 #include "CommandParser.h"
 #include "ModuleController.h"
-
-#ifdef AS_CONTROLLER
 #include "AlertModule.h"
 #include "ZeroStreamListener.h"
-#endif
 
 #ifdef USE_PIN_MODULE
 #include "PinModule.h"
@@ -106,8 +103,8 @@ CommandBuffer commandsFromSerial(&Serial);
 // Парсер команд
 CommandParser commandParser;
 
-// Контроллер модулей - в указанном режиме работы - как главный контроллер или дочерний модуль
-ModuleController controller(OUR_ID);
+// Контроллер модулей
+ModuleController controller;
 
 
 #ifdef USE_PIN_MODULE
@@ -265,13 +262,8 @@ void WIFI_EVENT_FUNC()
 
 #endif
 
-
-#ifdef AS_CONTROLLER
-// Модуль поддержки регистрации сторонних коробочек - только в режиме работы контроллера
-ZeroStreamListener remoteRegistrator;
-// модуль обработки правил тоже только в режиме контроллера
-AlertModule alerts;
-#endif
+ZeroStreamListener zeroStreamModule;
+AlertModule alertsModule;
    
 String ReadProgmemString(const char* c)
 {
@@ -296,7 +288,7 @@ void ProcessInitCommands()
       break;
 
      Command cmd;
-    if(commandParser.ParseCommand(command, /*OUR_ID,*/ cmd))
+    if(commandParser.ParseCommand(command, cmd))
     {
       // КОМАНДЫ ИНИЦИАЛИЗАЦИИ НЕ ДЕЛАЮТ ВЫВОД В СЕРИАЛ
       //cmd.SetIncomingStream(commandsFromSerial.GetStream());
@@ -387,10 +379,8 @@ void setup()
   #endif 
 
  // модуль алертов регистрируем последним, т.к. он должен вычитать зависимости с уже зарегистрированными модулями
-  #ifdef AS_CONTROLLER
-    controller.RegisterModule(&remoteRegistrator);
-    controller.RegisterModule(&alerts);
-  #endif
+  controller.RegisterModule(&zeroStreamModule);
+  controller.RegisterModule(&alertsModule);
 
   controller.begin(); // начинаем работу
 
@@ -489,7 +479,7 @@ void loop()
    {
     // есть новая команда
     Command cmd;
-    if(commandParser.ParseCommand(commandsFromSerial.GetCommand()/*,OUR_ID*/, cmd))
+    if(commandParser.ParseCommand(commandsFromSerial.GetCommand(), cmd))
     {
        Stream* answerStream = commandsFromSerial.GetStream();
       // разобрали, назначили поток, с которого пришла команда

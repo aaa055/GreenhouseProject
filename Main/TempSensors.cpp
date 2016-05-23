@@ -451,7 +451,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           unsigned long interval = sett->GetOpenInterval();
           
           if(command.GetArgsCount() > 3)
-            interval = (unsigned long) atol(command.GetArg(3));//String(command.GetArg(3)).toInt(); // получили интервал для работы реле
+            interval = (unsigned long) atol(command.GetArg(3)); // получили интервал для работы реле
 
  
           PublishSingleton.Status = true;
@@ -572,8 +572,8 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
       else
       if(commandRequested == TEMP_SETTINGS) // установить температуры закрытия/открытия
       {
-        uint8_t tOpen = (uint8_t) atoi(command.GetArg(1));//String(command.GetArg(1)).toInt();
-        uint8_t tClose = (uint8_t) atoi(command.GetArg(2));//String(command.GetArg(2)).toInt();
+        uint8_t tOpen = (uint8_t) atoi(command.GetArg(1));
+        uint8_t tClose = (uint8_t) atoi(command.GetArg(2));
 
         sett->SetOpenTemp(tOpen);
         sett->SetCloseTemp(tClose);
@@ -634,7 +634,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
       } // WORK_MODE
       else if(commandRequested == WM_INTERVAL) // запросили установку интервала
       {
-              unsigned long newInt = (unsigned long) atol(command.GetArg(1));//String(command.GetArg(1)).toInt();
+              unsigned long newInt = (unsigned long) atol(command.GetArg(1));
               if(newInt > 0)
               {
                 //СОХРАНЕНИЕ ИНТЕРВАЛА В НАСТРОЙКАХ

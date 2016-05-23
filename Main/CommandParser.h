@@ -84,14 +84,12 @@ class Command
 class CommandParser
 {
   private:
- //   String commandBuf;
     
   public:
     CommandParser();
 
     void Clear();
-    bool ParseCommand(const String& command, /*const String& ourID, */Command& outCommand);
-//    const String& GetRawCommand() {return commandBuf;}
+    bool ParseCommand(const String& command, Command& outCommand);
 };
 
 

@@ -27,7 +27,7 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
   CommandParser* cParser = mainController->GetCommandParser();
 
   Command cmd;
-  if(cParser->ParseCommand(fullCommand, /*mainController->GetControllerID(),*/ cmd))
+  if(cParser->ParseCommand(fullCommand,  cmd))
   {
 
     cmd.SetInternal(isInternalCommand); // устанавливаем флаг команды
@@ -38,8 +38,7 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
     else
       cmd.SetIncomingStream(NULL);
 
-    mainController->ProcessModuleCommand(cmd,NULL);//,false);
-
+    mainController->ProcessModuleCommand(cmd,NULL);
     return true;
   }
 
