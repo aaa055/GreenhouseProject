@@ -38,12 +38,29 @@ View.prototype.fillSensorsList = function(parentElement, list, add, pattern = {i
 
         if(pattern.data)
         {
-            var dt = $('<div/>',{'class': 'row_item sensor_data', id: 'data'}).appendTo(row);
+            var dt = $('<div/>',{'class': 'row_item sensor_data', id: 'data_col'}).appendTo(row);
+            
+            var dataDiv = $('<div/>',{'class': 'sensor_data_float', id : 'data'}).appendTo(dt);
             
             if(sensor.HasData)
-              dt.html(sensor.Data + add);
+              dataDiv.html(sensor.Data + add);
             else
-              dt.html(NO_DATA);
+              dataDiv.html(NO_DATA);
+              
+              var updatingChart = $('<div/>',{'class': 'peity', id: 'inline_chart'}).appendTo(dt);
+              updatingChart.peity("line", { width: 64, height: 20 });
+              
+              if(sensor.HasData)
+              {
+                var values = updatingChart.text().split(",");
+                var normData = sensor.normalizedData();
+                
+                for(var nd=0;nd<20;nd++)
+                  values.push(normData);
+                  
+                updatingChart.text(values.join(",")).change();
+              }
+              
         }
         
         var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
@@ -69,15 +86,30 @@ View.prototype.fillSensorsList = function(parentElement, list, add, pattern = {i
      {
       // надо обновить таблицу
         var childElem = $(parentElement).find("#" + child_id);
+        
 
         childElem.children('#module').html(ModuleNamesBindings[sensor.ModuleName]);
         childElem.children('#index').html(this.Controller.SensorsNames.getMnemonicName(sensor));
         
+        var dataCol = childElem.children('#data_col');
+        
         if(sensor.HasData)
-          childElem.children('#data').html(sensor.Data + add);
+          dataCol.children('#data').html(sensor.Data + add);
         else
-          childElem.children('#data').html(NO_DATA); 
+          dataCol.children('#data').html(NO_DATA);
           
+              var updatingChart = dataCol.children('#inline_chart');
+              
+              if(sensor.HasData)
+              {
+                var values = updatingChart.text().split(",");
+                
+                if(values.length > 20)
+                  values.shift();
+                                  
+                values.push(sensor.normalizedData());
+                updatingChart.text(values.join(",")).change();
+              }          
      }
     
   }

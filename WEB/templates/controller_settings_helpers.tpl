@@ -283,7 +283,9 @@ function queryDeltasList()
 // обработчик онлайн-статуса контроллера
 controller.OnStatus = function(obj)
 {
-  var is_online = controller.IsOnline();  
+  var is_online = controller.IsOnline();
+    
+  $('#reset_controller_link').toggle(is_online);  
   
   if(is_online)
   {  
@@ -523,7 +525,7 @@ function saveWateringSettings()
 //-----------------------------------------------------------------------------------------------------
 // событие "Получен список модулей в прошивке"
 controller.OnGetModulesList = function(obj)
-{
+{  
     $('#DELTA_MENU').toggle(controller.Modules.includes('DELTA')); // работаем с дельтами только если в прошивке есть модуль дельт
     
     if(controller.Modules.includes('SMS')) // если в прошивке есть модуль Neoway M590
@@ -583,7 +585,7 @@ controller.OnGetModulesList = function(obj)
             for(var i=0;i<compositeCommands.List.length;i++)
             {
               var ccList = compositeCommands.List[i];
-              $('#cc_lists').append($('<option/>',{value: ccList.Index }).text(ccList.Name));
+              $('#cc_lists').append($('<option/>',{value: ccList.Index }).text('#' + i + ' - ' + ccList.Name));
             } // for
           
           $('#cc_lists').change(function(){
@@ -694,7 +696,10 @@ $("#new_cc_list_dialog").dialog({modal:true, buttons: [{text: "Добавить"
       $(this).dialog("close");
       
       var newList = compositeCommands.addNewList(list_name);
-      $('#cc_lists').append($('<option/>',{value: newList.Index }).text(newList.Name));
+      $('#cc_lists').append($('<option/>',{value: newList.Index }).text('#' + (newList.Index - 1) + ' - ' + newList.Name));
+      
+      $('#cc_lists').val(newList.Index);
+      $('#cc_lists').trigger('change');
     
       $(this ).dialog('close');
       

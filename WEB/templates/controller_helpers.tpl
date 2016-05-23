@@ -58,6 +58,8 @@ controller.OnStatus = function(obj)
 {
   var is_online = controller.IsOnline();
   
+  $('#reset_controller_link').toggle(is_online);
+  
   if(!lastIsOnline && is_online)
   {
     controller.querySensorNames(); // запрашиваем список имён датчиков из БД

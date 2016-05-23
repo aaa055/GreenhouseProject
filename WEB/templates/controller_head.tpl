@@ -57,7 +57,7 @@ $(document).ready(function(){ldelim}
       icons: {ldelim}
         primary: "ui-icon-refresh"
       {rdelim}
-    {rdelim}).css('background','#ff794d');            
+    {rdelim}).css('background','#ff794d').hide();            
     
     if(typeof(controller) != 'undefined')
     {ldelim}

@@ -14,6 +14,7 @@
 <script type="text/javascript" src="js/controller.js"></script>
 <script type="text/javascript" src="js/jquery.js"></script>
 <script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript" src="js/jquery.peity.js"></script>
 <script type="text/javascript" src="js/common.js"></script>
 
 <script type='text/javascript'>

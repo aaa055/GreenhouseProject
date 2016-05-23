@@ -21,6 +21,13 @@ LABEL {
   cursor: pointer;
 }
 
+.peity {
+  float: right;
+}
+
+.sensor_data_float{
+  float:left;
+}
 
 .row:hover .row_item {
     background-color: #E0E0E0;
