@@ -27,115 +27,93 @@ void NextionModule::StringReceived(const char* str)
 {
 
   // Обрабатываем пришедшие команды здесь
-  static String _w_open = F("w_open"); // открыть окна
-  static String _w_close = F("w_close"); // закрыть окна
-  static String _w_auto = F("w_auto"); // автоматический режим работы окон
-  static String _w_manual = F("w_manual"); // ручной режим работы окон
   
-  static String _wtr_on = F("wtr_on"); // включить полив
-  static String _wtr_off = F("wtr_off"); // выключить полив
-  static String _wtr_auto = F("wtr_auto"); // автоматический режим управления поливом
-  static String _wtr_manual = F("wtr_manual"); // ручной режим управления поливом
-  
-  static String _lht_on = F("lht_on"); // включить досветку
-  static String _lht_off = F("lht_off"); // выключить досветку
-  static String _lht_auto = F("lht_auto"); // автоматический режим работы досветки
-  static String _lht_manual = F("lht_manual"); // ручной режим работы досветки
-  
-  static String _topen_down = F("topen_down"); // листают температуру открытия вниз
-  static String _tclose_down = F("tclose_down"); // листают температуру закрытия вниз
-  static String _topen_up = F("topen_up"); // листают температуру открытия вверх
-  static String _tclose_up = F("tclose_up"); // листают температуру закрытия вверх
-
-  static String _prev = F("prev"); // попросили пролистать показания датчиков вперёд
-  static String _next = F("next"); // попросили пролистать показания датчиков назад
-  
-  if(_w_open == str)
+  if(!strcmp_P(str,(const char*)F("w_open")))
   {
     // попросили открыть окна
     ModuleInterop.QueryCommand(ctSET,F("STATE|WINDOW|ALL|OPEN"),false,false);
     return;
   }
   
-  if(_w_close == str)
+  if(!strcmp_P(str,(const char*)F("w_close")))
   {
     // попросили закрыть окна
     ModuleInterop.QueryCommand(ctSET,F("STATE|WINDOW|ALL|CLOSE"),false,false);
     return;
   }
   
-  if(_w_auto == str)
+  if(!strcmp_P(str,(const char*)F("w_auto")))
   {
     // попросили перевести в автоматический режим окон
     ModuleInterop.QueryCommand(ctSET,F("STATE|MODE|AUTO"),false,false);
     return;
   }
   
-  if(_w_manual == str)
+  if(!strcmp_P(str,(const char*)F("w_manual")))
   {
     // попросили перевести в ручной режим работы окон
     ModuleInterop.QueryCommand(ctSET,F("STATE|MODE|MANUAL"),false,false);
     return;
   }
   
-  if(_wtr_on == str)
+  if(!strcmp_P(str,(const char*)F("wtr_on")))
   {
     // попросили включить полив
     ModuleInterop.QueryCommand(ctSET,F("WATER|ON"),false,false);
     return;
   }
   
-  if(_wtr_off == str)
+  if(!strcmp_P(str,(const char*)F("wtr_off")))
   {
     // попросили выключить полив
     ModuleInterop.QueryCommand(ctSET,F("WATER|OFF"),false,false);
     return;
   }
   
-  if(_wtr_auto == str)
+  if(!strcmp_P(str,(const char*)F("wtr_auto")))
   {
     // попросили перевести в автоматический режим работы полива
     ModuleInterop.QueryCommand(ctSET,F("WATER|MODE|AUTO"),false,false);
     return;
   }
   
-  if(_wtr_manual == str)
+  if(!strcmp_P(str,(const char*)F("wtr_manual")))
   {
     // попросили перевести в ручной режим работы полива
     ModuleInterop.QueryCommand(ctSET,F("WATER|MODE|MANUAL"),false,false);
     return;
   }
   
-  if(_lht_on == str)
+  if(!strcmp_P(str,(const char*)F("lht_on")))
   {
     // попросили включить досветку
     ModuleInterop.QueryCommand(ctSET,F("LIGHT|ON"),false,false);
     return;
   }
   
-  if(_lht_off == str)
+  if(!strcmp_P(str,(const char*)F("lht_off")))
   {
     // попросили выключить досветку
     ModuleInterop.QueryCommand(ctSET,F("LIGHT|OFF"),false,false);
     return;
   }
   
-  if(_lht_auto == str)
+  if(!strcmp_P(str,(const char*)F("lht_auto")))
   {
     // попросили перевести досветку в автоматический режим
     ModuleInterop.QueryCommand(ctSET,F("LIGHT|MODE|AUTO"),false,false);
     return;
   }
   
-  if(_lht_manual == str)
+  if(!strcmp_P(str,(const char*)F("lht_manual")))
   {
     // попросили перевести досветку в ручной режим
     ModuleInterop.QueryCommand(ctSET,F("LIGHT|MODE|MANUAL"),false,false);
     return;
   }
   
-  if(_topen_down == str)
-  {
+ if(!strcmp_P(str,(const char*)F("topen_down")))
+ {
     // листают температуру открытия вниз
     uint8_t tmp = sett->GetOpenTemp();
     
@@ -147,7 +125,7 @@ void NextionModule::StringReceived(const char* str)
     return;
   }  
 
-  if(_topen_up == str)
+ if(!strcmp_P(str,(const char*)F("topen_up")))
   {
     // листают температуру открытия вверх
     uint8_t tmp = sett->GetOpenTemp();
@@ -160,7 +138,7 @@ void NextionModule::StringReceived(const char* str)
     return;
   }
 
-  if(_tclose_down == str)
+ if(!strcmp_P(str,(const char*)F("tclose_down")))
   {
     // листают температуру закрытия вниз
     uint8_t tmp = sett->GetCloseTemp();
@@ -173,7 +151,7 @@ void NextionModule::StringReceived(const char* str)
     return;
   }  
 
-  if(_tclose_up == str)
+ if(!strcmp_P(str,(const char*)F("tclose_up")))
   {
     // листают температуру закрытия вверх
     uint8_t tmp = sett->GetCloseTemp();
@@ -186,14 +164,14 @@ void NextionModule::StringReceived(const char* str)
     return;
   }
 
-  if(_prev == str)
+ if(!strcmp_P(str,(const char*)F("prev")))
   {
     rotationTimer = 0;
     displayNextSensorData(-1);
     return;
   }
 
-  if(_next == str)
+ if(!strcmp_P(str,(const char*)F("next")))
   {
     rotationTimer = 0;
     displayNextSensorData(1);

@@ -5,7 +5,7 @@
 
 PublishStruct PublishSingleton;
 
-ModuleController::ModuleController(uint8_t wAs, const String& id) : workAs(wAs), ourID(id), cParser(NULL)
+ModuleController::ModuleController(/*uint8_t wAs, */const String& id) : /*workAs(wAs),*/ ourID(id), cParser(NULL)
 #ifdef USE_LOG_MODULE
 ,logWriter(NULL)
 #endif
@@ -26,10 +26,7 @@ void ModuleController::begin()
  
 }
 void ModuleController::Setup()
-{
-  Command::_CMD_GET = CMD_GET;
-  Command::_CMD_SET = CMD_SET;
-  
+{  
   settings.Load(); // загружаем настройки
   ModuleInterop.SetController(this); // устанавливаем контроллер для класса взаимодействия между модулями
 
@@ -148,12 +145,14 @@ AbstractModule* ModuleController::GetModuleByID(const String& id)
   return NULL;
 }
 
-void ModuleController::ProcessModuleCommand(const Command& c, AbstractModule* mod, bool checkDestination)
+void ModuleController::ProcessModuleCommand(const Command& c, AbstractModule* mod)//, bool checkDestination)
 {
+/*  
   if(checkDestination && (c.GetDestination() != workAs) ) // команда не для нас! 
   {
     return;
   }
+*/
 
 #ifdef _DEBUG
 ///Serial.println("called: " +  c.GetTargetModuleID() + PARAM_DELIMITER + c.GetRawArguments());

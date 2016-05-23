@@ -1,6 +1,9 @@
 #include "WateringModule.h"
 #include "ModuleController.h"
 #include <EEPROM.h>
+#ifdef USE_LOG_MODULE
+#include <SD.h> // пробуем записать статус полива не только в EEPROM, но и на SD-карту, если LOG-модуль есть в прошивке
+#endif
 
 #if WATER_RELAYS_COUNT > 0
 static uint8_t WATER_RELAYS[] = { WATER_RELAYS_PINS }; // объявляем массив пинов реле
@@ -34,18 +37,56 @@ void WateringModule::Setup()
   #endif
 
   #ifdef USE_DS3231_REALTIME_CLOCK
+
+  
     // смотрим, не поливали ли мы на всех каналах сегодня
     uint8_t today = t.dayOfWeek;
+    unsigned long savedWorkTime = 0xFFFFFFFF;
+    byte* writeAddr = (byte*) &savedWorkTime;
+    uint8_t savedDOW = 0xFF;
     uint16_t curReadAddr = WATERING_STATUS_EEPROM_ADDR;
 
-    unsigned long savedWorkTime = 0;
-    uint8_t savedDOW = EEPROM.read(curReadAddr++);
+    bool needToReadFromEEPROM = true; // считаем, что мы должны читать из EEPROM
 
-     byte* writeAddr = (byte*) &savedWorkTime;
-    *writeAddr++ = EEPROM.read(curReadAddr++);
-    *writeAddr++ = EEPROM.read(curReadAddr++);
-    *writeAddr++ = EEPROM.read(curReadAddr++);
-    *writeAddr = EEPROM.read(curReadAddr++);
+    #ifdef USE_LOG_MODULE
+
+    if(mainController->HasSDCard())
+    {
+
+      char file_name[13] = {0};
+      sprintf_P(file_name,(const char*)F("%u.WTR"),0);
+
+      SDFile sdFile = SD.open(file_name,FILE_READ);
+      if(sdFile)
+      {
+        if(sdFile.size() == sizeof(unsigned long) + sizeof(uint8_t))
+        {
+            // нормальный размер файла, можем читать
+            sdFile.read(&savedDOW,sizeof(uint8_t));
+            sdFile.read(&savedWorkTime,sizeof(unsigned long));
+
+            needToReadFromEEPROM = false; // прочитали настройки из файла
+        
+        } // if
+        
+        sdFile.close();
+        
+      } // if(sdFile)
+
+    } // if(mainController->HasSDCard())
+
+    #endif // USE_LOG_MODULE
+
+    if(needToReadFromEEPROM)
+    {
+      savedDOW = EEPROM.read(curReadAddr++);
+  
+      *writeAddr++ = EEPROM.read(curReadAddr++);
+      *writeAddr++ = EEPROM.read(curReadAddr++);
+      *writeAddr++ = EEPROM.read(curReadAddr++);
+      *writeAddr = EEPROM.read(curReadAddr++);
+      
+    } // needToReadFromEEPROM
 
    
     
@@ -58,7 +99,7 @@ void WateringModule::Setup()
         #endif
       }
       
-    }
+    } // if
 
   lastDOW = t.dayOfWeek; // запоминаем прошлый день недели
   currentDOW = t.dayOfWeek; // запоминаем текущий день недели
@@ -114,19 +155,52 @@ void WateringModule::Setup()
     wateringChannels[i].WateringDelta = 0;
 
     #ifdef USE_DS3231_REALTIME_CLOCK
+    
       // смотрим, не поливался ли уже канал сегодня?
-      curReadAddr = WATERING_STATUS_EEPROM_ADDR + (i+1)*5;
-      savedWorkTime = 0;
+      savedWorkTime = 0xFFFFFFFF;
+      savedDOW = 0xFF;
+      needToReadFromEEPROM = true;
 
-      savedDOW = EEPROM.read(curReadAddr++);
+    #ifdef USE_LOG_MODULE
 
-      writeAddr = (byte*) &savedWorkTime;
-     *writeAddr++ = EEPROM.read(curReadAddr++);
-     *writeAddr++ = EEPROM.read(curReadAddr++);
-     *writeAddr++ = EEPROM.read(curReadAddr++);
-     *writeAddr = EEPROM.read(curReadAddr++);
+    if(mainController->HasSDCard())
+    {
+      char file_name[13] = {0};
+      sprintf_P(file_name,(const char*)F("%u.WTR"),(i+1));
 
-     //Serial.println(savedWorkTime);
+      SDFile sdFile = SD.open(file_name,FILE_READ);
+      if(sdFile)
+      {
+        if(sdFile.size() == sizeof(unsigned long) + sizeof(uint8_t))
+        {
+            // нормальный размер файла, можем читать
+            sdFile.read(&savedDOW,sizeof(uint8_t));
+            sdFile.read(&savedWorkTime,sizeof(unsigned long));
+            needToReadFromEEPROM = false; // прочитали настройки из файла
+        
+        } // if
+        
+        sdFile.close();
+        
+      } // if(sdFile)
+    } // if(mainController->HasSDCard())
+
+    #endif // USE_LOG_MODULE
+      
+
+      if(needToReadFromEEPROM)
+      {
+          curReadAddr = WATERING_STATUS_EEPROM_ADDR + (i+1)*5;
+          savedDOW = EEPROM.read(curReadAddr++);
+    
+          writeAddr = (byte*) &savedWorkTime;
+         *writeAddr++ = EEPROM.read(curReadAddr++);
+         *writeAddr++ = EEPROM.read(curReadAddr++);
+         *writeAddr++ = EEPROM.read(curReadAddr++);
+         *writeAddr = EEPROM.read(curReadAddr++);
+         
+      } // needToReadFromEEPROM
+
      
       if(savedDOW != 0xFF && savedWorkTime != 0xFFFFFFFF )
       {
@@ -245,6 +319,29 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
           byte* readAddr = (byte*) &ttw;
           for(int i=0;i<4;i++)
             EEPROM.write(wrAddr++,*readAddr++);
+
+
+         // теперь пишем в файл для дублирования, чтобы не потерять настройки при слетании EEPROM
+          #ifdef USE_LOG_MODULE
+
+          if(mainController->HasSDCard())
+          {
+            char file_name[13] = {0};
+            sprintf_P(file_name,(const char*)F("%u.WTR"),(channelIdx+1));
+      
+            SDFile sdFile = SD.open(file_name,FILE_WRITE | O_TRUNC);
+            if(sdFile)
+            {              
+              sdFile.write(&currentDOW,sizeof(uint8_t));
+              sdFile.write((const uint8_t*) &ttw,sizeof(unsigned long));
+      
+              sdFile.close();
+               
+            } // if(sdFile)
+
+          } // if(mainController->HasSDCard())
+      
+          #endif // USE_LOG_MODULE
             
         } // if(channel->IsChannelRelayOn())
 

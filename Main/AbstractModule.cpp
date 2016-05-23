@@ -99,18 +99,24 @@ bool WorkStatus::GetStatus(uint8_t bitNum)
 }
 
 const char HEX_CHARS[]  PROGMEM = {"0123456789ABCDEF"};
-String WorkStatus::ToHex(int i)
+const char* WorkStatus::ToHex(int i)
 {  
+
+  static char WORK_STATUS_HEX_HOLDER[3] = {0}; // глобальный холдер для шестнадцатеричного представления байта в строковом виде
   
-  String Out;
+ // String Out;
   int idx = i & 0xF;
   char char1 = (char) pgm_read_byte_near( HEX_CHARS + idx );
   i>>=4;
   idx = i & 0xF;
   char char2 = (char) pgm_read_byte_near( HEX_CHARS + idx );
-  Out = String(char2); Out += String(char1);
+  //Out = String(char2); Out += String(char1);
   
-  return Out; 
+  WORK_STATUS_HEX_HOLDER[0] = char2;
+  WORK_STATUS_HEX_HOLDER[1] = char1;
+  
+  //return Out; 
+  return WORK_STATUS_HEX_HOLDER;
 }
 void WorkStatus::WriteStatus(Stream* pStream, bool bAsTextHex)
 {

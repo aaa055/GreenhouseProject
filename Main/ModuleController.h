@@ -29,7 +29,7 @@ class ModuleController
 {
  private:
   ModulesVec modules; // список зарегистрированных модулей
-  uint8_t workAs; // как работаем - как контроллер или дочерний модуль?
+ // uint8_t workAs; // как работаем - как контроллер или дочерний модуль?
   
   String ourID; // ID контроллера
 
@@ -52,7 +52,7 @@ class ModuleController
   void PublishToCommandStream(AbstractModule* module,const Command& sourceCommand); // публикация в поток команды
 
 public:
-  ModuleController(uint8_t wAs, const String& id);
+  ModuleController(/*uint8_t wAs, */const String& id);
 
   void Setup(); // настраивает контроллер на работу (инициализация нужных железок и т.п.)
   void begin(); // начинаем работу
@@ -79,11 +79,11 @@ public:
   AbstractModule* GetModuleByID(const String& id);
 
   void RegisterModule(AbstractModule* mod);
-  void ProcessModuleCommand(const Command& c, AbstractModule* thisModule=NULL, bool checkDestination=true);
+  void ProcessModuleCommand(const Command& c, AbstractModule* thisModule=NULL);//, bool checkDestination=true);
   
   void UpdateModules(uint16_t dt, CallbackUpdateFunc func);
   
-  uint8_t GetWorkMode() {return workAs;}
+ // uint8_t GetWorkMode() {return workAs;}
   String GetControllerID() {return ourID;}
 
   void CallRemoteModuleCommand(AbstractModule* mod, const String& command); // вызывает команду с другой коробочки

@@ -32,14 +32,6 @@ ctGET,
 ctSET,
 } COMMAND_TYPE; // тип команды
 
-typedef enum
-{
-  cdUNKNOWN,
-  cdCONTROLLER, // контроллеру
-  cdCHILDMODULE // дочернему модулю
-  
-} COMMAND_DESTINATION; // кому адресована команда
-
 typedef Vector<char*> CommandArgsVec;
 
 class Command
@@ -52,17 +44,12 @@ class Command
     
     bool bIsInternal; // флаг того, что команда получена от другого зарегистрированного модуля
     uint8_t Type; // тип команды
-    uint8_t Destination; // кому команда
     String ModuleID; // ID модуля
-    uint8_t GetCommandType(const String& command);
 
     void Clear();
-    void Construct(const String& moduleID,const String& rawArgs, uint8_t ct,uint8_t dest); // конструирует команду из переданных аргументов
 
  public:
 
-    static String _CMD_GET;
-    static String _CMD_SET;
 
     // устанавливает/возвращает поток для работы с командой
     void SetIncomingStream(Stream* s) {IncomingStream = s;}
@@ -72,18 +59,12 @@ class Command
     bool IsInternal() const {return bIsInternal;}
     void SetInternal(bool i) {bIsInternal = i;}
     
-    void Construct(const String& moduleID,const String& rawArgs, const String& commandType,uint8_t dest); // конструирует команду из переданных аргументов
+    void Construct(const char* moduleID,const char* rawArgs, uint8_t ct); // конструирует команду из переданных аргументов
+    void Construct(const char* moduleID,const char* rawArgs, const char* ct); // конструирует команду из переданных аргументов
 
-    // возвращает тип адресации команды: контроллеру или дочернему модулю (отдельной железной коробочке со своим МК)
-    uint8_t GetDestination() const { return Destination;}
 
     // возвращает тип команды
     uint8_t GetType() const {return Type;}
-    // возвращает тип команды в виде строки
-    String GetStringType() const;
-
-    // возвращает все аргументы в виде строки
-   // String GetRawArguments() const  {return Arg;}
 
     // возвращает ID программного модуля, которому адресована команда
     String GetTargetModuleID() const {return ModuleID;}
@@ -103,14 +84,14 @@ class Command
 class CommandParser
 {
   private:
-    String commandBuf;
+ //   String commandBuf;
     
   public:
     CommandParser();
 
     void Clear();
-    bool ParseCommand(const String& command, const String& ourID, Command& outCommand);
-    const String& GetRawCommand() {return commandBuf;}
+    bool ParseCommand(const String& command, /*const String& ourID, */Command& outCommand);
+//    const String& GetRawCommand() {return commandBuf;}
 };
 
 

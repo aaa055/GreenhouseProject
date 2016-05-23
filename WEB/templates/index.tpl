@@ -23,7 +23,6 @@
 </script>
 
 <link rel="stylesheet" href="css/common.css"  type="text/css"/>
-<link rel="stylesheet" href="css/visualize.css"  type="text/css"/>
 <link rel="stylesheet" href="css/jquery-ui.css"  type="text/css"/>
 <link rel="stylesheet" href="css/jquery-ui.structure.css"  type="text/css"/>
 <link rel="stylesheet" href="css/jquery-ui.theme.css"  type="text/css"/>

@@ -107,15 +107,7 @@ CommandBuffer commandsFromSerial(&Serial);
 CommandParser commandParser;
 
 // Контроллер модулей - в указанном режиме работы - как главный контроллер или дочерний модуль
-ModuleController controller(
-  
-  #ifdef AS_CONTROLLER
-  cdCONTROLLER
-  #else
-  cdCHILDMODULE
-  #endif
-    
-  ,OUR_ID);
+ModuleController controller(OUR_ID);
 
 
 #ifdef USE_PIN_MODULE
@@ -304,7 +296,7 @@ void ProcessInitCommands()
       break;
 
      Command cmd;
-    if(commandParser.ParseCommand(command, OUR_ID, cmd))
+    if(commandParser.ParseCommand(command, /*OUR_ID,*/ cmd))
     {
       // КОМАНДЫ ИНИЦИАЛИЗАЦИИ НЕ ДЕЛАЮТ ВЫВОД В СЕРИАЛ
       //cmd.SetIncomingStream(commandsFromSerial.GetStream());
@@ -497,7 +489,7 @@ void loop()
    {
     // есть новая команда
     Command cmd;
-    if(commandParser.ParseCommand(commandsFromSerial.GetCommand(),OUR_ID, cmd))
+    if(commandParser.ParseCommand(commandsFromSerial.GetCommand()/*,OUR_ID*/, cmd))
     {
        Stream* answerStream = commandsFromSerial.GetStream();
       // разобрали, назначили поток, с которого пришла команда

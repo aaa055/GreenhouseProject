@@ -291,7 +291,7 @@ class WorkStatus
     bool GetStatus(uint8_t bitNum);
     WorkStatus();
 
-  static String ToHex(int i);
+  static const char* ToHex(int i);
   
 }; // структура статусов работы 
 

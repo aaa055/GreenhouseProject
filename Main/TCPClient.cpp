@@ -73,11 +73,11 @@ bool TCPClient::Prepare(const char* command)
 
  COMMAND_TYPE cType = ctUNKNOWN;
 
- static String _ctget = F("CTGET=");
- static String _ctset = F("CTSET=");
+ //static String _ctget = F("CTGET=");
+// static String _ctset = F("CTSET=");
  
- const char* strGET = strstr(command,_ctget.c_str());
- const char* strSET = strstr(command,_ctset.c_str());
+ const char* strGET = strstr_P(command,(const char*) F("CTGET="));//_ctget.c_str());
+ const char* strSET = strstr_P(command,(const char*) F("CTSET="));//_ctset.c_str());
  
  if(strGET == command)
   cType = ctGET;
@@ -91,7 +91,7 @@ bool TCPClient::Prepare(const char* command)
   // у нас асинхронная посылка данных, поэтому надо быть уверенным, что данные всегда доступны.
   
    Command cmd;
-   if(cParser->ParseCommand(command, OUR_ID, cmd))
+   if(cParser->ParseCommand(command, /*OUR_ID,*/ cmd))
    {
      
      // команду разобрали, надо назначить поток вывода в неё
@@ -155,9 +155,11 @@ void TCPClient::OpenSDFile()
   if(workFile)
     return;
 
-  String fname = String(tcpClientID); fname += F(".TCP");
+  char file_name[13];
+  sprintf_P(file_name,(const char*) F("%u.TCP"),tcpClientID);
+  //String fname = String(tcpClientID); fname += F(".TCP");
   // открываем файл на запись
-  workFile = SD.open(fname.c_str(), FILE_WRITE | O_TRUNC); // открываем файл и усекаем его до нуля   
+  workFile = SD.open(/*fname.c_str()*/file_name, FILE_WRITE | O_TRUNC); // открываем файл и усекаем его до нуля   
     
 }
 void TCPClient::WriteErrorToFile()
@@ -226,10 +228,9 @@ bool TCPClient::SendPacket(Stream* s)
     {
        // длина оставшихся к отсылу данных больше, чем размер одного пакета.
        // поэтому можем отсылать пакет целиком, предварительно его сформировав.
-       String str = cachedData.substring(0,nextPacketLength);
+     //  String str = cachedData.substring(0,nextPacketLength);
+       s->write(cachedData.c_str(),nextPacketLength); // пишем данные в поток
        cachedData = cachedData.substring(nextPacketLength);
-
-       s->write(str.c_str(),nextPacketLength); // пишем данные в поток
        
     }
     else

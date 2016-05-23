@@ -31,7 +31,7 @@ void LoopModule::Update(uint16_t dt)
           // конструируем команду
        
           Command com;
-          com.Construct(lnk->linkedModule->GetID(),lnk->paramsToPass,lnk->typeOfCommand,mainController->GetWorkMode());
+          com.Construct(lnk->linkedModule->GetID().c_str(),lnk->paramsToPass.c_str(),lnk->typeOfCommand.c_str());//,mainController->GetWorkMode());
 
 
           com.SetInternal(true); // говорим, что команда - от одного модуля к другому

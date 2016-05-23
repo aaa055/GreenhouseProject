@@ -243,12 +243,12 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
             // показание каждого модуля идут так:
             
             // 1 байт - флаги о том, какие датчики есть
-             pStream->write(WorkStatus::ToHex(flags).c_str());
+             pStream->write(WorkStatus::ToHex(flags));
             
             // 1 байт - длина ID модуля
               moduleName = mod->GetID();
               uint8_t mnamelen = moduleName.length();
-              pStream->write(WorkStatus::ToHex(mnamelen).c_str());
+              pStream->write(WorkStatus::ToHex(mnamelen));
             // далее идёт имя модуля
               pStream->write(moduleName.c_str());
             
@@ -257,7 +257,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
             if(tempCount)
             {
             // 1 байт - кол-во датчиков температуры
-              pStream->write(WorkStatus::ToHex(tempCount).c_str());
+              pStream->write(WorkStatus::ToHex(tempCount));
 
               for(uint8_t cntr=0;cntr<tempCount;cntr++)
               {
@@ -266,13 +266,13 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                 OneState* os = mod->State.GetStateByOrder(StateTemperature,cntr);
                 // потом идут пакеты температуры. каждый пакет состоит из:
                 // 1 байт - индекс датчика
-                pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                pStream->write(WorkStatus::ToHex(os->GetIndex()));
                 // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
                 TemperaturePair tp = *os;
                 if(tp.Current.Value != NO_TEMPERATURE_DATA)
                 {
-                  pStream->write(WorkStatus::ToHex(tp.Current.Value).c_str());
-                  pStream->write(WorkStatus::ToHex(tp.Current.Fract).c_str());
+                  pStream->write(WorkStatus::ToHex(tp.Current.Value));
+                  pStream->write(WorkStatus::ToHex(tp.Current.Fract));
                 }
                 else
                 {
@@ -287,7 +287,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               // затем идёт кол-во датчиков влажности, 1 байт, если они есть
             if(humCount)
             {
-              pStream->write(WorkStatus::ToHex(humCount).c_str());
+              pStream->write(WorkStatus::ToHex(humCount));
               
               for(uint8_t cntr=0;cntr<humCount;cntr++)
               {
@@ -296,13 +296,13 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                 OneState* os = mod->State.GetStateByOrder(StateHumidity,cntr);
                 // затем идут показания датчиков влажности, каждый пакет состоит из:
                 // 1 байт - индекс датчика
-                pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                pStream->write(WorkStatus::ToHex(os->GetIndex()));
                 // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
                 HumidityPair hp = *os;
                 if(hp.Current.Value != NO_TEMPERATURE_DATA)
                 {
-                  pStream->write(WorkStatus::ToHex(hp.Current.Value).c_str());
-                  pStream->write(WorkStatus::ToHex(hp.Current.Fract).c_str());
+                  pStream->write(WorkStatus::ToHex(hp.Current.Value));
+                  pStream->write(WorkStatus::ToHex(hp.Current.Fract));
                 }
                 else
                 {
@@ -318,7 +318,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
             if(lightCount)
             {
             // 1 байт - кол-во датчиков
-              pStream->write(WorkStatus::ToHex(lightCount).c_str());
+              pStream->write(WorkStatus::ToHex(lightCount));
             
             // затем идут пакеты с данными:
                 for(uint8_t cntr=0;cntr < lightCount; cntr++)
@@ -327,7 +327,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                   
                   OneState* os = mod->State.GetStateByOrder(StateLuminosity,cntr);
                   // 1 байт - индекс датчика
-                  pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                  pStream->write(WorkStatus::ToHex(os->GetIndex()));
                   
                   // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
                   LuminosityPair lp = *os;
@@ -335,8 +335,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                   if(lum != NO_LUMINOSITY_DATA)
                   {
                     byte* b = (byte*)&lum;
-                    pStream->write(WorkStatus::ToHex(*(b+1)).c_str());
-                    pStream->write(WorkStatus::ToHex(*b).c_str());
+                    pStream->write(WorkStatus::ToHex(*(b+1)));
+                    pStream->write(WorkStatus::ToHex(*b));
                   }
                   else
                   {
@@ -352,7 +352,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
              if(waterflowCountInstant)
              {
             // 1 байт - кол-во датчиков
-              pStream->write(WorkStatus::ToHex(waterflowCountInstant).c_str());
+              pStream->write(WorkStatus::ToHex(waterflowCountInstant));
             
             // затем идут пакеты с данными:
                 for(uint8_t cntr=0;cntr < waterflowCountInstant; cntr++)
@@ -361,17 +361,17 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                   
                   OneState* os = mod->State.GetStateByOrder(StateWaterFlowInstant,cntr);
                   // 1 байт - индекс датчика
-                  pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                  pStream->write(WorkStatus::ToHex(os->GetIndex()));
                   
                   // 4 байта - его показания, мы пишем любые показания, даже если у датчика нет накопленных показаний
                   WaterFlowPair wfp = *os;
                   unsigned long wf = wfp.Current;
                   byte* b = (byte*)&wf;
                   
-                  pStream->write(WorkStatus::ToHex(*(b+3)).c_str());
-                  pStream->write(WorkStatus::ToHex(*(b+2)).c_str());
-                  pStream->write(WorkStatus::ToHex(*(b+1)).c_str());
-                  pStream->write(WorkStatus::ToHex(*b).c_str());
+                  pStream->write(WorkStatus::ToHex(*(b+3)));
+                  pStream->write(WorkStatus::ToHex(*(b+2)));
+                  pStream->write(WorkStatus::ToHex(*(b+1)));
+                  pStream->write(WorkStatus::ToHex(*b));
 
                 } // for
              } // waterflowCountInstant > 0
@@ -380,7 +380,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
              if(waterflowCount)
              {
             // 1 байт - кол-во датчиков
-              pStream->write(WorkStatus::ToHex(waterflowCount).c_str());
+              pStream->write(WorkStatus::ToHex(waterflowCount));
             
             // затем идут пакеты с данными:
                 for(uint8_t cntr=0;cntr < waterflowCount; cntr++)
@@ -389,17 +389,17 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                   
                   OneState* os = mod->State.GetStateByOrder(StateWaterFlowIncremental,cntr);
                   // 1 байт - индекс датчика
-                  pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                  pStream->write(WorkStatus::ToHex(os->GetIndex()));
                   
                   // 4 байта - его показания, мы пишем любые показания, даже если у датчика нет накопленных показаний
                   WaterFlowPair wfp = *os;
                   unsigned long wf = wfp.Current;
                   byte* b = (byte*)&wf;
                   
-                  pStream->write(WorkStatus::ToHex(*(b+3)).c_str());
-                  pStream->write(WorkStatus::ToHex(*(b+2)).c_str());
-                  pStream->write(WorkStatus::ToHex(*(b+1)).c_str());
-                  pStream->write(WorkStatus::ToHex(*b).c_str());
+                  pStream->write(WorkStatus::ToHex(*(b+3)));
+                  pStream->write(WorkStatus::ToHex(*(b+2)));
+                  pStream->write(WorkStatus::ToHex(*(b+1)));
+                  pStream->write(WorkStatus::ToHex(*b));
 
                 } // for
              } // waterflowCount > 0
@@ -408,7 +408,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
              if(soilMoistureCount)
             {
             // 1 байт - кол-во датчиков влажности почвы
-              pStream->write(WorkStatus::ToHex(soilMoistureCount).c_str());
+              pStream->write(WorkStatus::ToHex(soilMoistureCount));
 
               for(uint8_t cntr=0;cntr<soilMoistureCount;cntr++)
               {
@@ -417,13 +417,13 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                 OneState* os = mod->State.GetStateByOrder(StateSoilMoisture,cntr);
                 // потом идут пакеты влажности. каждый пакет состоит из:
                 // 1 байт - индекс датчика
-                pStream->write(WorkStatus::ToHex(os->GetIndex()).c_str());
+                pStream->write(WorkStatus::ToHex(os->GetIndex()));
                 // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
                 HumidityPair tp = *os;
                 if(tp.Current.Value != NO_TEMPERATURE_DATA)
                 {
-                  pStream->write(WorkStatus::ToHex(tp.Current.Value).c_str());
-                  pStream->write(WorkStatus::ToHex(tp.Current.Fract).c_str());
+                  pStream->write(WorkStatus::ToHex(tp.Current.Value));
+                  pStream->write(WorkStatus::ToHex(tp.Current.Fract));
                 }
                 else
                 {

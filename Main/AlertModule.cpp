@@ -876,13 +876,13 @@ void AlertModule::Update(uint16_t dt)
     if(tc.length()) // надо отправлять команду
     {
       Command cmd;
-      if(cParser->ParseCommand(tc, controllerID, cmd))
+      if(cParser->ParseCommand(tc, /*controllerID,*/ cmd))
       {
          cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
 
         // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
         //cmd.SetIncomingStream(pStream);
-        mainController->ProcessModuleCommand(cmd,NULL,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой
+        mainController->ProcessModuleCommand(cmd,NULL);//,false); // не проверяем адресата, т.к. он может быть удаленной коробочкой
 
         // дёргаем функцию обновления других вещей - типа, кооперативная работа
         yield();

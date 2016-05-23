@@ -389,7 +389,10 @@
 #define RULE_VIEW F("RULE_VIEW") // просмотр правила по индексу CTGET=ALERT|RULE_VIEW|0
 #define RULE_STATE F("RULE_STATE") // включить/выключить правило по имени CTSET=ALERT|RULE_STATE|RuleName|ON, CTSET=ALERT|RULE_STATE|RuleName|OFF, CTSET=ALERT|RULE_STATE|ALL|OFF
 // получить состояние правила по индексу -  CTGET=ALERT|RULE_STATE|0
-#define RULE_DELETE F("RULE_DELETE") // удалить правило по имени CTSET=ALERT|RULE_DELETE|RuleName - ПРИ УДАЛЕНИИ ВСЕ ПРАВИЛА СДВИГАЮТСЯ К ГОЛОВЕ ОТ УДАЛЁННОГО !!!
+
+#define RULE_DELETE F("RULE_DELETE") // удалить правило по имени CTSET=ALERT|RULE_DELETE|RuleName - ПРИ УДАЛЕНИИ ВСЕ ПРАВИЛА СДВИГАЮТСЯ К ГОЛОВЕ ОТ УДАЛЁННОГО !!! 
+// Специальный параметр ALL (CTSET=ALERT|RULE_DELETE|ALL) удаляет все правила.
+
 #define SAVE_RULES F("SAVE") // команда "сохранить правила", CTSET=ALERT|SAVE
 #define GREATER_THAN F(">") // больше чем
 #define GREATER_OR_EQUAL_THAN F(">=") // больше либо равно
