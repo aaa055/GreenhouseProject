@@ -292,7 +292,7 @@ var Controller = function(id, name, address)
              self.processQueue(); 
          }
      })(this)
-  ,100);
+  ,50);
   
   
   this.updateStatus();

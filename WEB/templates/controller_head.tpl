@@ -30,7 +30,7 @@
 </p>
 
 
-<h2 class='ui-widget-header ui-corner-all'>Контроллер "{$selected_controller.controller_name}"</h2>
+<h2 class='ui-widget-header ui-corner-all'>Контроллер "{$selected_controller.controller_name}" <div class='right_float' id='controller_date_time'></div></h2>
 
 <script type='text/javascript'>
 $(document).ready(function(){ldelim}
@@ -69,6 +69,9 @@ $(document).ready(function(){ldelim}
       window.setInterval(freeRam,FREERAM_CHECK_INTERVAL);
       
       window.setInterval(upTime,UPTIME_CHECK_INTERVAL);
+      
+      waitControllerTimer = window.setInterval(waitControllerTime,1000);
+      
     {rdelim}
               
 

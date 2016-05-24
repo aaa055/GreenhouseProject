@@ -42,6 +42,33 @@ function showMessage(message)
   ] });     
 }
 //-----------------------------------------------------------------------------------------------------
+function promptMessage(message, yesFunc, cancelFunc)
+{
+  $('#prompt_dialog_message').html(message);
+
+  $("#prompt_dialog").dialog({modal:true, buttons: [
+    {text: "Отмена", click: function(){$(this).dialog("close");  if(cancelFunc) cancelFunc(); } },
+    {text: "ОК", click: function(){$(this).dialog("close"); if(yesFunc) yesFunc(); } }
+  ] });     
+}
+//-----------------------------------------------------------------------------------------------------
+// устанавливаем дату/время для контроллера
+function setControllerTime()
+{
+  promptMessage('Установить дату/время контроллера на текущее время компьютера?',
+  function() {
+    
+    //showMessage('Yes');
+    controllerInternalDate = new Date();
+    
+    var cmd = '0|DATETIME|' + formatDateTime(controllerInternalDate);
+    controller.queryCommand(false,cmd);
+    
+  }
+
+  );
+}
+//-----------------------------------------------------------------------------------------------------
 // добавляем дельту
 function newDelta()
 {
@@ -285,7 +312,8 @@ controller.OnStatus = function(obj)
 {
   var is_online = controller.IsOnline();
     
-  $('#reset_controller_link').toggle(is_online);  
+  $('#reset_controller_link, #controller_time_button').toggle(is_online);  
+  
   
   if(is_online)
   {  
@@ -973,7 +1001,14 @@ $(document).ready(function(){
       icons: {
         primary: "ui-icon-disk"
       }
-    });  
+    });
+      
+    
+    $( "#controller_time_button" ).button({
+      icons: {
+        primary: "ui-icon-clock"
+      }
+    }).hide().css('width','100%');       
       
     
  $( "#wifi_menu" ).button({

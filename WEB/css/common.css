@@ -25,6 +25,10 @@ LABEL {
   float: right;
 }
 
+.right_float {
+  float: right;
+}
+
 .sensor_data_float{
   float:left;
 }
@@ -128,6 +132,10 @@ cursor: pointer;
 
 .no-close .ui-dialog-titlebar-close {
   display: none;
+}
+
+.button_menu_spacer {
+margin-bottom:6px;
 }
 
 /* класс пункта меню слева */

@@ -5,6 +5,11 @@
   <p id='message_dialog_message'></p>
 </div>
 
+<div id="prompt_dialog" title="Подтверждение" class='hdn'>
+  <p id='prompt_dialog_message'></p>
+</div>
+
+
 <div id="data_requested_dialog" title="Обработка данных..." class='hdn'>
   <p>Пожалуйста, подождите, пока данные обрабатываются...</p>
 </div>
@@ -119,8 +124,10 @@
       <div class='menuitem ui-corner-all hdn' id='CC_MENU' onclick="content(this);">Составные команды</div>
       <div class='menuitem ui-corner-all hdn' id='WATER_MENU' onclick="content(this);">Настройки полива</div>
 
-      <div class='ui-corner-all hdn' id='phone_number' onclick="editPhoneNumber();">Номер телефона для SMS</div>
-      <div class='ui-corner-all hdn' id='wifi_menu' onclick="editWiFiSettings();">Настройки Wi-Fi</div>
+      <div class='ui-corner-all button_menu_spacer hdn' id='controller_time_button' onclick="setControllerTime();">Дата/время</div>
+
+      <div class='ui-corner-all button_menu_spacer hdn' id='phone_number' onclick="editPhoneNumber();">Номер телефона для SMS</div>
+      <div class='ui-corner-all button_menu_spacer hdn' id='wifi_menu' onclick="editWiFiSettings();">Настройки Wi-Fi</div>
 
     </div>
     

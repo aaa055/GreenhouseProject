@@ -39,11 +39,107 @@ FREERAM_CHECK_INTERVAL = 500;
 UPTIME_CHECK_INTERVAL = 500;
 
 var controllerUptime = 0;
+
+var waitControllerTimer = 0;
+var controllerTimeTicksTimer = 0;
+var controllerInternalDate = new Date();
+//-----------------------------------------------------------------------------------------------------
+function formatDateTime(dt)
+{
+  var result = '';
+  
+  var day = dt.getDate();
+  var month = dt.getMonth() + 1;
+  var year = dt.getFullYear();
+  
+  var hours = dt.getHours();
+  var mins = dt.getMinutes();
+  var secs = dt.getSeconds();
+  
+  if(day < 10)
+    day = '0' + day;
+    
+  if(month < 10)
+    month = '0' + month;
+    
+  if(hours < 10)
+    hours = '0' + hours;
+    
+  if(mins < 10)
+    mins = '0' + mins;
+    
+  if(secs < 10)
+    secs = '0' + secs;
+  
+  
+  result = day + '.' + month + '.' + year + ' ' + hours + ':' + mins + ':' + secs;
+  
+  
+  return result;
+}
+//-----------------------------------------------------------------------------------------------------
+function controllerTicks()
+{
+  controllerInternalDate.setSeconds(controllerInternalDate.getSeconds()+1);
+  $('#controller_date_time').html(formatDateTime(controllerInternalDate));
+}
+//-----------------------------------------------------------------------------------------------------
+function waitControllerTime()
+{
+  if(!controller.IsOnline())
+    return;
+    
+  if(!controller.Modules.length)
+    return;    
+    
+   window.clearInterval(waitControllerTimer);
+   waitControllerTimer = 0;
+   
+   if(controllerTimeTicksTimer != 0)
+    window.clearInterval(controllerTimeTicksTimer);
+    controllerTimeTicksTimer = 0;
+    
+    if(controller.Modules.includes('STAT'))
+    {
+   
+         controller.queryCommand(true,'STAT|DATETIME',function(obj,answer){
+        
+              if(answer.IsOK)
+              {
+                var unparsedDate = answer.Params.toString();
+                
+                var idx = unparsedDate.indexOf(' ');
+                unparsedDate = unparsedDate.substring(idx+1);
+                
+                idx = unparsedDate.indexOf(' ');
+                var dt = unparsedDate.substring(0,idx);
+                var tm = unparsedDate.substring(idx+1);
+                
+                var dtParts = dt.split('.');
+                var tmParts = tm.split(':');
+                
+                controllerInternalDate = new Date(dtParts[2],parseInt(dtParts[1])-1,dtParts[0],tmParts[0],tmParts[1],tmParts[2]);            
+                
+                $('#controller_date_time').html(formatDateTime(controllerInternalDate));
+                $('#controller_date_time').show();
+                
+                controllerTimeTicksTimer = window.setInterval(controllerTicks,1000);
+
+                
+              }
+          }); 
+      
+      } // if(controller.Modules.includes('STAT'))
+     
+}
 //-----------------------------------------------------------------------------------------------------
 function freeRam()
 {
 
   if(!controller.IsOnline())
+    return;
+    
+  if(!controller.Modules.length)
     return;
     
   freeRamCounter += FREERAM_CHECK_INTERVAL;  
@@ -87,6 +183,9 @@ function upTime()
 
   if(!controller.IsOnline())
     return;
+    
+  if(!controller.Modules.length)
+    return;    
     
   upTimeCounter += UPTIME_CHECK_INTERVAL;  
 
