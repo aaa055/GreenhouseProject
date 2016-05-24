@@ -222,7 +222,7 @@ void IdlePageMenuItem::draw(DrawContext* dc)
     return;
 
   // рисуем показания с датчика по центру экрана
-  int cur_top = 20 + MENU_BITMAP_SIZE;
+  int cur_top = 14 + MENU_BITMAP_SIZE;
   u8g_uint_t strW = dc->getStrWidth(sensorData.c_str());
   int left = (frame_width - strW)/2 + CONTENT_PADDING;
 
@@ -234,6 +234,23 @@ void IdlePageMenuItem::draw(DrawContext* dc)
   left = (frame_width - strW)/2 + CONTENT_PADDING;
 
   dc->drawStr(left, cur_top, displayString);
+
+     #ifdef USE_DS3231_REALTIME_CLOCK
+
+        cur_top += HINT_FONT_HEIGHT + 6;
+        
+        DS3231Clock rtc = parentMenu->mainController->GetClock();
+        DS3231Time tm = rtc.getTime();
+
+        static char dt_buff[20] = {0};
+        sprintf_P(dt_buff,(const char*) F("%02d.%02d.%d %02d:%02d"), tm.dayOfMonth, tm.month, tm.year, tm.hour, tm.minute);
+        
+        strW = dc->getStrWidth(dt_buff);
+        left = (frame_width - strW)/2 + CONTENT_PADDING;
+        
+        dc->drawStr(left, cur_top, dt_buff);
+        
+      #endif // USE_DS3231_REALTIME_CLOCK 
 
 }
 #ifdef USE_TEMP_SENSORS
@@ -1063,12 +1080,15 @@ unsigned long m = millis();
     // теперь рисуем название пункта меню
     
     #ifdef SCREEN_HINT_AT_RIGHT
+          
     // рисуем подсказку, выровненную по правому краю
     u8g_uint_t strW = getStrWidth(capt);    
     drawStr(FRAME_WIDTH - HINT_FONT_BOX_PADDING - strW,FRAME_HEIGHT + MENU_BITMAP_SIZE - HINT_FONT_BOX_PADDING,capt);
+    
     #else
     // рисуем подсказку, выровненную по левому краю
     drawStr(HINT_FONT_BOX_PADDING,FRAME_HEIGHT + MENU_BITMAP_SIZE - HINT_FONT_BOX_PADDING,capt);
+    
     #endif
 
     setColorIndex(1);
