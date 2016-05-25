@@ -5,6 +5,7 @@
 <script type="text/javascript" src="js/deltas_view.js"></script>
 <script type="text/javascript" src="js/cc.js"></script>
 <script type="text/javascript" src="js/water_settings.js"></script>
+<script type="text/javascript" src="js/rules.js"></script>
 
 
 <script type='text/javascript'>
@@ -17,6 +18,7 @@ var deltaView = new DeltaView(controller, deltaList);
 
 var compositeCommands = new CompositeCommands(); // список составных команд
 var wateringSettings = new WateringSettings(); // настройки полива
+var rulesList = new RulesList(); // список правил из контроллера
 
 {literal}
 //-----------------------------------------------------------------------------------------------------
@@ -442,6 +444,129 @@ function fillWaterChannelsList()
   } // for
 }
 //-----------------------------------------------------------------------------------------------------
+// добавляет строку в таблицу правил
+function addRuleRow(parentElement, rule, num)
+{
+  if(!rule)
+  {
+    // запросили заголовок
+    var row = $('<div/>',{'class': 'row', id: 'rules_list_header'});
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("#").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Имя").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Начало").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Активно").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Следим за").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Действие").appendTo(row);
+    
+    row.appendTo(parentElement);
+    return;
+  }
+  
+    var row = $('<div/>',{'class': 'row', id: 'rule_' + num});
+    $('<div/>',{'class': 'row_item', id: 'rule_index'}).html(num + 1).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'rule_name'}).html(rule.Name).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'rule_start'}).html(rule.StartTime + ' ч').appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'rule_time'}).html(rule.WorkTime + ' мин').appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'rule_target'}).html(rule.getTargetDescription()).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'rule_command'}).html(rule.getTargetCommandDescription()).appendTo(row);
+    
+    var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
+    
+    $('<div/>',{'class': 'action', title: 'Редактировать правило'}).appendTo(actions).button({
+      icons: {
+        primary: "ui-icon-pencil"
+      }, text: false
+    }).click({row: row, rule : rule, rule_index: num}, function(ev){
+              
+             showMessage('Пока не реализовано');
+              
+      
+              });
+              
+    $('<div/>',{'class': 'action', title: 'Удалить правило'}).appendTo(actions).button({
+      icons: {
+        primary: "ui-icon-close"
+      }, text: false
+    }).click({row: row, rule : rule}, function(ev){
+              
+                ev.data.row.remove();
+                alert(rulesList.Rules.length);
+                rulesList.Rules.remove(ev.data.rule);
+                alert(rulesList.Rules.length);
+                
+              });                  
+    
+    row.appendTo(parentElement);
+    
+  
+}
+//-----------------------------------------------------------------------------------------------------
+// создаёт новое правило
+function newRule()
+{
+showMessage('Пока не реализовано');
+}
+//-----------------------------------------------------------------------------------------------------
+// сохраняем список правил
+function saveRulesList()
+{
+
+    $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+              
+     var rulesToProcess = rulesList.Rules.length;
+     var processedRules = 0;
+              
+     controller.queryCommand(false,"ALERT|RULE_DELETE|ALL",function(obj,answer){
+     
+          for(var i=0;i<rulesList.Rules.length;i++)
+          {
+            var rule = rulesList.Rules[i];
+            var cmd = 'ALERT|RULE_ADD|' + rule.getAlertRule();
+            controller.queryCommand(false,cmd, function(obj, processResult){
+            
+              processedRules++;
+              if(processedRules >= rulesToProcess)
+              {
+                  controller.queryCommand(false,"ALERT|SAVE", function() {
+                
+                    $("#data_requested_dialog" ).dialog('close');
+                
+                });
+              }
+            
+            });
+          } // for
+          
+          
+          if(!rulesToProcess)
+          {
+            $("#data_requested_dialog" ).dialog('close');
+          }
+     
+     });
+
+}
+//-----------------------------------------------------------------------------------------------------
+// заполняем список правил
+function fillRulesList()
+{
+  $('#RULES_LIST').html('');
+  addRuleRow('#RULES_LIST', null);
+  
+  for(var i=0;i<rulesList.Rules.length;i++)
+  {
+    var rule = rulesList.Rules[i];
+    addRuleRow('#RULES_LIST', rule, i);
+  } // for  
+}
+//-----------------------------------------------------------------------------------------------------
 // сохраняем настройки для всех каналов полива одновременно
 var wateringTotalCommands = 1;
 var wateringProcessedCommands = 0;
@@ -551,6 +676,75 @@ function saveWateringSettings()
    saveAllChannelsWateringOptions(watering_option);
 }
 //-----------------------------------------------------------------------------------------------------
+function doRequestRulesList()
+{
+  $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+              
+    requestRulesList(function(){
+    
+      $("#data_requested_dialog" ).dialog('close');
+    
+    });
+              
+}
+//-----------------------------------------------------------------------------------------------------
+// запрашивает список правил
+function requestRulesList(doneFunc)
+{
+    rulesList.Clear();
+    $('#RULES_LIST').html('');
+    
+    var rulesCnt = 0;
+    
+     controller.queryCommand(true,'ALERT|RULES_CNT',function(obj,answer){
+           
+          
+          if(answer.IsOK)
+          {
+            rulesCnt = parseInt(answer.Params[2]);
+            for(var i=0;i<rulesCnt;i++)
+            {
+                var cmd = 'ALERT|RULE_VIEW|' + i;
+                
+                controller.queryCommand(true,cmd,function(obj,ruleSettings){
+                
+                  if(ruleSettings.IsOK)
+                  {
+                    var rule = rulesList.Add();
+                    rule.Construct(ruleSettings.Params);
+                    
+                    if(rulesCnt == rulesList.Rules.length)
+                    {
+                      fillRulesList();
+                      
+                      if(doneFunc)
+                        doneFunc();
+                    }
+                  } // is ok
+                
+                });
+            } // for
+            
+            if(!rulesCnt)
+            {
+              if(doneFunc)
+                doneFunc();
+            } // !rulesCnt
+            
+          } // is ok
+        
+        });
+    
+
+}
+//-----------------------------------------------------------------------------------------------------
 // событие "Получен список модулей в прошивке"
 controller.OnGetModulesList = function(obj)
 {  
@@ -569,6 +763,13 @@ controller.OnGetModulesList = function(obj)
         
         });
     }
+    
+    // запрашиваем список правил
+    requestRulesList(function(){ 
+      
+      $('#RULES_MENU').toggle(true);
+    
+    });
     
     
     if(controller.Modules.includes('WIFI')) // если в прошивке есть модуль wi-fi
@@ -961,19 +1162,19 @@ $(document).ready(function(){
   controller.querySensorNames(); // получаем имена датчиков
   
   
-  $( "#get_delta_button" ).button({
+  $( "#get_delta_button, #get_rules_button" ).button({
       icons: {
         primary: "ui-icon-arrowthickstop-1-s"
       }
     });
     
-  $( "#save_delta_button, #save_cc_button, #save_watering_button" ).button({
+  $( "#save_delta_button, #save_cc_button, #save_watering_button, #save_rules_button" ).button({
       icons: {
         primary: "ui-icon-arrowthickstop-1-n"
       }
     }); 
     
-  $( "#new_delta_button, #new_cc_button" ).button({
+  $( "#new_delta_button, #new_cc_button, #new_rule_button" ).button({
       icons: {
         primary: "ui-icon-document"
       }

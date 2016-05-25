@@ -122,6 +122,7 @@
     
       <div class='menuitem ui-corner-all hdn' id='DELTA_MENU' onclick="content(this);">Список дельт</div>
       <div class='menuitem ui-corner-all hdn' id='CC_MENU' onclick="content(this);">Составные команды</div>
+      <div class='menuitem ui-corner-all hdn' id='RULES_MENU' onclick="content(this);">Правила</div>
       <div class='menuitem ui-corner-all hdn' id='WATER_MENU' onclick="content(this);">Настройки полива</div>
 
       <div class='ui-corner-all button_menu_spacer hdn' id='controller_time_button' onclick="setControllerTime();">Дата/время</div>
@@ -150,6 +151,21 @@
                     
                   </div>
 
+                  <div class='content hdn' id='RULES_MENU_CONTENT'>
+                  
+                    <h3 class='ui-widget-header ui-corner-all'>Список правил</h3>
+                    
+                    <div id='RULES_LIST'></div>
+                    <br clear='left'/>
+                    <div><br/><br/>
+                    
+                        <button id='get_rules_button' onclick='doRequestRulesList();'>Получить список правил</button>
+                        <button id='save_rules_button' onclick='saveRulesList();'>Сохранить</button>
+                        <button id='new_rule_button' onclick='newRule();'>Новое правило</button>
+                        
+                    </div>
+                    
+                  </div>
 
                   <div class='content hdn' id='CC_MENU_CONTENT'>
                   

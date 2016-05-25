@@ -235,6 +235,27 @@ width: calc(100%-220px);
   width:100px;
 }
 
+#RULES_LIST .row .row_item:nth-child(1) {
+  width:30px;
+}
+#RULES_LIST .row .row_item:nth-child(2) {
+  width:150px;
+}
+#RULES_LIST .row .row_item:nth-child(3) {
+  width:100px;
+}
+#RULES_LIST .row .row_item:nth-child(4) {
+  width:100px;
+}
+
+#RULES_LIST .row .row_item:nth-child(5) {
+  width:150px;
+}
+
+#RULES_LIST .row .row_item:nth-child(6) {
+  width:200px;
+}
+
 
 /* ширина столбцов в списке дельт */
 #DELTA_LIST .row .row_item{
