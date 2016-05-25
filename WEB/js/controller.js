@@ -255,8 +255,13 @@ var Controller = function(id, name, address)
   this.HumidityList = new SensorsList(); // список влажностей
   this.LuminosityList = new SensorsList(); // список освещённостей
   this.SoilMoistureList = new SensorsList(); // список влажностей почвы 
+  
   this.FlowIncrementalLitres = 0; // кол-во литров расхода воды всего
   this.FlowInstantLitres = 0; // мгновенный расход воды
+
+  this.FlowIncrementalLitres2 = 0; // кол-во литров расхода воды всего, второй расходомер
+  this.FlowInstantLitres2 = 0; // мгновенный расход воды, второй расходомер
+
   
   this.IsWindowsOpen = false; // первый бит выставлен - окна открыты
   this.IsWindowsAutoMode = true; // второй бит выставлен - автоматический режим работы окон
@@ -683,7 +688,10 @@ Controller.prototype.parseControllerState = function(answer)
               var flow = parseInt(dt);
 
               //сохраняем показания с датчика мгновенного расхода воды
-              this.FlowInstantLitres = flow;
+              if(sensorIdx == 0)
+                this.FlowInstantLitres = flow;
+              else
+                this.FlowInstantLitres2 = flow;
 
           } // for
       } // waterFlowInstantPresent
@@ -708,7 +716,10 @@ Controller.prototype.parseControllerState = function(answer)
               var flow = parseInt(dt);
 
               //сохраняем показания с датчика накопительного расхода воды
-              this.FlowIncrementalLitres = flow;
+              if(sensorIdx == 0)
+                this.FlowIncrementalLitres = flow;
+              else
+                this.FlowIncrementalLitres2 = flow;
 
           } // for
       } // waterFlowIncrementalPresent

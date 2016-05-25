@@ -98,6 +98,9 @@
                   <div class='content hdn' id='FLOW_MENU_CONTENT'>
 
                     <h3 class='ui-widget-header ui-corner-all'>Расход воды</h3>
+                    
+                    <h4 class='ui-widget-header ui-corner-all' style='margin-bottom:0px;'>Первый расходомер</h4>
+                    
                       <div class='half'>
                           <div class='half_box half_left'>
                               <div class='ui-widget-header ui-corner-all'>Мгновенный</div>
@@ -118,6 +121,31 @@
                             </div>
                         </div>
                       </div>
+                     
+                    <br clear='left'/><br/> 
+                    <h4 class='ui-widget-header ui-corner-all' style='margin-bottom:0px;'>Второй расходомер</h4>
+                    
+                      <div class='half'>
+                          <div class='half_box half_left'>
+                              <div class='ui-widget-header ui-corner-all'>Мгновенный</div>
+                              <div class='ui-widget-content'> 
+                              
+                                <div><img src='/images/water_meter_icon.png'/></div>
+                                <span id='flow_instant2' class='bold big'>0</span><br/>литров<br/><br/>
+                              </div>
+                           </div>
+                      </div>
+                    
+                      <div class='half'>
+                        <div class='half_box half_right'>
+                            <div class='ui-widget-header ui-corner-all'>Накопительный</div>
+                            <div class='ui-widget-content'>
+                              <div><img src='/images/water_meter_icon.png'/></div>
+                              <span id='flow_incremental2' class='bold big'>0</span><br/>литров<br/><br/>
+                            </div>
+                        </div>
+                      </div>
+                      
                     
                   </div>
 

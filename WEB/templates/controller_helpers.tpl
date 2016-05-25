@@ -164,6 +164,9 @@ controller.OnUpdate = function(obj, answer)
     {
       $('#flow_instant').html(controller.FlowInstantLitres);
       $('#flow_incremental').html(controller.FlowIncrementalLitres);
+
+      $('#flow_instant2').html(controller.FlowInstantLitres2);
+      $('#flow_incremental2').html(controller.FlowIncrementalLitres2);
       
       $('#FLOW_MENU').show();
     }
