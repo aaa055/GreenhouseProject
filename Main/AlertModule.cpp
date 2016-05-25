@@ -6,13 +6,17 @@ AlertRule::AlertRule(AlertModule* am)
 {
   parent = am;
   linkedModule = NULL;
-  bEnabled = true;
   whichTime = 0;
   workTime = 0;
-  canWork = true;
   dataAlertLong = 0;
+/*
+  canWork = true;
+  bEnabled = true;
   bFirstCall = true;
-  
+*/
+  bitWrite(flags,RULE_ENABLED_BIT,1);  
+  bitWrite(flags,RULE_CAN_WORK_BIT,1);  
+  bitWrite(flags,RULE_FIRST_CALL_BIT,1);  
 }
 const char* AlertRule::GetName()
 {
@@ -28,7 +32,8 @@ void AlertRule::Update(uint16_t dt
 
   UNUSED(dt);
   
-  canWork = true; // считаем, что мы можем работать
+//  canWork = true; // считаем, что мы можем работать
+  bitWrite(flags,RULE_CAN_WORK_BIT,1);  
 
   if(whichTime == 0  && workTime == 0) // работаем всегда
   {
@@ -64,14 +69,16 @@ void AlertRule::Update(uint16_t dt
   }
 
     // проверяем попадание в диапазон
-    canWork = checkMinutes >= startDia && checkMinutes <= stopDia;
-     
+   // canWork = checkMinutes >= startDia && checkMinutes <= stopDia;
+     bitWrite(flags,RULE_CAN_WORK_BIT,((checkMinutes >= startDia && checkMinutes <= stopDia) ? 1 : 0));  
+
+
   #endif  
   
 }
 bool AlertRule::HasAlert()
 {
-  if(!linkedModule || !bEnabled || !canWork)
+  if(!linkedModule || !bitRead(flags,RULE_ENABLED_BIT) || !bitRead(flags,RULE_CAN_WORK_BIT))//!bEnabled || !canWork)
     return false;
 
 
@@ -87,10 +94,11 @@ bool AlertRule::HasAlert()
      if(!os) // не срослось
       return false;
 
-     if(!os->IsChanged() && !bFirstCall) // ничего не изменилось
+     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
         return false;
       
-       bFirstCall = false;
+       //bFirstCall = false;
+       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
             
 
        TemperaturePair tp = *os; 
@@ -141,10 +149,11 @@ bool AlertRule::HasAlert()
        if(!os) // не срослось
         return false;
 
-     if(!os->IsChanged() && !bFirstCall) // ничего не изменилось
+     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
         return false;
 
-       bFirstCall = false;
+       //bFirstCall = false;
+       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
 
        LuminosityPair lp = *os; 
        long lum = lp.Current;
@@ -173,10 +182,11 @@ bool AlertRule::HasAlert()
        if(!os) // не срослось
         return false;
 
-     if(!os->IsChanged() && !bFirstCall) // ничего не изменилось
+     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
         return false;
 
-       bFirstCall = false;
+       //bFirstCall = false;
+       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
 
        HumidityPair hp = *os;
        int8_t curHumidity = hp.Current.Value;
@@ -206,10 +216,11 @@ bool AlertRule::HasAlert()
        if(!os) // не срослось
         return false;
 
-     if(!os->IsChanged() && !bFirstCall) // ничего не изменилось
+     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
         return false;
 
-       bFirstCall = false;
+       //bFirstCall = false;
+       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
 
        HumidityPair hp = *os;
        int8_t curHumidity = hp.Current.Value;
@@ -355,7 +366,7 @@ uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EE
   EEPROM.write(curWriteAddr++,dataAlert); written++;// записали установку, за которой следим
   EEPROM.write(curWriteAddr++,sensorIdx); written++;// записали индекс датчика, за которым следим
   EEPROM.write(curWriteAddr++,operand); written++;// записали оператор сравнения
-  EEPROM.write(curWriteAddr++,bEnabled); written++;// записали флаг - активно правило или нет?
+  EEPROM.write(curWriteAddr++,/*bEnabled*/ bitRead(flags,RULE_ENABLED_BIT)); written++;// записали флаг - активно правило или нет?
   EEPROM.write(curWriteAddr++,dataSource); written++;// записали источник, с которого надо брать установку
   EEPROM.write(curWriteAddr++,whichTime); written++;// записали, когда работаем
 
@@ -442,7 +453,8 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
   dataAlert = EEPROM.read(curReadAddr++); readed++;// прочитали установку, за которой следим
   sensorIdx = EEPROM.read(curReadAddr++); readed++;// прочитали индекс датчика, за которым следим
   operand = (RuleOperand) EEPROM.read(curReadAddr++); readed++;// прочитали оператор сравнения
-  bEnabled = EEPROM.read(curReadAddr++); readed++;// прочитали флаг - активно правило или нет?
+  bool bEnabled = EEPROM.read(curReadAddr++); readed++;// прочитали флаг - активно правило или нет?
+  bitWrite(flags,RULE_ENABLED_BIT, (bEnabled ? 1 : 0));
   dataSource = (RuleDataSource) EEPROM.read(curReadAddr++); readed++;// прочитали источник, с которого надо брать установку
   whichTime = EEPROM.read(curReadAddr++); readed++;// прочитали, когда работаем
 
@@ -827,7 +839,7 @@ void AlertModule::Update(uint16_t dt)
 #endif
 
 
-  Vector<AlertRule*> raisedAlerts;
+  RulesVector raisedAlerts;
   
   for(uint8_t i=0;i<rulesCnt;i++)
   {
@@ -837,7 +849,6 @@ void AlertModule::Update(uint16_t dt)
 
       // сначала обновляем состояние правила
       r->Update(lastUpdateCall
-        //dt
 #ifdef USE_DS3231_REALTIME_CLOCK
 ,tm.hour, tm.minute
 #endif
@@ -847,7 +858,8 @@ void AlertModule::Update(uint16_t dt)
       if(r->HasAlert())
       {
         // помещаем это правило в список сработавших правил
-        raisedAlerts.push_back(r);
+          raisedAlerts.push_back(r);
+          
       } // if(r->HasAlert())
   } // for
 
@@ -1029,7 +1041,6 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
  
           if(t == ADD_RULE)
           {
-
             t =  command.GetArg(2); // имя модуля
             AbstractModule* m = mainController->GetModuleByID(t);
             if(m && m != this && AddRule(m,command))

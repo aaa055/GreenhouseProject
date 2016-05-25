@@ -82,6 +82,147 @@
 
 </div>
 
+<div id="rule_edit_dialog" title="Настройки правила" class='hdn'>
+  <form>
+  
+    <div class='half'>
+      <div class='half_box half_left left_align'>
+        <div class='padding_around8px'>
+  
+            <div class='button_menu_spacer'>
+              Имя правила:<br/>
+              <input type='text' id='rule_name_input' maxlength='10' value='' style='width:100%;text-transform:uppercase;'/>
+            </div>
+            
+            <div class='button_menu_spacer'> 
+              Следим за:<br/>
+              <select id='rule_target_input' style='width:100%;'>
+              <option value='_'>Ни за чем не следим</option>
+              <option value='TEMP'>Температурой</option>
+              <option value='HUMIDITY'>Влажностью</option>
+              <option value='LIGHT'>Освещенностью</option>
+              <option value='PIN'>Уровнем пина</option>
+              <option value='SOIL'>Влажностью почвы</option>
+              </select>
+            </div>
+            
+            
+          <div class='button_menu_spacer'>  
+            Час начала работы:<br/>
+            <input type='text' id='rule_start_time_input' maxlength='3' value='' style='width:100%;'/>
+          </div>
+          
+          <div class='button_menu_spacer'>
+            Продолжительность, мин:<br/>
+            <input type='text' id='rule_work_time_input' maxlength='5' value='' style='width:100%;'/>
+          </div>
+      
+      </div>
+      
+    </div> 
+  </div>
+  
+  <div class='half'>
+    <div class='half_box half_right left_align'>
+    
+      <div class='padding_around8px'>
+    
+            <div id='rule_module_box' class='button_menu_spacer hdn'>
+                Модуль, который опрашиваем:<br/>
+                <select id='rule_module_select' style='width:100%;'>
+                </select>
+            </div>
+            
+          <div id='rule_index_box' class='button_menu_spacer hdn'>
+            <div id='rule_sensor_index_description'>Индекс датчика:</div>
+            <input type='text' id='rule_sensor_index_input' maxlength='3' value='' style='width:100%;'/>
+          </div>
+          
+          
+          <div id='rule_pin_state_box' class='button_menu_spacer hdn'>
+            <div>Уровень на пине:</div>
+            <div>
+              <select id='rule_pin_state_input' style='width:100%;'>
+                <option value='>='>высокий</option>
+                <option value='<'>низкий</option>
+              </select>
+            </div>
+          </div>
+
+          <div id='rule_sensor_value_box' class='button_menu_spacer hdn'>
+            Показания датчика:<br clear='left'/>
+            <div class='half'>
+                <div class='half_box half_left left_align'>
+                 
+                  <select id='rule_sensor_operand' style='width:100%;'>
+                    <option value='>'>больше чем</option>
+                    <option value='>='>больше либо равны</option>
+                    <option value='<'>меньше чем</option>
+                    <option value='<='>меньше либо равны</option>
+                  </select>
+                </div>
+            </div>
+                
+            <div class='half'>
+                <div class='half_box half_right left_align'>
+                  <input type='text' id='rule_sensor_value_input' maxlength='4' value='' style='width:100%;'/>
+                </div>                
+            </div>
+            
+            
+          </div>
+
+            <div>
+              Выполнить действие:
+            </div>
+            <div class='button_menu_spacer'>
+              <select id='rule_action_input' style='width:100%'>
+                <option value='0'>Открыть окна</option>
+                <option value='1'>Закрыть окна</option>
+                <option value='2'>Включить досветку</option>
+                <option value='3'>Выключить досветку</option>
+                <option value='4'>Высокий уровень на пинах</option>
+                <option value='5'>Низкий уровень на пинах</option>
+                <option value='6'>Выполнить составную команду</option>
+              </select>
+            </div>
+            
+            <div class='button_menu_spacer hdn' id='rule_additional_param'>
+                <div>
+                  Дополнительный параметр:
+                </div>
+                
+                <div>
+                  <input type='text' id='rule_additional_param_input' style='width:100%' placeholder=''/>
+                </div>
+            </div>            
+      
+      </div>
+    
+    </div>
+  </div>
+
+  <br clear='left'/>
+  <div>
+       <div class='ui-widget-header ui-corner-all'>Не выполнять, если сработали правила</div>
+        <div id='linked_rules_box' class='padding_around8px' style='max-height:80px;overflow:auto;'>
+        </div>
+  </div>
+  <div class='ui-widget-header ui-corner-all'>
+        Специальные значения
+  </div>
+  <div style='font-size:70%;'>
+  <ul>
+    <li><b>"%TO%"</b> - температура открытия из настроек;</li>
+    <li><b>"%TC%"</b> - температура закрытия из настроек;</li>
+    <li><b>"-2"</b> - игнорировать показания с датчика освещенности;</li>
+    <li>Если час начала и продолжительность работы правила установлены в <b>"0"</b> - правило работает всегда.</li>
+  </ul>
+  </div>
+    
+  </form>
+</div>
+
 <div id="water_channel_settings_dialog" title="Настройки канала" class='hdn'>
 
    Дни работы канала:
@@ -160,7 +301,7 @@
                     <div><br/><br/>
                     
                         <button id='get_rules_button' onclick='doRequestRulesList();'>Получить список правил</button>
-                        <button id='save_rules_button' onclick='saveRulesList();'>Сохранить</button>
+                        <button id='save_rules_button' onclick='saveRulesList();'>Сохранить в контроллер</button>
                         <button id='new_rule_button' onclick='newRule();'>Новое правило</button>
                         
                     </div>

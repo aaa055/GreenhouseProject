@@ -34,6 +34,15 @@ class AlertModule; // forward declaration
 
 typedef Vector<size_t> LinkedRulesToIdxVector;
 
+
+// флаги правила:
+// бит 0 - включено или выключено
+// бит 1 - может работать или нет
+// бит 2 - флаг первого вызова
+#define RULE_ENABLED_BIT 0
+#define RULE_CAN_WORK_BIT 1
+#define RULE_FIRST_CALL_BIT 2
+
 class AlertRule
 {
   private:
@@ -47,10 +56,15 @@ class AlertRule
     String targetCommand; // команда, которую надо выполнить при срабатывании правила
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
     long dataAlertLong; // настройка, за которой следим (4 байта)
-    
+
+    /*
     bool bEnabled; // включено или нет
     bool bFirstCall; // первый ли вызов правила?
+    bool canWork; // можем ли мы работать?
+    */
 
+    uint8_t flags; // флаги состояний
+    
     uint8_t dataSource; // источник, с которого получаем установку значения для правила
 
     size_t ruleNameIdx; // индекс имени правила у родителя
@@ -59,14 +73,13 @@ class AlertRule
 
    LinkedRulesToIdxVector linkedRulesIndices; // привязка имён связанных правил к их индексу у родителя
 
-    bool canWork; // можем ли мы работать?
     
     
   public:
     AlertRule(AlertModule* am);
 
-    bool GetEnabled() {return bEnabled;}
-    void SetEnabled(bool e) {bEnabled = e;}
+    bool GetEnabled() {return /*bEnabled*/ bitRead(flags,RULE_ENABLED_BIT);}
+    void SetEnabled(bool e) {/*bEnabled = e;*/ bitWrite(flags,RULE_ENABLED_BIT, (e ? 1 : 0));}
     const char* GetName();
     bool Construct(AbstractModule* linkedModule, const Command& command);
     String GetTargetCommand() {return targetCommand;}
@@ -102,6 +115,7 @@ class AlertModule : public AbstractModule
     String strAlerts[MAX_STORED_ALERTS];
     String& GetAlert(uint8_t idx);
     void AddAlert(const String& strAlert);
+    
 #endif
 
     NamesVector paramsArray; // всякие общие имена храним здесь

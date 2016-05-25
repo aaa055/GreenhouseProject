@@ -49,8 +49,8 @@ function promptMessage(message, yesFunc, cancelFunc)
   $('#prompt_dialog_message').html(message);
 
   $("#prompt_dialog").dialog({modal:true, buttons: [
-    {text: "Отмена", click: function(){$(this).dialog("close");  if(cancelFunc) cancelFunc(); } },
-    {text: "ОК", click: function(){$(this).dialog("close"); if(yesFunc) yesFunc(); } }
+    {text: "ОК", click: function(){$(this).dialog("close"); if(yesFunc) yesFunc(); } },
+    {text: "Отмена", click: function(){$(this).dialog("close");  if(cancelFunc) cancelFunc(); } }
   ] });     
 }
 //-----------------------------------------------------------------------------------------------------
@@ -60,7 +60,6 @@ function setControllerTime()
   promptMessage('Установить дату/время контроллера на текущее время компьютера?',
   function() {
     
-    //showMessage('Yes');
     controllerInternalDate = new Date();
     
     var cmd = '0|DATETIME|' + formatDateTime(controllerInternalDate);
@@ -478,7 +477,7 @@ function addRuleRow(parentElement, rule, num)
       }, text: false
     }).click({row: row, rule : rule, rule_index: num}, function(ev){
               
-             showMessage('Пока не реализовано');
+             newRule(ev.data.rule,ev.data.row);
               
       
               });
@@ -490,9 +489,7 @@ function addRuleRow(parentElement, rule, num)
     }).click({row: row, rule : rule}, function(ev){
               
                 ev.data.row.remove();
-                alert(rulesList.Rules.length);
                 rulesList.Rules.remove(ev.data.rule);
-                alert(rulesList.Rules.length);
                 
               });                  
     
@@ -502,9 +499,201 @@ function addRuleRow(parentElement, rule, num)
 }
 //-----------------------------------------------------------------------------------------------------
 // создаёт новое правило
-function newRule()
+function newRule(editedRule, editedRow)
 {
-showMessage('Пока не реализовано');
+
+  if(rulesList.Rules.length >= MAX_RULES)
+  {
+    showMessage('Достигнуто максимальное количество правил!');
+    return;
+  }
+
+  $('#rule_target_input').val('_').trigger('change');
+  $('#rule_name_input').val('');
+  $('#rule_name_input').removeAttr('disabled');
+  $('#rule_start_time_input').val('0');
+  $('#rule_work_time_input').val('0');
+  $('#rule_sensor_index_input').val('0');
+  $('#rule_sensor_value_box').val('0');
+  $('#linked_rules_box').empty();
+  $('#rule_sensor_value_input').val('');
+  $('#rule_action_input').val('0').trigger('change');
+  $('#rule_additional_param_input').val('');
+
+  
+  var newRuleRequested = !editedRule;
+  
+  
+      
+  for(var i=0;i<rulesList.Rules.length;i++)
+  {
+    var rule = rulesList.Rules[i];
+    
+    if(editedRule && editedRule.Name == rule.Name)
+      continue;
+      
+     
+    
+    var row = $('<div/>');
+    var chb = $('<input/>',{type: 'checkbox', id: 'linked_rule_index', value: i});
+    chb.appendTo(row);
+    
+    if(editedRule && editedRule.LinkedRules.includes(rule.Name))
+      chb.get(0).checked = true;
+    
+    $('<label/>').appendTo(row).html(rule.Name + ': ' + rule.getTargetCommandDescription());
+    
+    row.appendTo('#linked_rules_box');
+  }
+  
+  if(editedRule)
+  {
+    // запросили редактирование правила, заполняем поля в форме
+    $('#rule_name_input').attr('disabled','disabled');
+    $('#rule_name_input').val(editedRule.Name);
+    
+    var targ = editedRule.Target.toString();
+    if(targ == '0')
+      targ = '_';
+    
+    $('#rule_target_input').val(targ).trigger('change');
+    $('#rule_module_select').val(editedRule.ModuleName).trigger('change');
+    $('#rule_start_time_input').val(editedRule.StartTime);
+    $('#rule_work_time_input').val(editedRule.WorkTime);
+    $('#rule_sensor_index_input').val(editedRule.SensorIndex);
+    $('#rule_sensor_operand').val(editedRule.Operand);
+    $('#rule_sensor_value_input').val(editedRule.AlertCondition);
+    $('#rule_pin_state_input').val(editedRule.AlertCondition);
+    $('#rule_action_input').val(editedRule.getTargetCommandIndex()).trigger('change');
+    $('#rule_additional_param_input').val(editedRule.getAdditionalParam());
+    
+  }  
+      
+
+
+ $("#rule_edit_dialog").dialog({modal:true, width:600, buttons: [{text: "OK", click: function(){
+  
+      var ruleName = $('#rule_name_input').val();
+      if(ruleName == '')
+      {
+        showMessage('Укажите имя правила!');
+        $('#rule_name_input').focus();
+        return;
+      }
+      
+      ruleName = ruleName.toUpperCase();
+      
+      var ruleTarget = $('#rule_target_input').val();
+      var ruleStartTime = parseInt($('#rule_start_time_input').val());
+      if(isNaN(ruleStartTime))
+        ruleStartTime = 0;
+        
+      var ruleWorkTime = parseInt($('#rule_work_time_input').val());
+      if(isNaN(ruleWorkTime))
+        ruleWorkTime = 0;
+        
+      var sensorIndex = parseInt($('#rule_sensor_index_input').val());
+      if(isNaN(sensorIndex))
+        sensorIndex = 0;
+        
+      var targetPinState = $('#rule_pin_state_input').val();
+      
+      var moduleName = $('#rule_module_select').val();
+      
+      var operand = $('#rule_sensor_operand').val();
+      var alertCondition = $('#rule_sensor_value_input').val();
+      
+      var rule_action_input = parseInt($('#rule_action_input').val());
+      var rule_additional_param_input = $('#rule_additional_param_input').val();
+      
+      var linked_rules = '';
+      
+      var lst = $('#linked_rules_box').find('div #linked_rule_index');
+
+      for(var i=0;i<lst.length;i++)
+      {
+         var elem = lst.get(i);
+         if(elem.checked)
+         {
+          if(linked_rules != '')
+            linked_rules += ',';
+            
+            linked_rules += rulesList.Rules[elem.value].Name;
+         }
+     }
+     
+     if(linked_rules == '')
+      linked_rules = '_';
+        
+      
+      if(ruleTarget != '_')
+      {
+        // если следим за чем-то, то проверяем параметры
+        if(ruleTarget == 'PIN')
+        {
+            alertCondition = '1';
+            moduleName = '0';
+            operand = targetPinState;
+        }
+        else
+        {
+          if(alertCondition == '')
+          {
+            showMessage('Введите показания датчика!');
+            return;
+          }
+        }
+      }
+      else
+      {
+        // когда ни за чем не следим, ссылаемся на модуль "0"
+          moduleName = '0';
+          alertCondition = '0';
+          operand = '>';
+          
+      }
+      
+       if(rule_action_input > 3 && rule_additional_param_input == '')
+       {
+        showMessage('Укажите дополнительные параметры!');
+        $('#rule_additional_param_input').focus();
+        return;
+       }
+       
+       var targetCommand = rulesList.buildTargetCommand(rule_action_input,rule_additional_param_input);
+       
+       
+       // вроде всё проверили, пытаемся посмотреть
+       var fullRuleString = 'dummy|dummy|dummy|' + ruleName + '|' + moduleName + '|' + ruleTarget + '|' + sensorIndex + '|' + operand + '|' + alertCondition + '|' + 
+       ruleStartTime + '|' + ruleWorkTime + '|' + linked_rules + '|' + targetCommand;
+       
+       
+       if(newRuleRequested)
+       {
+        // новое правило
+        editedRule = rulesList.Add();
+        editedRule.Construct(fullRuleString.split('|'));
+        addRuleRow('#RULES_LIST', editedRule, rulesList.Rules.length - 1);
+       }
+       else
+       {
+        // редактируем правило
+        editedRule.Construct(fullRuleString.split('|'));
+        editedRow.find('#rule_name').html(editedRule.Name);
+        editedRow.find('#rule_start').html(editedRule.StartTime + ' ч');
+        editedRow.find('#rule_time').html(editedRule.WorkTime + ' мин');
+        editedRow.find('#rule_target').html(editedRule.getTargetDescription());
+        editedRow.find('#rule_command').html(editedRule.getTargetCommandDescription());
+       }
+      
+
+      $(this).dialog("close");
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });     
+  
 }
 //-----------------------------------------------------------------------------------------------------
 // сохраняем список правил
@@ -547,7 +736,11 @@ function saveRulesList()
           
           if(!rulesToProcess)
           {
-            $("#data_requested_dialog" ).dialog('close');
+             controller.queryCommand(false,"ALERT|SAVE", function() {
+                
+                    $("#data_requested_dialog" ).dialog('close');
+                
+                });
           }
      
      });
@@ -1155,11 +1348,100 @@ function deleteCCList()
   $('#cc_lists').trigger('change');
 }
 //-----------------------------------------------------------------------------------------------------
+function addRuleModuleToList(moduleName)
+{
+  $('#rule_module_select').append($('<option/>',{value: moduleName}).text(ModuleNamesBindings[moduleName]));
+}
+//-----------------------------------------------------------------------------------------------------
 $(document).ready(function(){
 
   lastVisibleContent = $('#welcome');
 
   controller.querySensorNames(); // получаем имена датчиков
+  
+  
+  $('#rule_action_input').change(function(){
+  
+      var val = parseInt($(this).val());
+      var ed = $('#rule_additional_param_input');
+      ed.attr('placeholder','');
+      $('#rule_additional_param').toggle(false);
+      
+      switch(val)
+      {
+        case 4:
+        case 5:
+          ed.attr('placeholder','номера пинов, через запятую');
+          $('#rule_additional_param').toggle(true);
+        break;
+        
+        case 6:
+          ed.attr('placeholder','индекс составной команды');
+          $('#rule_additional_param').toggle(true);
+        break;
+      } // switch
+  });
+  
+  $('#rule_target_input').change(function(){
+  
+    var val = $(this).val();
+    $('#rule_module_box').toggle(val != '_');
+    $('#rule_index_box').toggle(val != '_');
+    $('#rule_sensor_value_box').toggle(val != '_');
+    $('#rule_pin_state_box').toggle(false);
+    
+    $('#rule_module_select').empty().val('');
+    $('#rule_sensor_index_description').text('Индекс датчика:');
+    
+    switch(val)
+    {
+      case '_': // ни за чем не следим
+      {
+      
+      }
+      break;
+      
+      case 'TEMP': // следим за температурой
+      {
+        addRuleModuleToList('STATE');
+        addRuleModuleToList('HUMIDITY');
+        addRuleModuleToList('DELTA');        
+      }
+      break;
+      
+      case 'HUMIDITY': // следим за влажностью
+      {
+        addRuleModuleToList('HUMIDITY');
+        addRuleModuleToList('DELTA');        
+      }
+      break;
+      
+      case 'LIGHT': // следим за освещенностью
+      {
+        addRuleModuleToList('LIGHT');
+        addRuleModuleToList('DELTA');        
+      }
+      break;
+      
+      case 'SOIL': // следим за влажностью почвы
+      {
+        addRuleModuleToList('SOIL');
+        addRuleModuleToList('DELTA');        
+      }
+      break;
+      
+      case 'PIN': // следим за уровнем пина
+      {
+        $('#rule_module_box').toggle(false);
+        $('#rule_sensor_index_description').text('Номер пина:');
+        $('#rule_sensor_value_box').toggle(false);
+        $('#rule_pin_state_box').toggle(true);
+      }
+      break;
+    } // switch
+  
+  });
+  
   
   
   $( "#get_delta_button, #get_rules_button" ).button({
@@ -1218,13 +1500,12 @@ $(document).ready(function(){
       }
     }).hide().css('width','100%');       
     
-    $('#delta_index1').forceNumericOnly();     
-    $('#delta_index2').forceNumericOnly();
-    $('#cc_param').forceNumericOnly();
-    $('#all_watering_start_hour').forceNumericOnly();
-    $('#all_watering_time').forceNumericOnly();
-    $('#watering_start_hour').forceNumericOnly(); 
-    $('#watering_time').forceNumericOnly(); 
+    $('#delta_index1, #delta_index2, #cc_param').forceNumericOnly();     
+
+    $('#all_watering_start_hour, #all_watering_time').forceNumericOnly();
+    $('#watering_start_hour, #watering_time').forceNumericOnly(); 
+
+    $('#rule_work_time_input, #rule_sensor_index_input, #rule_start_time_input, #rule_sensor_value_input').forceNumericOnly();
     
     for(var i=0;i<CompositeActionsNames.length;i++)
     {
