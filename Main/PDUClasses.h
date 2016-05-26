@@ -53,7 +53,7 @@ class PDUMessageDecoder // декодировщик сообщений из UCS2
   
   public:
 
-    PDUIncomingMessage Decode(const String& ucs2Message); // декодирует сообщение
+    PDUIncomingMessage Decode(const String& ucs2Message, const String& allowedSenderNumber); // декодирует сообщение
     PDUMessageDecoder();
   
 }; 

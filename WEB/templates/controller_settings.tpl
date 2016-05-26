@@ -265,6 +265,7 @@
       <div class='menuitem ui-corner-all hdn' id='CC_MENU' onclick="content(this);">Составные команды</div>
       <div class='menuitem ui-corner-all hdn' id='RULES_MENU' onclick="content(this);">Правила</div>
       <div class='menuitem ui-corner-all hdn' id='WATER_MENU' onclick="content(this);">Настройки полива</div>
+      <div class='menuitem ui-corner-all' id='COMMAND_PROMPT_MENU' onclick="content(this);">Командная строка</div>
 
       <div class='ui-corner-all button_menu_spacer hdn' id='controller_time_button' onclick="setControllerTime();">Дата/время</div>
 
@@ -291,6 +292,31 @@
                     </div>
                     
                   </div>
+                  
+                   <div class='content hdn' id='COMMAND_PROMPT_MENU_CONTENT'>
+                  
+                    <h3 class='ui-widget-header ui-corner-all'>Командная строка контроллера</h3>
+                    
+                    <div class='button_menu_spacer' style='margin-right:10px;'>
+                    Текст команды:<br/>
+                    <input type='text' id='command_prompt_text' value='' style='width:100%;text-transform:uppercase;'/>
+                    </div>
+            
+                    <div class='button_menu_spacer'>
+                    
+                        <button id='exec_command_button' onclick='execCommandPrompt();'>Выполнить</button>
+                        
+                    </div>
+                                        
+                    <div class='button_menu_spacer' style='margin-right:10px;'>
+                    Ответ контроллера:<br/>
+                    <textarea id='controller_answer_text' style='width:100%;height:200px;'></textarea>
+                    </div>
+                    
+
+                    
+                  </div>
+                                   
 
                   <div class='content hdn' id='RULES_MENU_CONTENT'>
                   
@@ -419,3 +445,5 @@
 </div>
 
 {include file="controller_settings_helpers.tpl"}
+
+{include file="commands_help.tpl"}

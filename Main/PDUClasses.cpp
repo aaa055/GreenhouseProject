@@ -392,7 +392,7 @@ int PDUMessageDecoder::UCS2ToUTF8 (unsigned long ucs2, unsigned char * utf8)
     }
     return 0;
 }
-PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
+PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message, const String& allowedSenderNumber)
 {
   PDUIncomingMessage result;
   result.IsDecodingSucceed = true;
@@ -470,6 +470,13 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
      // сохраняем номер телефона отправителя
       result.SenderNumber = sender_number;
 
+      if(sender_number != allowedSenderNumber) // не с нашего номера
+      {
+        result.IsDecodingSucceed = false;
+        return result; 
+      }
+
+
       // тут декодируем сообщение...
       start += senderAddrLen;
       
@@ -540,6 +547,13 @@ PDUIncomingMessage PDUMessageDecoder::Decode(const String& ucs2Message)
     start += sender_addressLength;
 
     result.SenderNumber = sender_number;
+
+    if(sender_number != allowedSenderNumber) // не с нашего номера
+    {
+      result.IsDecodingSucceed = false;
+      return result; 
+    }
+
 
     //String tp_PID = workStr.substring(start,start+2);
     start +=2;

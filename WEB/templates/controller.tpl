@@ -242,3 +242,6 @@
 
 
 {include file="controller_helpers.tpl"}
+
+
+{include file="commands_help.tpl"}

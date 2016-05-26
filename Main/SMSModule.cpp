@@ -292,9 +292,10 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
 
   bool shouldSendSMS = false;
 
-  PDUIncomingMessage message = PDU.Decode(line);
-  if(message.IsDecodingSucceed)
+  PDUIncomingMessage message = PDU.Decode(line, Settings->GetSmsPhoneNumber());
+  if(message.IsDecodingSucceed) // сообщение пришло с нужного номера
   {
+    /*
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println(F("Message decoded, check phone number..."));
     #endif
@@ -306,7 +307,8 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
     #endif
      return;
     }
-
+  */
+  
     #ifdef NEOWAY_DEBUG_MODE
       Serial.println(F("Phone number is OK, continue..."));
     #endif

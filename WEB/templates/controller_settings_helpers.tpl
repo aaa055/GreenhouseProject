@@ -1353,6 +1353,48 @@ function addRuleModuleToList(moduleName)
   $('#rule_module_select').append($('<option/>',{value: moduleName}).text(ModuleNamesBindings[moduleName]));
 }
 //-----------------------------------------------------------------------------------------------------
+// выполняем команду, введённую пользователем
+function execCommandPrompt()
+{
+  var cmd = $('#command_prompt_text').val();
+  cmd = cmd.toUpperCase();
+ 
+  if(cmd == "")
+  {
+    showMessage("Введите текст команды!");
+    return;
+  }
+  
+  var getIdx = cmd.indexOf("CTGET=");
+  var setIdx = cmd.indexOf("CTSET=");
+  
+  if((getIdx == -1 && setIdx == -1))
+  {
+    showMessage("Команда должна начинаться с CTGET= или CTSET=<p>Пожалуйста, напишите команду правильно.");
+    return;
+  }
+  
+  var isGet = getIdx != -1;
+  cmd = cmd.substring(6);
+  
+  if(cmd.length < 1)
+  {
+    showMessage("Команда не должна быть пустой!");
+    return;
+  }
+  
+  $("#exec_command_button").button('disable');
+  
+    controller.queryCommand(isGet,cmd,function(obj,answer){
+                                
+                                  $("#exec_command_button").button('enable');
+                                  $('#controller_answer_text').append(answer.RawData);
+                                  
+                                });  
+  
+  
+}
+//-----------------------------------------------------------------------------------------------------
 $(document).ready(function(){
 
   lastVisibleContent = $('#welcome');
@@ -1442,6 +1484,14 @@ $(document).ready(function(){
   
   });
   
+  $('#command_prompt_text').keypress(function(e){
+  
+    if(e.which == 13)
+    {
+      execCommandPrompt();
+    }
+  
+  });
   
   
   $( "#get_delta_button, #get_rules_button" ).button({
@@ -1485,6 +1535,13 @@ $(document).ready(function(){
         primary: "ui-icon-disk"
       }
     });
+    
+    $('#exec_command_button').button({
+      icons: {
+        primary: "ui-icon-play"
+      }
+    });
+    exec_command_button
       
     
     $( "#controller_time_button" ).button({

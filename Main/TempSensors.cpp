@@ -530,7 +530,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           else
           { 
             
-              if(Windows[channelIdx].ChangePosition( bOpen ? dirOPEN : dirCLOSE, interval) ) // смогли сменить позицию окна
+              if(Windows[channelIdx].ChangePosition( bOpen ? dirOPEN : dirCLOSE, bOpen ? interval : 0) ) // смогли сменить позицию окна
               {
                   // сменили позицию, пишем в лог действие
                   mainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
