@@ -63,8 +63,27 @@ class SocketTransport
         
      @fwrite($this->sock, 'CTGET=' . $query . "\r\n");
      @stream_set_timeout($this->sock,$this->timeout);
-               
-     return @fgets($this->sock, 1024);
+     
+     $line = @fgets($this->sock,1024);
+     
+     $pos = strstr($line,"OK=FOLLOW");
+     if($pos === false)
+      return $line;
+     
+     $data = $line;
+
+     while(true)
+     {
+        $line = @fgets($this->sock,1024);
+        $data .= $line;
+        $pos = strstr($line,"OK=LOG|END_OF_FILE");
+        if(!($pos === false))
+          break;
+     }
+     
+     return $data;
+              
+    // return @fgets($this->sock);
   }
   //
   //  Base set method

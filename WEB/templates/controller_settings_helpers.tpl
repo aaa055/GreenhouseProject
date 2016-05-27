@@ -1388,7 +1388,7 @@ function execCommandPrompt()
     controller.queryCommand(isGet,cmd,function(obj,answer){
                                 
                                   $("#exec_command_button").button('enable');
-                                  $('#controller_answer_text').append(answer.RawData);
+                                  $('#controller_answer_text').val(answer.RawData);
                                   
                                 });  
   
