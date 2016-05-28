@@ -81,7 +81,6 @@ void Command::Clear()
   IncomingStream = NULL;
   bIsInternal = false;
 
-
   size_t sz = arguments.size();
   for(size_t i=0;i<sz;i++)
   {
@@ -125,7 +124,6 @@ bool CommandParser::ParseCommand(const String& command, Command& outCommand)
   bool rightType =  isGet || !strncmp_P(readPtr,(const char*)CMD_SET,CMD_TYPE_LEN);
   if(!rightType)
     return false;
-
 
 
   uint8_t commandType = isGet ? ctGET : ctSET;

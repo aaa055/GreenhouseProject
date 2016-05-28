@@ -74,6 +74,10 @@
 #include "SoilMoistureModule.h"
 #endif
 
+#ifdef USE_W5100_MODULE
+#include "EthernetModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 #ifdef USE_READY_DIODE
@@ -213,6 +217,11 @@ CompositeCommandsModule compositeCommands;
 #ifdef USE_SOIL_MOISTURE_MODULE
 // модуль датчиков влажности почвы
 SoilMoistureModule soilMoistureModule;
+#endif
+
+#ifdef USE_W5100_MODULE
+// модуль поддержки W5100
+EthernetModule ethernetModule;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -366,6 +375,10 @@ void setup()
   
   #ifdef USE_SOIL_MOISTURE_MODULE
   controller.RegisterModule(&soilMoistureModule);
+  #endif
+
+  #ifdef USE_W5100_MODULE
+  controller.RegisterModule(&ethernetModule);
   #endif
 
   #ifdef USE_LOG_MODULE
