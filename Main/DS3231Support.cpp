@@ -46,7 +46,9 @@ DS3231Time DS3231Clock::getTime()
 
   Wire.beginTransmission(DS3231Address);
   DS3231_WIRE_WRITE(0); // говорим, что мы собираемся читать с регистра 0
-  Wire.endTransmission();
+  
+  if(Wire.endTransmission() != 0) // ошибка
+    return t;
   
   if(Wire.requestFrom(DS3231Address, 7) == 7) // читаем 7 байт, начиная с регистра 0
   {

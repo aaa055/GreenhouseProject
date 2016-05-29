@@ -44,8 +44,7 @@ void Command::Construct(const char* id, const char* rawArgs, uint8_t ct)
     const char* startPtr = rawArgs;
     size_t len = 0;
 
-
-    while(1)
+    while(*startPtr)
     {
       const char* delimPtr = strchr(startPtr,'|');
             

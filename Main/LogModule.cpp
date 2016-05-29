@@ -40,6 +40,9 @@ void LogModule::Setup()
 #ifdef LOG_ACTIONS_ENABLED 
 void LogModule::CreateActionsFile(const DS3231Time& tm)
 {  
+  if(!hasSD)
+    return;
+  
   // формат YYYYMMDD.LOG
    String logFileName;
    logFileName += String(tm.year);
@@ -164,6 +167,9 @@ void LogModule::EnsureActionsFileCreated()
 #endif
 void LogModule::CreateNewLogFile(const DS3231Time& tm)
 {
+  if(!hasSD)
+    return;
+  
     if(logFile) // есть открытый файл
       logFile.close(); // закрываем его
 
@@ -735,7 +741,6 @@ if(hasSD)
                while(fRead.available())
                {
                 readed = fRead.read(SD_BUFFER,SD_BUFFER_LENGTH);
-                //writeStream->write(fRead.read()); // пишем в поток
                 writeStream->write(SD_BUFFER,readed);
                 delayCntr++;
                 if(delayCntr > DELAY_AFTER)
@@ -758,13 +763,80 @@ if(hasSD)
             
           } // SD.exists
           
-        }
+        } // if(argsCnt > 1)
         else
         {
           PublishSingleton = PARAMS_MISSED;
         }
         
       } // FILE_COMMAND
+      else
+      if(cmd == ACTIONS_COMAND)
+      {
+        // надо отдать файл действий
+        if(argsCnt > 1)
+        {
+          // получаем полное имя файла
+          String fileNameRequested = command.GetArg(1);
+          String fullFilePath = ACTIONS_DIRECTORY;
+          fullFilePath += F("/");
+          fullFilePath += fileNameRequested;
+
+          if(SD.exists(fullFilePath.c_str()))
+          {
+            // такой файл существует, можно отдавать
+            if(actionFile)
+              actionFile.close(); // сперва закрываем текущий файл действий
+
+            // теперь можно открывать файл на чтение
+            File fRead = SD.open(fullFilePath,FILE_READ);
+            if(fRead)
+            {
+              // файл открыли, можно читать
+              // сперва отправим в потом строчку OK=FOLLOW
+              Stream* writeStream = command.GetIncomingStream();
+              writeStream->print(OK_ANSWER);
+              writeStream->print(COMMAND_DELIMITER);
+              writeStream->println(FOLLOW);
+
+              //теперь читаем из файла блоками, делая паузы для вызова yield через несколько блоков
+              const int DELAY_AFTER = 2;
+              int delayCntr = 0;
+
+              uint16_t readed;
+
+               while(fRead.available())
+               {
+                readed = fRead.read(SD_BUFFER,SD_BUFFER_LENGTH);
+                writeStream->write(SD_BUFFER,readed);
+                delayCntr++;
+                if(delayCntr > DELAY_AFTER)
+                {
+                  delayCntr = 0;
+                  yield(); // даём поработать другим модулям
+                }
+               } // while
+              
+              
+              fRead.close(); // закрыли файл
+              PublishSingleton.Status = true;
+              PublishSingleton = END_OF_FILE; // выдаём OK=END_OF_FILE
+            } // if(fRead)
+
+            #if defined(USE_DS3231_REALTIME_CLOCK) && defined(LOG_ACTIONS_ENABLED)
+                DS3231Time tm = rtc.getTime();
+                CreateActionsFile(tm); // создаём новый файл действий
+            #endif
+            
+          } // SD.exists
+          
+        } // if(argsCnt > 1)
+        else
+        {
+          PublishSingleton = PARAMS_MISSED;
+        }
+        
+      } // ACTIONS_COMAND
       else
       {
         PublishSingleton = UNKNOWN_COMMAND;
