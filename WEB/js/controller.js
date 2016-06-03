@@ -256,9 +256,11 @@ var Controller = function(id, name, address)
   this.LuminosityList = new SensorsList(); // список освещённостей
   this.SoilMoistureList = new SensorsList(); // список влажностей почвы 
   
+  this.Flow1Present = false; // доступен ли первый расходомер в прошивке
   this.FlowIncrementalLitres = 0; // кол-во литров расхода воды всего
   this.FlowInstantLitres = 0; // мгновенный расход воды
 
+  this.Flow2Present = false; // доступен ли второй расходомер в прошивке
   this.FlowIncrementalLitres2 = 0; // кол-во литров расхода воды всего, второй расходомер
   this.FlowInstantLitres2 = 0; // мгновенный расход воды, второй расходомер
 
@@ -516,7 +518,7 @@ Controller.prototype.parseControllerState = function(answer)
   if(answer.IsOK)
   {
   
-   var line = answer.Params[0];
+   var line = answer.Params[0].toString().trim();
    var firstByte = '0x' + line.substring(0, 2);
    var secondByte = '0x' + line.substring(2, 4);
 
@@ -529,6 +531,9 @@ Controller.prototype.parseControllerState = function(answer)
     this.IsWaterAutoMode = BitIsSet(num, 3); // четвертый бит выставлен - автоматический режим работы полива
     this.IsLightOn = BitIsSet(num, 4); // пятый бит выставлен - включена досветка
     this.IsLightAutoMode = BitIsSet(num, 5); // шестой бит выставлен - автоматический режим работы досветки
+    
+    this.Flow1Present = false;
+    this.Flow2Present = false;
 
 
    line = line.substring(4);
@@ -547,6 +552,7 @@ Controller.prototype.parseControllerState = function(answer)
       var waterFlowInstantPresent = (flags & 16) == 16;
       var waterFlowIncrementalPresent = (flags & 32) == 32;
       var soilMoisturePresent = (flags & 64) == 64;
+      var phPresent = (flags & 128) == 128;
 
       // читаем байт имени модуля
       var s = "0x" + line.substring(0, 2);
@@ -689,9 +695,15 @@ Controller.prototype.parseControllerState = function(answer)
 
               //сохраняем показания с датчика мгновенного расхода воды
               if(sensorIdx == 0)
+              {
+                this.Flow1Present = true;
                 this.FlowInstantLitres = flow;
+              }
               else
+              {
+                this.Flow2Present = true;
                 this.FlowInstantLitres2 = flow;
+              }
 
           } // for
       } // waterFlowInstantPresent
@@ -717,9 +729,15 @@ Controller.prototype.parseControllerState = function(answer)
 
               //сохраняем показания с датчика накопительного расхода воды
               if(sensorIdx == 0)
+              {
+                this.Flow1Present = true;
                 this.FlowIncrementalLitres = flow;
+              }
               else
+              {
+                this.Flow2Present = true;
                 this.FlowIncrementalLitres2 = flow;
+              }
 
           } // for
       } // waterFlowIncrementalPresent
@@ -759,6 +777,45 @@ Controller.prototype.parseControllerState = function(answer)
               this.SoilMoistureList.Add(sensorIdx, moduleName, temp, haveSensorData);
           } // for
       } // if(soilMoisturePresent)
+      
+      if (phPresent)
+      {
+          // переходим на чтение данных с датчиков PH
+          s = "0x" + line.substring(0, 2);
+          cnt = parseInt(s);
+          line = line.substring(2);
+
+          // обрабатываем их
+          for (var i = 0; i < cnt; i++)
+          {
+              // первым байтом идёт индекс датчика
+              s = "0x" + line.substring(0, 2);
+              var sensorIdx = parseInt(s);
+              // затем два байта - его показания
+              var val = line.substring(2, 4);
+              var fract = line.substring(4, 6);
+              line = line.substring(6);
+
+              // теперь смотрим, есть ли показания с датчика
+              var haveSensorData = !(val == "FF" && fract == "FF");
+              var ph = "";
+              if (haveSensorData)
+              {
+                  // имеем показания, надо сконвертировать
+                  ph = '' + parseInt("0x" + val) + ",";
+                  var fractVal = parseInt("0x" + fract);
+                  if (fractVal < 10)
+                      ph += "0";
+                  ph += '' + fractVal;
+              }
+
+              // получили показания с датчика, надо их сохранить в список
+              
+
+           } // for
+           
+        } // if(phPresent)
+      
 
       // все датчики обработали, переходим к следующему модулю
 

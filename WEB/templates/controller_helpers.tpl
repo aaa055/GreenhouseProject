@@ -168,7 +168,10 @@ controller.OnUpdate = function(obj, answer)
       $('#flow_instant2').html(controller.FlowInstantLitres2);
       $('#flow_incremental2').html(controller.FlowIncrementalLitres2);
       
-      $('#FLOW_MENU').show();
+      $('#flow1_box').toggle(controller.Flow1Present);
+      $('#flow2_box').toggle(controller.Flow2Present);
+      
+      $('#FLOW_MENU').show(controller.Flow1Present || controller.Flow2Present);
     }
     else
       $('#FLOW_MENU').hide();  
