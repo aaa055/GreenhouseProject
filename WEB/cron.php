@@ -201,7 +201,7 @@ function requestControllerData($controller_id,$address)
                       $temp .= '' . $fractVal;
                   }
                   // получили показания с датчика, надо их сохранить в БД
-                  $sql = "INSERT INTO controller_data(sensor_type_id,module_id,sensor_index,sensor_data) VALUES($sensor_type_id,$module_id,$sensorIdx,$temp);";
+                  $sql = "INSERT INTO controller_data(controller_id,sensor_type_id,module_id,sensor_index,sensor_data) VALUES($controller_id,$sensor_type_id,$module_id,$sensorIdx,$temp);";
                   if($SIMULATION)
                     echo "$sql\n";
                   else
@@ -243,7 +243,7 @@ function requestControllerData($controller_id,$address)
                   }
 
                   // получили показания с датчика, надо их сохранить в БД
-                  $sql = "INSERT INTO controller_data(sensor_type_id,module_id,sensor_index,sensor_data) VALUES($sensor_type_id,$module_id,$sensorIdx,$humidity);";
+                  $sql = "INSERT INTO controller_data(controller_id,sensor_type_id,module_id,sensor_index,sensor_data) VALUES($controller_id,$sensor_type_id,$module_id,$sensorIdx,$humidity);";
                   if($SIMULATION)
                     echo "$sql\n";
                   else
@@ -281,7 +281,7 @@ function requestControllerData($controller_id,$address)
                   }
 
                   // получили показания с датчика, надо их сохранить в БД
-                  $sql = "INSERT INTO controller_data(sensor_type_id,module_id,sensor_index,sensor_data) VALUES($sensor_type_id,$module_id,$sensorIdx,$luminosity);";
+                  $sql = "INSERT INTO controller_data(controller_id,sensor_type_id,module_id,sensor_index,sensor_data) VALUES($controller_id,$sensor_type_id,$module_id,$sensorIdx,$luminosity);";
                   if($SIMULATION)
                     echo "$sql\n";
                   else
@@ -310,7 +310,7 @@ function requestControllerData($controller_id,$address)
                   $flow = hexdec($dt);
 
                   // получили показания с датчика, надо их сохранить в БД
-                  $sql = "INSERT INTO controller_data(sensor_type_id,module_id,sensor_index,sensor_data) VALUES($sensor_type_id,$module_id,$sensorIdx,$flow);";
+                  $sql = "INSERT INTO controller_data(controller_id,sensor_type_id,module_id,sensor_index,sensor_data) VALUES($controller_id,$sensor_type_id,$module_id,$sensorIdx,$flow);";
                   if($SIMULATION)
                     echo "$sql\n";
                   else
@@ -340,7 +340,7 @@ function requestControllerData($controller_id,$address)
                   $flow = hexdec($dt);
 
                   // получили показания с датчика, надо их сохранить в БД
-                  $sql = "INSERT INTO controller_data(sensor_type_id,module_id,sensor_index,sensor_data) VALUES($sensor_type_id,$module_id,$sensorIdx,$flow);";
+                  $sql = "INSERT INTO controller_data(controller_id,sensor_type_id,module_id,sensor_index,sensor_data) VALUES($controller_id,$sensor_type_id,$module_id,$sensorIdx,$flow);";
                   if($SIMULATION)
                     echo "$sql\n";
                   else
@@ -384,7 +384,7 @@ function requestControllerData($controller_id,$address)
                   }
 
                   // получили показания с датчика, надо их сохранить в БД
-                  $sql = "INSERT INTO controller_data(sensor_type_id,module_id,sensor_index,sensor_data) VALUES($sensor_type_id,$module_id,$sensorIdx,$temp);";
+                  $sql = "INSERT INTO controller_data(controller_id,sensor_type_id,module_id,sensor_index,sensor_data) VALUES($controller_id,$sensor_type_id,$module_id,$sensorIdx,$temp);";
                   if($SIMULATION)
                     echo "$sql\n";
                   else
@@ -426,7 +426,7 @@ function requestControllerData($controller_id,$address)
                   }
 
                   // получили показания с датчика, надо их сохранить в БД
-                  $sql = "INSERT INTO controller_data(sensor_type_id,module_id,sensor_index,sensor_data) VALUES($sensor_type_id,$module_id,$sensorIdx,$phValue);";
+                  $sql = "INSERT INTO controller_data(controller_id,sensor_type_id,module_id,sensor_index,sensor_data) VALUES($controller_id,$sensor_type_id,$module_id,$sensorIdx,$phValue);";
                   if($SIMULATION)
                     echo "$sql\n";
                   else
