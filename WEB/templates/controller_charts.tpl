@@ -93,9 +93,14 @@ function doRequest(obj)
   requestStatsData(from,to);
 }
 
+function getTickSize()
+{
+  return $('#ticks_select').val().toString().split(",");
+}
+
 function changeTicks(obj)
 {
-  var val = $(obj).val().toString().split(",");
+  var val = getTickSize();
   var duration = val[0];
   var period = val[1]; 
   
@@ -107,6 +112,7 @@ function changeTicks(obj)
     plot.setupGrid();
     plot.draw();
   }
+  
 }
 
 
@@ -118,6 +124,7 @@ function showChartForSerie(serieType,serie)
   var chartBox = $('#' + serieType + '_chart');
   
   var data = new Array();
+  var serie_idx = 0;
   
         for(var moduleName in serie.modules)
         {
@@ -126,7 +133,7 @@ function showChartForSerie(serieType,serie)
             
             var moduleData = module.data;
             
-            
+                        
             for(var sensorIndex in moduleData)
             {
               var dataSerie = new Object();
@@ -136,6 +143,7 @@ function showChartForSerie(serieType,serie)
               dataSerie.clickable = true;
               dataSerie.hoverable = true;
               dataSerie.myLabel = dataSerie.label; // плагин threshold неверно работает с label, поэтому копируем это свойство в наше
+              
               
               var unit = '';
               
@@ -165,12 +173,10 @@ function showChartForSerie(serieType,serie)
               }
               
               dataSerie.unit = unit;
-             
-
-              
+              dataSerie.index = serie_idx;
               data.push(dataSerie);
-            
-
+                          
+              serie_idx++;
             } // for
             
         } // for  
@@ -182,12 +188,31 @@ function showChartForSerie(serieType,serie)
         
     }
     
-    , legend: { noColumns : 4, sorted: true, margin : 4, backgroundOpacity: 0, container : "#" + serieType + '_legend' }
-    , xaxis: {mode : 'time', timezone: 'browser', timeformat: "%d.%m.%Y %H:%M", tickSize: [1, "hour"]}
+    , legend: { 
+    
+        noColumns : 4
+      , sorted: true
+      , margin : 4
+      , backgroundOpacity: 0
+      , container : "#" + serieType + '_legend'
+      
+      , labelFormatter: function (label, series)
+      {
+        var code = "<input type='checkbox' ";
+        if(series.lines.show)
+          code += "checked='checked'";
+        code += " onclick='togglePlot(" + series.index + ",this);'/>" + label;
+        return code;
+      }
+
+    
+     }
+    , xaxis: {mode : 'time', timezone: 'browser', timeformat: "%d.%m.%Y %H:%M", tickSize: getTickSize()}
     , grid: { hoverable: true, clickable: false }
 };
   
   var pl = $.plot(chartBox, data, options);
+  pl.serieType = serieType;
   
   chartBox.bind("plothover", function (event, pos, item) 
           {
@@ -208,7 +233,35 @@ function showChartForSerie(serieType,serie)
 		});  
   
   plots.push(pl);
+  
+
+     
+     
 }
+
+function togglePlot(seriesIdx, checkbox)
+{
+  // тут ищем активный график
+  var somePlot = null;
+  var tabId = $("#series_buttons .ui-tabs-panel:visible").attr("id");
+  
+   for(var i=0;i<plots.length;i++)
+  {
+    var plot = plots[i];
+    if(plot.serieType == tabId)
+    {
+      somePlot = plot;
+      break;
+    }
+  } 
+  
+  var someData = somePlot.getData();
+  
+  someData[seriesIdx].lines.show = checkbox.checked;//!someData[seriesIdx].lines.show;
+  somePlot.setData(someData);
+  somePlot.draw();
+}
+
 var __tabsInited = false;
 
 function requestStatsData(fromDate,toDate)
@@ -239,6 +292,7 @@ function requestStatsData(fromDate,toDate)
     }
     
     plots = new Array();
+    datasets = new Object();
 
     // теперь назначаем имена датчикам, если они есть в системе
     for(var i=0;i<queryResult.data.length;i++)
@@ -286,11 +340,12 @@ function requestStatsData(fromDate,toDate)
       var serie = chartSeries[serieType];
       if(!__tabsInited)
       {
-        var li = $('<li/>', {id: 'tab' + serieType}).appendTo(tabsList);
+        var li = $('<li/>', {id: 'tab' + serieType, 'serie_type' : serieType}).appendTo(tabsList);
         var link = $('<a/>',{href: '#' + serieType }).appendTo(li).text(serie.serieName);
         var chartBox = $('<div/>', {id : serieType }).appendTo('#series_buttons');
         $('<div/>', {id : serieType + '_legend'}).appendTo(chartBox).css('margin-bottom','10px');
         $('<div/>', {id : serieType + '_chart'}).appendTo(chartBox).css('width',$('#series_buttons').width() - 50).css('height','450px');
+
       }
               
       showChartForSerie(serieType,serie);
@@ -313,7 +368,24 @@ function requestStatsData(fromDate,toDate)
     });
 
       $('#series_buttons').find('ul').html(sortedTabs);    
-      $('#series_buttons').tabs({active : 0});
+      $('#series_buttons').tabs({active : 0, activate: function(event,ui){
+      
+          // перерисовываем график, поскольку при обновлении данных съезжают оси
+          var sType = ui.newTab.attr('serie_type');
+          for(var i=0;i<plots.length;i++)
+          {
+            var plot = plots[i];
+            if(plot.serieType == sType)
+            {
+              plot.setupGrid();
+              plot.draw();
+              break;
+            }
+          } // for
+          
+        }
+      
+      });
       
     } // if
     
