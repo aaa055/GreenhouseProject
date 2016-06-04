@@ -20,7 +20,7 @@
 </div>
 
 
-{include file='controller_head.tpl'}
+{include file='controller_head.tpl' additional_text=', показания'}
 
 <div id='offline_block' class='hdn'>
 {include file='controller_offline.tpl'}

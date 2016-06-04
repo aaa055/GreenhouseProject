@@ -236,7 +236,7 @@ return this;
 // Класс контроллера, предназначенный для обмена данными с железкой
 //-----------------------------------------------------------------------------------------------------
 // конструктор
-var Controller = function(id, name, address)
+var Controller = function(id, name, address, silent)
 {
   this.OnStatus = null; // обработчик события "онлайн/оффлайн"
   this.OnUpdate = null; // обработчик события "Получен слепок состояния с контроллера", вызывается как результат вызова метода queryState
@@ -285,24 +285,27 @@ var Controller = function(id, name, address)
   this._queue = new Array();
   this._currentAction = null;
 
-  this._statusTimer = window.setInterval(
-  (function(self) {         
-         return function() {   
-             self.updateStatus(); 
-         }
-     })(this)
-  ,10000);
-  
-  this._queueTimer = window.setInterval(
-  (function(self) {         
-         return function() {   
-             self.processQueue(); 
-         }
-     })(this)
-  ,50);
-  
-  
-  this.updateStatus();
+  if(!silent) // только если попросили обновляться
+  {
+    this._statusTimer = window.setInterval(
+    (function(self) {         
+           return function() {   
+               self.updateStatus(); 
+           }
+       })(this)
+    ,10000);
+    
+    this._queueTimer = window.setInterval(
+    (function(self) {         
+           return function() {   
+               self.processQueue(); 
+           }
+       })(this)
+    ,50);
+    
+    
+    this.updateStatus();
+  } // if(!silent)
   
   return this;
 }
@@ -1018,7 +1021,9 @@ Controller.prototype.querySensorNames = function()
             var dt = data.names[i];
             _this.SensorsNames.Add(new SensorMnemonicName(dt.sensor_idx,dt.module_name,dt.display_name));
            } 
-          
+           
+          if(_this.OnGetSensorNames != null)
+            _this.OnGetSensorNames(_this);
      
         });  
 }

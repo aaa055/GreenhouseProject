@@ -26,11 +26,12 @@
 <a href="/" id='back_link'>На главную</a>
 <a href="/controller.php?id={$selected_controller.controller_id}" id='view_link'>Показания</a>
 <a href="/controller_settings.php?id={$selected_controller.controller_id}" id='settings_link'>Настройки</a>
+<a href="/controller_charts.php?id={$selected_controller.controller_id}" id='charts_link'>Графики</a>
 <a href="javascript:resetController();" id='reset_controller_link'>Перезагрузить</a>
 </p>
 
 
-<h2 class='ui-widget-header ui-corner-all'>Контроллер "{$selected_controller.controller_name}" <div class='right_float' id='controller_date_time'></div></h2>
+<h2 class='ui-widget-header ui-corner-all'>Контроллер "{$selected_controller.controller_name}"{$additional_text} <div class='right_float' id='controller_date_time'></div></h2>
 
 <script type='text/javascript'>
 $(document).ready(function(){ldelim}
@@ -52,6 +53,12 @@ $(document).ready(function(){ldelim}
         primary: "ui-icon-gear"
       {rdelim}
     {rdelim});
+    
+  $( "#charts_link" ).button({ldelim}
+      icons: {ldelim}
+        primary: "ui-icon-image"
+      {rdelim}
+    {rdelim});    
  
   $( "#reset_controller_link" ).button({ldelim}
       icons: {ldelim}

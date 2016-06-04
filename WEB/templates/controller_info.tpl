@@ -6,10 +6,31 @@
 
 ID контроллера: <span id='controller_id{$controller.controller_id}'>{$controller.controller_id}</span><br/>
 Адрес контроллера: <span id='controller_address{$controller.controller_id}'>{$controller.controller_address}</span><br/>
-Онлайн: <b><span id='controller_status{$controller.controller_id}'>{if $controller.is_online==1}<span class='auto_mode'>да</span>{else}<span class='manual_mode'>нет</span>{/if}</span></b><br/><br/>
-<a href="javascript:editController({$controller.controller_id});" id='controller_edit_link{$controller.controller_id}'>Редактировать</a>
-<a href="controller.php?id={$controller.controller_id}" id='controller_view_link{$controller.controller_id}'>Показания</a>
-<a href="controller_settings.php?id={$controller.controller_id}" id='controller_settings_link{$controller.controller_id}'>Настройки</a>
+Онлайн: <b><span id='controller_status{$controller.controller_id}'>{if $controller.is_online==1}<span class='auto_mode'>да</span>{else}<span class='manual_mode'>нет</span>{/if}</span></b><br/>
+
+<div style='margin-top:8px;'>
+
+<table width='100%' border='0' cellspacing='0' cellpadding='2'>
+<tr>
+<td width='50%'>
+    <a href="javascript:editController({$controller.controller_id});" id='controller_edit_link{$controller.controller_id}'>Редактировать</a>
+</td>
+<td width='50%'>
+
+    <a href="controller.php?id={$controller.controller_id}" id='controller_view_link{$controller.controller_id}'>Показания</a>
+</td>
+
+</tr>
+<tr>
+<td width='50%'>
+    <a href="controller_settings.php?id={$controller.controller_id}" id='controller_settings_link{$controller.controller_id}'>Настройки</a>
+</td>
+<td width='50%'>
+    <a href="controller_charts.php?id={$controller.controller_id}" id='controller_charts_link{$controller.controller_id}'>Графики</a>
+</td>
+</tr>
+</table>
+</div>
 
 </fieldset>
 </div>
@@ -21,19 +42,25 @@ $(document).ready(function(){ldelim}
       icons: {ldelim}
         primary: "ui-icon-gear"
       {rdelim}
-    {rdelim});
+    {rdelim}).css("width","100%");
     
   $( "#controller_edit_link{$controller.controller_id}" ).button({ldelim}
       icons: {ldelim}
         primary: "ui-icon-pencil"
       {rdelim}
-    {rdelim});
+    {rdelim}).css("width","100%");
     
   $( "#controller_view_link{$controller.controller_id}" ).button({ldelim}
       icons: {ldelim}
         primary: "ui-icon-info"
       {rdelim}
-    {rdelim});    
+    {rdelim}).css("width","100%");  
+    
+  $( "#controller_charts_link{$controller.controller_id}" ).button({ldelim}
+      icons: {ldelim}
+        primary: "ui-icon-image"
+      {rdelim}
+    {rdelim}).css("width","100%");         
         
 
 {rdelim});  

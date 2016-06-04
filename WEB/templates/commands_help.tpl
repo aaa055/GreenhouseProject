@@ -1,5 +1,5 @@
 {* Smarty *}
-<br clear='left'/>
+<br clear='left'/><br/>
   
   <h3 class='ui-widget-header ui-corner-all'>
   

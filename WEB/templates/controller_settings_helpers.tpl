@@ -1553,7 +1553,7 @@ $(document).ready(function(){
     
  $( "#wifi_menu" ).button({
       icons: {
-        primary: "ui-icon-signal"
+        primary: "ui-icon-signal-diag"
       }
     }).hide().css('width','100%');       
     
