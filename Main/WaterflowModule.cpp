@@ -30,10 +30,13 @@ void WaterflowModule::Setup()
   pin2Flow.flowMilliLitres = 0;
   pin2Flow.totalMilliliters = 0;
   pin2Flow.totalLitres = 0;
+  pin2Flow.calibrationFactor = WATERFLOW_CALIBRATION_FACTOR;
   
   pin3Flow.flowMilliLitres = 0;
   pin3Flow.totalMilliliters = 0;
   pin3Flow.totalLitres = 0;
+  pin3Flow.calibrationFactor = WATERFLOW_CALIBRATION_FACTOR;
+
 
   //читаем из EEPROM сохранённых значений литров для каждого датчика
   unsigned long tmp = 0;
@@ -67,7 +70,18 @@ void WaterflowModule::Setup()
     // есть показания, сохраняем в нашу структуру
     pin3Flow.totalLitres = tmp;
   }
-  
+
+  // теперь читаем факторы калибровки
+  pin2Flow.calibrationFactor = EEPROM.read(readPtr++);
+  pin3Flow.calibrationFactor = EEPROM.read(readPtr++);
+
+  // если ничего не сохранено - назначаем фактор калибровки по умолчанию
+  if(pin2Flow.calibrationFactor == 0xFF)
+    pin2Flow.calibrationFactor = WATERFLOW_CALIBRATION_FACTOR;
+
+  if(pin3Flow.calibrationFactor == 0xFF)
+    pin3Flow.calibrationFactor = WATERFLOW_CALIBRATION_FACTOR;
+
 
   // регистрируем датчики
   #if WATERFLOW_SENSORS_COUNT > 0
@@ -98,7 +112,7 @@ void WaterflowModule::Setup()
 void WaterflowModule::UpdateFlow(WaterflowStruct* wf,unsigned int delta, unsigned int pulses, uint8_t writeOffset)
 {
     // за delta миллисекунд у нас произошло pulses пульсаций, пересчитываем в кол-во миллилитров с момента последнего замера
-    float flowRate = ((WATERFLOW_CHECK_FREQUENCY / delta) * pulses) / WATERFLOW_CALIBRATION_FACTOR;
+    float flowRate = (((WATERFLOW_CHECK_FREQUENCY / delta) * pulses)*10) / wf->calibrationFactor;
     
     wf->flowMilliLitres = (flowRate / 60) * 1000; // мгновенные показания с датчика
     wf->totalMilliliters += wf->flowMilliLitres; // накапливаем показания тут
@@ -184,10 +198,77 @@ void WaterflowModule::Update(uint16_t dt)
 
 bool  WaterflowModule::ExecCommand(const Command& command, bool wantAnswer)
 {
-  UNUSED(wantAnswer);
-  UNUSED(command);
+  if(wantAnswer) PublishSingleton = UNKNOWN_COMMAND;
 
+  size_t argsCount = command.GetArgsCount();
+  
+  if(command.GetType() == ctSET) 
+  {
+       if(argsCount < 1)
+       {
+          if(wantAnswer) 
+            PublishSingleton = PARAMS_MISSED;
+       }
+       else
+       {
+          String t = command.GetArg(0);
+          if(t == FLOW_CALIBRATION_COMMAND)
+          {
+              if(argsCount < 3)
+              {
+                if(wantAnswer) 
+                  PublishSingleton = PARAMS_MISSED;                
+              }
+              else
+              {
+                  pin2Flow.calibrationFactor = (uint8_t) atoi(command.GetArg(1));
+                  pin3Flow.calibrationFactor = (uint8_t) atoi(command.GetArg(2));
+                  
+                  uint16_t addr = WATERFLOW_EEPROM_ADDR + sizeof(unsigned long)*2;
+                  
+                  EEPROM.write(addr++,pin2Flow.calibrationFactor);
+                  EEPROM.write(addr++,pin3Flow.calibrationFactor);
 
-  return true;
+                  PublishSingleton.Status = true;
+                  if(wantAnswer)
+                    PublishSingleton = REG_SUCC;
+              }
+            
+          } // FLOW_CALIBRATION_COMMAND
+       } // else
+  }
+  else
+  if(command.GetType() == ctGET) //получить статистику
+  {
+    if(!argsCount) // нет аргументов
+    {
+      if(wantAnswer) PublishSingleton = PARAMS_MISSED;
+    }
+    else
+    {
+        String t = command.GetArg(0);
+
+        if(t == FLOW_CALIBRATION_COMMAND) // запросили данные о факторах калибровки
+        {
+         PublishSingleton.Status = true;
+          if(wantAnswer) 
+          {
+            PublishSingleton = FLOW_CALIBRATION_COMMAND; 
+            PublishSingleton << PARAM_DELIMITER << pin2Flow.calibrationFactor << PARAM_DELIMITER << pin3Flow.calibrationFactor;
+          }
+        }
+        else
+        {
+          // неизвестная команда
+        } // else
+
+    }// have arguments
+    
+  } // if
+ 
+ // отвечаем на команду
+  mainController->Publish(this,command);
+    
+  return PublishSingleton.Status;
 }
 

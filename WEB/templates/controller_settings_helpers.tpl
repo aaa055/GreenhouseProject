@@ -248,6 +248,60 @@ function editPhoneNumber()
   ] });  
 }
 //-----------------------------------------------------------------------------------------------------
+// редактируем калибровки расходомеров
+function editFlowCalibration()
+{
+ $("#flow_calibration_dialog").dialog({modal:true, buttons: [{text: "Изменить", click: function(){
+
+      var cal1 = parseInt($('#flow_calibraton1').val());
+      var cal2 = parseInt($('#flow_calibraton2').val());
+      
+      
+      if(isNaN(cal1) || isNaN(cal2))
+        return;
+        
+      if(cal1 < 1 || cal2 < 1)
+        return;
+        
+       if(cal1 > 255)
+       {
+        cal1 = 255;
+        $('#flow_calibraton1').val(cal1);
+       }
+
+       if(cal2 > 255)
+       {
+        cal2 = 255;
+        $('#flow_calibraton2').val(cal2);
+       }
+
+
+      $(this).dialog("close");
+
+      
+      $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+                    
+      controller.queryCommand(false,'FLOW|T_SETT|' + cal1 + '|' + cal2,function(obj,answer){
+      
+      $("#data_requested_dialog" ).dialog('close');
+      
+      });
+      
+  
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });  
+}
+//-----------------------------------------------------------------------------------------------------
 // получаем список дельт с контроллера
 function queryDeltasList()
 {
@@ -957,6 +1011,21 @@ controller.OnGetModulesList = function(obj)
         });
     }
     
+    if(controller.Modules.includes('FLOW')) // если в прошивке есть модуль расходомеров
+    {
+        controller.queryCommand(true,'FLOW|T_SETT',function(obj,answer){
+           
+          $('#flow_calibration_button').toggle(answer.IsOK);
+          
+          if(answer.IsOK)
+          {
+            $('#flow_calibraton1').val(answer.Params[2]);
+            $('#flow_calibraton2').val(answer.Params[3]);
+          }
+        
+        });
+    }    
+    
     // запрашиваем список правил
     requestRulesList(function(){ 
       
@@ -1524,6 +1593,12 @@ $(document).ready(function(){
       }
     });
     
+    $('#flow_calibration_button').button({
+      icons: {
+        primary: "ui-icon-note"
+      }
+    }).hide().css('width','100%');    
+    
     $('#delete_cc_list').button({
       icons: {
         primary: "ui-icon-close"
@@ -1557,7 +1632,7 @@ $(document).ready(function(){
       }
     }).hide().css('width','100%');       
     
-    $('#delta_index1, #delta_index2, #cc_param').forceNumericOnly();     
+    $('#delta_index1, #delta_index2, #cc_param, #flow_calibraton1, #flow_calibraton2').forceNumericOnly();     
 
     $('#all_watering_start_hour, #all_watering_time').forceNumericOnly();
     $('#watering_start_hour, #watering_time').forceNumericOnly(); 

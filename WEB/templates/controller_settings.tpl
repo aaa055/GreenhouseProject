@@ -61,6 +61,20 @@
   </form>
 </div>
 
+<div id='flow_calibration_dialog' title='Калибровка расходомеров' class='hdn'>
+  <form>
+    <p>
+    Калибровка расходомера №1:<br/>
+    <input type='text' id='flow_calibraton1' maxlength='3' value='' style='width:100%;'/>
+    </p>
+    <p>
+    Калибровка расходомера №2:<br/>
+    <input type='text' id='flow_calibraton2' maxlength='3' value='' style='width:100%;'/>
+    </p>
+    
+  </form>
+</div>
+
 <div id="new_delta_dialog" title="Новая дельта" class='hdn'>
 
   <form>
@@ -267,6 +281,7 @@
       <div class='menuitem ui-corner-all hdn' id='WATER_MENU' onclick="content(this);">Настройки полива</div>
       <div class='menuitem ui-corner-all' id='COMMAND_PROMPT_MENU' onclick="content(this);">Командная строка</div>
 
+      <div class='ui-corner-all button_menu_spacer hdn' id='flow_calibration_button' onclick="editFlowCalibration();">Калибровка расходомеров</div>
       <div class='ui-corner-all button_menu_spacer hdn' id='controller_time_button' onclick="setControllerTime();">Дата/время</div>
 
       <div class='ui-corner-all button_menu_spacer hdn' id='phone_number' onclick="editPhoneNumber();">Номер телефона для SMS</div>

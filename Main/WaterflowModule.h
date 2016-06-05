@@ -8,6 +8,7 @@ struct WaterflowStruct
 unsigned long flowMilliLitres; // сколько миллилитров вылито с момента последнего замера
 unsigned long totalMilliliters; // сюда накапливаем, пока не наберётся литр
 unsigned long totalLitres; // сколько всего литров вылито через датчик
+uint8_t calibrationFactor; // фактор калибровки
 };
 
 class WaterflowModule : public AbstractModule // модуль учёта расхода воды
