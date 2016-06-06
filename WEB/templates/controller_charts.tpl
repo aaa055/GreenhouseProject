@@ -4,6 +4,7 @@
 <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="js/excanvas.min.js"></script><![endif]-->
 <script language="javascript" type="text/javascript" src="js/jquery.flot.js"></script>
 <script language="javascript" type="text/javascript" src="js/jquery.flot.time.js"></script>
+<script language="javascript" type="text/javascript" src="js/jquery.flot.selection.js"></script>
 
 
 <div id="data_requested_dialog" title="Обработка данных..." class='hdn'>
@@ -187,6 +188,9 @@ function showChartForSerie(serieType,serie)
         points: { show: false}
         
     }
+    ,selection: {
+				mode: "x"
+			}
     
     , legend: { 
     
@@ -231,6 +235,22 @@ function showChartForSerie(serieType,serie)
             }
 			
 		});  
+		
+    chartBox.bind("plotselected", function (event, ranges) {
+
+        var plot = $(this).data("plot");
+        
+				$.each(plot.getXAxes(), function(_, axis) 
+				{
+					var opts = axis.options;
+					opts.min = ranges.xaxis.from;
+					opts.max = ranges.xaxis.to;
+				});
+				
+				plot.setupGrid();
+				plot.draw();
+				plot.clearSelection();
+		});		
   
   plots.push(pl);
   
@@ -239,25 +259,35 @@ function showChartForSerie(serieType,serie)
      
 }
 
-function togglePlot(seriesIdx, checkbox)
+function findPlot(serieType)
 {
-  // тут ищем активный график
   var somePlot = null;
-  var tabId = $("#series_buttons .ui-tabs-panel:visible").attr("id");
   
    for(var i=0;i<plots.length;i++)
   {
     var plot = plots[i];
-    if(plot.serieType == tabId)
+    if(plot.serieType == serieType)
     {
       somePlot = plot;
       break;
     }
   } 
+    
+
+  return somePlot;
+}
+
+function togglePlot(seriesIdx, checkbox)
+{
+  // тут ищем активный график
+  var tabId = $("#series_buttons .ui-tabs-panel:visible").attr("id");
+  var somePlot = findPlot(tabId);
+  if(!somePlot)
+    return;
   
   var someData = somePlot.getData();
   
-  someData[seriesIdx].lines.show = checkbox.checked;//!someData[seriesIdx].lines.show;
+  someData[seriesIdx].lines.show = checkbox.checked;
   somePlot.setData(someData);
   somePlot.draw();
 }
@@ -343,8 +373,38 @@ function requestStatsData(fromDate,toDate)
         var li = $('<li/>', {id: 'tab' + serieType, 'serie_type' : serieType}).appendTo(tabsList);
         var link = $('<a/>',{href: '#' + serieType }).appendTo(li).text(serie.serieName);
         var chartBox = $('<div/>', {id : serieType }).appendTo('#series_buttons');
-        $('<div/>', {id : serieType + '_legend'}).appendTo(chartBox).css('margin-bottom','10px');
+      
+         $('<div/>', {id : serieType + '_legend'}).appendTo(chartBox).css('margin-bottom','10px');
         $('<div/>', {id : serieType + '_chart'}).appendTo(chartBox).css('width',$('#series_buttons').width() - 50).css('height','450px');
+     
+        var buttons = $('<div/>', {id : serieType + '_buttons'}).appendTo(chartBox).css('margin-top','10px');
+        
+        var btn = $('<button/>').text('Сбросить масштабирование').button({
+      icons: {
+        primary: "ui-icon-zoomout"
+      }
+      
+    });
+    
+        btn.click({serieType : serieType}, function(ev){
+        
+          var plot = findPlot(ev.data.serieType);
+            var axes = plot.getAxes(),
+                xaxis = axes.xaxis.options,
+                yaxis = axes.yaxis.options;
+            xaxis.min = null;
+            xaxis.max = null;
+            yaxis.min = null;
+            yaxis.max = null;
+          
+          plot.setupGrid();
+          plot.draw();
+          plot.clearSelection();
+          
+        });
+        
+        btn.appendTo(buttons);
+        
 
       }
               
