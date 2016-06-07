@@ -216,6 +216,14 @@ function editWiFiSettings()
 
 }
 //-----------------------------------------------------------------------------------------------------
+// показывает информацию о датчиках, прописанных в прошивке
+function showSensorsInfo()
+{
+ $("#sensors_info_dialog").dialog({modal:true, buttons: [
+  {text: "OK", click: function(){$(this).dialog("close");} }
+  ] });
+}
+//-----------------------------------------------------------------------------------------------------
 // редактируем номер телефона
 function editPhoneNumber()
 {
@@ -1131,6 +1139,21 @@ controller.OnGetModulesList = function(obj)
         });
     }    
     
+    // запрашиваем информацию о прошивке
+    controller.queryCommand(true,'0|WIRED',function(obj,answer){
+           
+          $('#sensors_info_button').toggle(answer.IsOK);
+          
+          if(answer.IsOK)
+          {
+            $('#sensors_info_temp').html(answer.Params[1]);
+            $('#sensors_info_humidity').html(answer.Params[2]);
+            $('#sensors_info_luminosity').html(answer.Params[3]);
+            $('#sensors_info_soil').html(answer.Params[4]);
+          }
+        
+        });
+    
     // запрашиваем список правил
     requestRulesList(function(){ 
       
@@ -1691,6 +1714,13 @@ $(document).ready(function(){
         primary: "ui-icon-note"
       }
     }).hide().css('width','100%');
+    
+      $( "#sensors_info_button" ).button({
+      icons: {
+        primary: "ui-icon-info"
+      }
+    }).hide().css('width','100%');
+    
     
     $('#new_cc_list').button({
       icons: {

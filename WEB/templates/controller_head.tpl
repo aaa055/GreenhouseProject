@@ -44,7 +44,7 @@ $(document).ready(function(){ldelim}
  
   $( "#view_link" ).button({ldelim}
       icons: {ldelim}
-        primary: "ui-icon-info"
+        primary: "ui-icon-tag"
       {rdelim}
     {rdelim});
     

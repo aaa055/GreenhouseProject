@@ -43,6 +43,52 @@
   </div>
 </div>
 
+<div id='sensors_info_dialog' title='Датчиков в прошивке' class='hdn'>
+
+  <table width='100%' border='0' cellspacing='0' cellpadding='2'>
+
+    <tr>
+      <td>
+        Температуры:
+      </td>
+      <td align='right' class='bold'>
+        <div id='sensors_info_temp'><span class='no_data'>&lt;нет данных&gt;</span></div>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        Влажности:
+      </td>
+      <td align='right' class='bold'>
+        <div id='sensors_info_humidity'><span class='no_data'>&lt;нет данных&gt;</span></div>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        Освещённости:
+      </td>
+      <td align='right' class='bold'>
+        <div id='sensors_info_luminosity'><span class='no_data'>&lt;нет данных&gt;</span></div>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        Влажности почвы:
+      </td>
+      <td align='right' class='bold'>
+        <div id='sensors_info_soil'><span class='no_data'>&lt;нет данных&gt;</span></div>
+      </td>
+    </tr>
+    
+  </table>
+
+</div>
+
+
+
 
 
 <div id='wifi_dialog' title='Настройки Wi-Fi' class='hdn'>
@@ -322,6 +368,7 @@
 
       <div class='ui-corner-all button_menu_spacer hdn' id='phone_number' onclick="editPhoneNumber();">Номер телефона для SMS</div>
       <div class='ui-corner-all button_menu_spacer hdn' id='wifi_menu' onclick="editWiFiSettings();">Настройки Wi-Fi</div>
+      <div class='ui-corner-all button_menu_spacer hdn' id='sensors_info_button' onclick="showSensorsInfo();">О датчиках</div>
 
     </div>
     
