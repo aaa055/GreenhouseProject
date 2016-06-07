@@ -21,6 +21,17 @@ LABEL {
   cursor: pointer;
 }
 
+.popup_date {
+  text-align: right;
+  font-size: 80%;
+  margin-top:6px;
+}
+
+.popup_sensor_data {
+  margin-top:6px;
+  font-weight:bold;
+}
+
 .peity {
   float: right;
 }

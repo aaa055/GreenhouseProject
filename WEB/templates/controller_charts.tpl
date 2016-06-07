@@ -112,7 +112,10 @@ function changeTicks(obj)
     plot.getOptions().xaxes[0].tickSize[1] = period;
     plot.setupGrid();
     plot.draw();
+
+    updateLabels($('#' + plot.serieType + '_chart'));
   }
+  
   
 }
 
@@ -211,7 +214,7 @@ function showChartForSerie(serieType,serie)
 
     
      }
-    , xaxis: {mode : 'time', timezone: 'browser', timeformat: "%d.%m.%Y %H:%M", tickSize: getTickSize() }
+    , xaxis: {mode : 'time', timezone: 'browser', timeformat: "%d.%m<br/>%H:%M", tickSize: getTickSize() }
     , grid: { hoverable: true, clickable: false }
 };
   
@@ -219,7 +222,9 @@ function showChartForSerie(serieType,serie)
   pl.serieType = serieType;
   
   // кол-во сгенерированных тиков
-  //alert(pl.getXAxes()[0].ticks.length);  
+  //alert(pl.getXAxes()[0].ticks.length);
+  updateLabels(chartBox);
+  
   
   chartBox.bind("plothover", function (event, pos, item) 
           {
@@ -227,8 +232,10 @@ function showChartForSerie(serieType,serie)
             if (item) 
             {
               var y = item.datapoint[1].toFixed(2);
+              var tickX = item.datapoint[0];
+              var dt = $.plot.formatDate(new Date(tickX),"%d.%m.%Y %H:%M");
               
-              $("#tooltip").html(item.series.myLabel + "<br/><div style='margin-top:8px;font-weight:bold;'>" + y + item.series.unit + '</div>')
+              $("#tooltip").html(item.series.myLabel + "<br/><div class='popup_sensor_data'>" + y  + item.series.unit + '</div><div class="popup_date">' +  dt + "</div>")
                 .css({top: item.pageY+5, left: item.pageX+5})
                 .fadeIn(200);
             } 
@@ -253,6 +260,7 @@ function showChartForSerie(serieType,serie)
 				plot.setupGrid();
 				plot.draw();
 				plot.clearSelection();
+				updateLabels($('#' + plot.serieType + '_chart'));
 		});		
   
   plots.push(pl);
@@ -260,6 +268,34 @@ function showChartForSerie(serieType,serie)
 
      
      
+}
+
+var __max_labels = 7; // сколько максимально меток вмещается без наезжания друг на друга
+
+// обновляем метки на оси Х, чтобы не налазили друн на друга
+function updateLabels(chart)
+{
+
+  var labels = chart.find(".flot-text .flot-x-axis .flot-tick-label");
+  var totalLabels = labels.length;
+  
+  var showEvery = Math.floor(totalLabels/__max_labels);
+  
+  var cntr = 0;
+  
+  labels.each(function(idx,elem){ $(elem).hide(); });
+  
+  labels.each(function(idx,elem){
+
+      if(cntr > showEvery)
+        cntr = 0;
+        
+      if(!cntr)
+        $(elem).show();
+        
+      cntr++;
+  });
+
 }
 
 function findPlot(serieType)
@@ -403,6 +439,8 @@ function requestStatsData(fromDate,toDate)
           plot.setupGrid();
           plot.draw();
           plot.clearSelection();
+          
+          updateLabels($('#' + plot.serieType + '_chart'));
           
         });
         
