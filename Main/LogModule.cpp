@@ -431,6 +431,14 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
   #else
   LOG_WATERFLOW_TYPE;
   #endif
+
+   String soilMoistureType = 
+  #ifdef LOG_CHANGE_TYPE_TO_IDX
+  String(StateSoilMoisture);
+  #else
+  LOG_SOIL_TYPE;
+  #endif
+ 
  
   // он сказал - поехали
   size_t cnt = mainController->GetModulesCount();
@@ -602,6 +610,43 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
           } // for
           
         } // if(stateCnt > 0)
+
+        // датчика расхода воды обошли, обходим датчики влажности почвы
+        stateCnt = m->State.GetStateCount(StateSoilMoisture);
+        if(stateCnt > 0)
+        {
+          // нашли влажность почвы
+          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
+          {
+            OneState* os = m->State.GetStateByOrder(StateSoilMoisture,stateIdx);// обходим все датчики последовательно, вне зависимости, какой у них индекс
+            if(os)
+            {
+              String sensorIdx = String(os->GetIndex());
+              HumidityPair hp = *os;
+              String sensorData = hp.Current;
+              if(
+                #ifdef WRITE_ABSENT_SENSORS_DATA
+                true
+                #else
+                hp.Current.Value != NO_TEMPERATURE_DATA // только если датчик есть на линии
+                #endif
+                ) 
+              {
+                  // пишем строку с данными
+                  WriteLogLine(hhmm,moduleName,soilMoistureType,sensorIdx,sensorData);
+              } // if
+
+            } // if(os)
+            #ifdef _DEBUG
+            else
+            {
+             Serial.println(F("[ERR] LOG - No GetState(StateSoilMoisture)!"));
+            }
+            #endif
+            
+          } // for
+          
+        } // if(stateCnt > 0)        
 
 
         

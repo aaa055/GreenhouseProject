@@ -463,7 +463,7 @@ uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EE
   
   // записали всё, оставим заглушку в несколько байт, вдруг что ещё будет в правиле?
   
-  return (written + 4); // оставляем 4 байт на будущее
+  return (written + 4); // оставляем 4 байта на будущее
 }
 uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
 {
@@ -578,7 +578,7 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
   if(startTime == 0xFFFF) // ничего не было сохранено
     startTime = 0; // сбрасываем на 0 часов
   
-  return (readed+4); // оставляем в хвосте 4 свободных байт на будущее
+  return (readed+4); // оставляем в хвосте 4 свободных байта на будущее
 }
 const char* AlertRule::GetLinkedRuleName(uint8_t idx)
 {

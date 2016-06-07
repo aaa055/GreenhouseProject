@@ -396,9 +396,9 @@
 #define ALERT F("ALERT") // произошло событие
 #define VIEW_ALERT_COMMAND F("VIEW") // команда просмотра события CTGET=ALERT|VIEW|0
 #define CNT_COMMAND F("CNT") // сколько зарегистрировано событий CTGET=ALERT|CNT
-// правило алерта CTSET=ALERT|RULE_ADD|RuleName|STATE|TEMP|1|>|23|Час начала работы|Продолжительность работы, мин|Список связанных правил|Команды для стороннего модуля
-// пример №1: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|30|N3,N4|CTSET=STATE|WINDOW|ALL|OPEN
-// пример №2: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|0|_|CTSET=STATE|WINDOW|ALL|OPEN
+// правило алерта CTSET=ALERT|RULE_ADD|RuleName|STATE|TEMP|1|>|23|Время начала работы|Продолжительность работы, мин|Маска дней недели|Список связанных правил|Команды для стороннего модуля
+// пример №1: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|30|127|N3,N4|CTSET=STATE|WINDOW|ALL|OPEN
+// пример №2: CTSET=ALERT|RULE_ADD|N1|STATE|TEMP|1|>|23|0|0|127|_|CTSET=STATE|WINDOW|ALL|OPEN
 #define ADD_RULE F("RULE_ADD") // добавить правило
 #define RULE_CNT F("RULES_CNT") // кол-во правил CTGET=ALERT|RULES_CNT
 #define RULE_VIEW F("RULE_VIEW") // просмотр правила по индексу CTGET=ALERT|RULE_VIEW|0
@@ -421,7 +421,7 @@
 // настройки модуля логгирования информации
 //--------------------------------------------------------------------------------------------------------------------------------
 //#define ADD_LOG_HEADER // закомментировать, если не надо добавлять первые строки с информацией, с каких модулей есть данные).
-// Первая трока информации имеет вид:
+// Первая строка информации имеет вид:
 // MODULE_NAME1=MODULE_IDX1,MODULE_NAME2=MODULE_IDX2,MODULE_NAMEn=MODULE_IDXn
 // где MODULE_NAMEn - имя модуля, MODULE_IDXn = индекс модуля в системе.
 // Вторая строка информации сообщает о типах датчиков, и имеет вид:
@@ -436,6 +436,7 @@
 #define LOG_HUMIDITY_TYPE F("RH") // тип для влажности, который запишется в файл
 #define LOG_LUMINOSITY_TYPE F("RL") // тип для освещенности, который запишется в файл
 #define LOG_WATERFLOW_TYPE F("WF") // тип для датчика расхода воды, который запишется в файл
+#define LOG_SOIL_TYPE F("SM") // тип для датчика влажности почвы, который запишется в файл
 #define COMMA_DELIMITER F(",") // разделитель полей в CSV
 #define LOGS_DIRECTORY F("logs") // название папки с логами на карточке
 #define ACTIONS_DIRECTORY F("actions") // название папки с логами действий на карточке
