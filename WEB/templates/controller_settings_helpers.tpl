@@ -497,6 +497,24 @@ function fillWaterChannelsList()
   } // for
 }
 //-----------------------------------------------------------------------------------------------------
+// возвращает строку с маской рабочих дней для правила
+function getRuleDaymaskString(daymask)
+{
+var result = '';
+  for(var i=0;i<7;i++)
+  {
+    if(BitIsSet(daymask,i))
+    {
+      if(result.length)
+        result += ',';
+        
+      result += SHORT_WEEKDAYS[i];
+    }
+  } // for
+  
+  return result;
+}
+//-----------------------------------------------------------------------------------------------------
 // добавляет строку в таблицу правил
 function addRuleRow(parentElement, rule, num)
 {
@@ -508,6 +526,7 @@ function addRuleRow(parentElement, rule, num)
     $('<div/>',{'class': 'row_item ui-widget-header'}).html("Имя").appendTo(row);
     $('<div/>',{'class': 'row_item ui-widget-header'}).html("Начало").appendTo(row);
     $('<div/>',{'class': 'row_item ui-widget-header'}).html("Активно").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Дни").appendTo(row);
     $('<div/>',{'class': 'row_item ui-widget-header'}).html("Следим за").appendTo(row);
     $('<div/>',{'class': 'row_item ui-widget-header'}).html("Действие").appendTo(row);
     
@@ -518,8 +537,23 @@ function addRuleRow(parentElement, rule, num)
     var row = $('<div/>',{'class': 'row', id: 'rule_' + num});
     $('<div/>',{'class': 'row_item', id: 'rule_index'}).html(num + 1).appendTo(row);
     $('<div/>',{'class': 'row_item', id: 'rule_name'}).html(rule.Name).appendTo(row);
-    $('<div/>',{'class': 'row_item', id: 'rule_start'}).html(rule.StartTime + ' ч').appendTo(row);
+    
+    var rh = parseInt(rule.StartTime/60);
+    if(rh < 10)
+      rh = '0' + rh;
+    var rm = parseInt(rule.StartTime%60);
+    if(rm < 10)
+      rm = '0' + rm;
+      
+    var ruleStartTime = rh + ':' + rm;
+    
+    $('<div/>',{'class': 'row_item', id: 'rule_start'}).html(ruleStartTime).appendTo(row);
+    
     $('<div/>',{'class': 'row_item', id: 'rule_time'}).html(rule.WorkTime + ' мин').appendTo(row);
+    
+    // добавляем дни активности
+    $('<div/>',{'class': 'row_item', id: 'rule_daymask'}).html(getRuleDaymaskString(rule.DayMask)).appendTo(row);
+    
     $('<div/>',{'class': 'row_item', id: 'rule_target'}).html(rule.getTargetDescription()).appendTo(row);
     $('<div/>',{'class': 'row_item', id: 'rule_command'}).html(rule.getTargetCommandDescription()).appendTo(row);
     
@@ -552,6 +586,51 @@ function addRuleRow(parentElement, rule, num)
   
 }
 //-----------------------------------------------------------------------------------------------------
+var __globalRuleDaymask = 0xFF;
+// показывает диалог редактирования правил
+function adjustRuleDaymask()
+{
+    
+      var lst = $('#rule_daymask_box').find('div #rule_work_day');
+
+      for(var i=0;i<lst.length;i++)
+      {
+        var elem = lst.get(i);
+        var d = parseInt(elem.value);
+        elem.checked = (__globalRuleDaymask & d) == d;
+      } // for  
+      
+      $("#rule_daymask_dialog").dialog({modal:true, buttons: [
+      
+        {
+          text: "OK", click: function()
+          {
+              var lst = $('#rule_daymask_box').find('div #rule_work_day');
+              __globalRuleDaymask = 0;
+              for(var i=0;i<lst.length;i++)
+              {
+                 var elem = lst.get(i);
+                 if(elem.checked)
+                 {
+                  var dayMask = parseInt(elem.value);
+                   __globalRuleDaymask |= dayMask;
+                 }
+              } // for 
+              
+              $(this).dialog('close');             
+          } 
+        } 
+        ,{
+          text: "Отмена", click: function(){ $(this).dialog('close');} 
+        } 
+      ] 
+      
+      });    
+
+
+
+}
+//-----------------------------------------------------------------------------------------------------
 // создаёт новое правило
 function newRule(editedRule, editedRow)
 {
@@ -565,7 +644,9 @@ function newRule(editedRule, editedRow)
   $('#rule_target_input').val('_').trigger('change');
   $('#rule_name_input').val('');
   $('#rule_name_input').removeAttr('disabled');
-  $('#rule_start_time_input').val('0');
+  $('#rule_start_hour_input').val('0');
+  $('#rule_start_minute_input').val('0');
+  
   $('#rule_work_time_input').val('0');
   $('#rule_sensor_index_input').val('0');
   $('#rule_sensor_value_box').val('0');
@@ -573,6 +654,8 @@ function newRule(editedRule, editedRow)
   $('#rule_sensor_value_input').val('');
   $('#rule_action_input').val('0').trigger('change');
   $('#rule_additional_param_input').val('');
+  
+  __globalRuleDaymask = 0xFF;
 
   
   var newRuleRequested = !editedRule;
@@ -598,7 +681,7 @@ function newRule(editedRule, editedRow)
     $('<label/>').appendTo(row).html(rule.Name + ': ' + rule.getTargetCommandDescription());
     
     row.appendTo('#linked_rules_box');
-  }
+  } // for
   
   if(editedRule)
   {
@@ -612,7 +695,8 @@ function newRule(editedRule, editedRow)
     
     $('#rule_target_input').val(targ).trigger('change');
     $('#rule_module_select').val(editedRule.ModuleName).trigger('change');
-    $('#rule_start_time_input').val(editedRule.StartTime);
+    $('#rule_start_hour_input').val(parseInt(editedRule.StartTime/60));
+    $('#rule_start_minute_input').val(parseInt(editedRule.StartTime%60));
     $('#rule_work_time_input').val(editedRule.WorkTime);
     $('#rule_sensor_index_input').val(editedRule.SensorIndex);
     $('#rule_sensor_operand').val(editedRule.Operand);
@@ -620,6 +704,8 @@ function newRule(editedRule, editedRow)
     $('#rule_pin_state_input').val(editedRule.AlertCondition);
     $('#rule_action_input').val(editedRule.getTargetCommandIndex()).trigger('change');
     $('#rule_additional_param_input').val(editedRule.getAdditionalParam());
+    
+    __globalRuleDaymask = editedRule.DayMask;
     
   }  
       
@@ -638,13 +724,21 @@ function newRule(editedRule, editedRow)
       ruleName = ruleName.toUpperCase();
       
       var ruleTarget = $('#rule_target_input').val();
-      var ruleStartTime = parseInt($('#rule_start_time_input').val());
-      if(isNaN(ruleStartTime))
-        ruleStartTime = 0;
+      var ruleStartHour = parseInt($('#rule_start_hour_input').val());
+      if(isNaN(ruleStartHour))
+        ruleStartHour = 0;
+
+      var ruleStartMinute = parseInt($('#rule_start_minute_input').val());
+      if(isNaN(ruleStartMinute))
+        ruleStartMinute = 0;
+        
+      var ruleStartTime = ruleStartHour*60 + ruleStartMinute;
         
       var ruleWorkTime = parseInt($('#rule_work_time_input').val());
       if(isNaN(ruleWorkTime))
         ruleWorkTime = 0;
+        
+      var ruleDaymask = __globalRuleDaymask;
         
       var sensorIndex = parseInt($('#rule_sensor_index_input').val());
       if(isNaN(sensorIndex))
@@ -719,7 +813,7 @@ function newRule(editedRule, editedRow)
        
        // вроде всё проверили, пытаемся посмотреть
        var fullRuleString = 'dummy|dummy|dummy|' + ruleName + '|' + moduleName + '|' + ruleTarget + '|' + sensorIndex + '|' + operand + '|' + alertCondition + '|' + 
-       ruleStartTime + '|' + ruleWorkTime + '|' + linked_rules + '|' + targetCommand;
+       ruleStartTime + '|' + ruleWorkTime + '|' + ruleDaymask + '|' + linked_rules + '|' + targetCommand;
        
        
        if(newRuleRequested)
@@ -734,10 +828,21 @@ function newRule(editedRule, editedRow)
         // редактируем правило
         editedRule.Construct(fullRuleString.split('|'));
         editedRow.find('#rule_name').html(editedRule.Name);
-        editedRow.find('#rule_start').html(editedRule.StartTime + ' ч');
+        
+        var rh = parseInt(editedRule.StartTime/60);
+        if(rh < 10)
+          rh = '0' + rh;
+        var rm = parseInt(editedRule.StartTime%60);
+        if(rm < 10)
+          rm = '0' + rm;
+          
+        var ruleStartTime = rh + ':' + rm;
+            
+        editedRow.find('#rule_start').html(ruleStartTime);
         editedRow.find('#rule_time').html(editedRule.WorkTime + ' мин');
         editedRow.find('#rule_target').html(editedRule.getTargetDescription());
         editedRow.find('#rule_command').html(editedRule.getTargetCommandDescription());
+        editedRow.find('#rule_daymask').html(getRuleDaymaskString(editedRule.DayMask));
        }
       
 

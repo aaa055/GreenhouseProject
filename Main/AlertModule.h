@@ -57,19 +57,15 @@ class AlertRule
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
     long dataAlertLong; // настройка, за которой следим (4 байта)
 
-    /*
-    bool bEnabled; // включено или нет
-    bool bFirstCall; // первый ли вызов правила?
-    bool canWork; // можем ли мы работать?
-    */
 
     uint8_t flags; // флаги состояний
     
     uint8_t dataSource; // источник, с которого получаем установку значения для правила
 
     size_t ruleNameIdx; // индекс имени правила у родителя
-    uint8_t whichTime; // когда работает?
-    unsigned long workTime; // продолжительность работы, мс
+    uint16_t startTime; // начало работы (минут от начала суток)
+    unsigned long workTime; // продолжительность работы
+    uint8_t dayMask; // маска дней недели, когда работает правило
 
    LinkedRulesToIdxVector linkedRulesIndices; // привязка имён связанных правил к их индексу у родителя
 
@@ -96,6 +92,7 @@ class AlertRule
   #ifdef USE_DS3231_REALTIME_CLOCK 
      ,uint8_t currentHour // текущий час
      ,uint8_t currentMinute // текущая минута
+     ,uint8_t currentDOW // текущий день недели
   #endif
  );
 

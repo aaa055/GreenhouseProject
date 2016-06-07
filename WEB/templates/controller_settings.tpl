@@ -96,6 +96,18 @@
 
 </div>
 
+<div id="rule_daymask_dialog" title="Дни работы правила" class='hdn'>
+   <div id='rule_daymask_box' class='padding_around8px'>
+    <div><input type='checkbox' id='rule_work_day' value='1'/>Понедельник</div>
+    <div><input type='checkbox' id='rule_work_day' value='2'/>Вторник</div>
+    <div><input type='checkbox' id='rule_work_day' value='4'/>Среда</div>
+    <div><input type='checkbox' id='rule_work_day' value='8'/>Четверг</div>
+    <div><input type='checkbox' id='rule_work_day' value='16'/>Пятница</div>
+    <div><input type='checkbox' id='rule_work_day' value='32'/>Суббота</div>
+    <div><input type='checkbox' id='rule_work_day' value='64'/>Воскресенье</div>
+  </div>
+</div>
+
 <div id="rule_edit_dialog" title="Настройки правила" class='hdn'>
   <form>
   
@@ -122,14 +134,38 @@
             
             
           <div class='button_menu_spacer'>  
-            Час начала работы:<br/>
-            <input type='text' id='rule_start_time_input' maxlength='3' value='' style='width:100%;'/>
+            <div class='ui-widget-header ui-corner-all'>Начало работы</div>
+            <div>
+              <div style='float:left;width:50%'>
+                Час:
+                <div style='margin-right:8px;'>
+                  <input type='text' id='rule_start_hour_input' maxlength='2' value='' style='width:100%;'/>
+                </div>
+              </div>
+
+              <div style='float:left;width:50%'>
+                Минута:
+                <div>
+                  <input type='text' id='rule_start_minute_input' maxlength='2' value='' style='width:100%;'/>
+                </div>
+              </div>
+              
+            </div>
           </div>
           
           <div class='button_menu_spacer'>
-            Продолжительность, мин:<br/>
-            <input type='text' id='rule_work_time_input' maxlength='5' value='' style='width:100%;'/>
+            Продолжительность, мин:
+            <div>
+              <div style='float:left;width:80%'>
+                <input type='text' id='rule_work_time_input' maxlength='5' value='' style='width:100%;'/>
+              </div>
+              <div style='float:right;text-align:right;'>
+                <button onclick="adjustRuleDaymask();return false;">Дни</button>
+              </div>
+            </div>
           </div>
+          
+          <div class='button_menu_spacer'>&nbsp;</div>
       
       </div>
       

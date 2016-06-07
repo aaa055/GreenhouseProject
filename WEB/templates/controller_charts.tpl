@@ -211,12 +211,15 @@ function showChartForSerie(serieType,serie)
 
     
      }
-    , xaxis: {mode : 'time', timezone: 'browser', timeformat: "%d.%m.%Y %H:%M", tickSize: getTickSize()}
+    , xaxis: {mode : 'time', timezone: 'browser', timeformat: "%d.%m.%Y %H:%M", tickSize: getTickSize() }
     , grid: { hoverable: true, clickable: false }
 };
   
   var pl = $.plot(chartBox, data, options);
   pl.serieType = serieType;
+  
+  // кол-во сгенерированных тиков
+  //alert(pl.getXAxes()[0].ticks.length);  
   
   chartBox.bind("plothover", function (event, pos, item) 
           {
@@ -389,13 +392,13 @@ function requestStatsData(fromDate,toDate)
         btn.click({serieType : serieType}, function(ev){
         
           var plot = findPlot(ev.data.serieType);
-            var axes = plot.getAxes(),
-                xaxis = axes.xaxis.options,
-                yaxis = axes.yaxis.options;
-            xaxis.min = null;
-            xaxis.max = null;
-            yaxis.min = null;
-            yaxis.max = null;
+          var axes = plot.getAxes(),
+          xaxis = axes.xaxis.options,
+          yaxis = axes.yaxis.options;
+          xaxis.min = null;
+          xaxis.max = null;
+          yaxis.min = null;
+          yaxis.max = null;
           
           plot.setupGrid();
           plot.draw();

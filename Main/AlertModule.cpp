@@ -6,8 +6,9 @@ AlertRule::AlertRule(AlertModule* am)
 {
   parent = am;
   linkedModule = NULL;
-  whichTime = 0;
+  startTime = 0;
   workTime = 0;
+  dayMask = 0xFF; // все дни недели работаем
   dataAlertLong = 0;
 /*
   canWork = true;
@@ -26,16 +27,21 @@ void AlertRule::Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK 
      ,uint8_t currentHour // текущий час
     , uint8_t currentMinute // текущая минута
+    ,uint8_t currentDOW // текущий день недели
   #endif
  )
 {
 
   UNUSED(dt);
   
-//  canWork = true; // считаем, что мы можем работать
-  bitWrite(flags,RULE_CAN_WORK_BIT,1);  
+  // считаем, что мы можем работать, если попадаем в текущий день недели
+  #ifdef USE_DS3231_REALTIME_CLOCK 
+    bitWrite(flags,RULE_CAN_WORK_BIT,bitRead(dayMask,currentDOW-1));
+  #else
+    bitWrite(flags,RULE_CAN_WORK_BIT,1); // без часов реального времени считаем, что работаем всегда
+  #endif  
 
-  if(whichTime == 0  && workTime == 0) // работаем всегда
+  if(startTime == 0  && workTime == 0) // работаем всегда
   {
      return;
   }
@@ -44,7 +50,7 @@ void AlertRule::Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK
 
   // создаём диапазон для проверки
-  uint16_t startDia = whichTime*60;
+  uint16_t startDia = startTime;
   uint16_t stopDia = startDia + workTime;
 
   // если мы находимся между этим диапазоном, то мы можем работать в это время,
@@ -58,19 +64,31 @@ void AlertRule::Update(uint16_t dt
 
   const uint16_t mins_in_day = 1440; // кол-во минут в сутках
   uint16_t checkMinutes = currentHour*60 + currentMinute; // текущее время в минутах
+  bool haveOverflow = false; // флаг переноса работы на следующие сутки
 
   if(stopDia >= mins_in_day)
   {
     // правая граница диапазона перешагнула на следующие сутки,
     // отражаем диапазон текущего часа на следующие сутки
-    // только в том случае, если текущий час меньше, чем час начала работы
-    if(currentHour < whichTime)
+    // только в том случае, если текущее кол-во минут от начала суток меньше, чем время начала работы
+    if(checkMinutes < startTime)
+    {
       checkMinutes += mins_in_day;
+      haveOverflow = true;
+    }
   }
 
     // проверяем попадание в диапазон
-   // canWork = checkMinutes >= startDia && checkMinutes <= stopDia;
-     bitWrite(flags,RULE_CAN_WORK_BIT,((checkMinutes >= startDia && checkMinutes <= stopDia) ? 1 : 0));  
+    bool canWeWork = (checkMinutes >= startDia && checkMinutes <= stopDia);
+    if(canWeWork)
+    {
+      // в диапазон попали, надо проверить попадание в дни недели.
+      // считаем, что мы попали в день недели, если он выставлен
+      // в флагах или у нас был перенос работы на следующие сутки.
+      canWeWork = haveOverflow || bitRead(dayMask,currentDOW-1);
+    }
+    
+    bitWrite(flags,RULE_CAN_WORK_BIT,(canWeWork ? 1 : 0));  
 
 
   #endif  
@@ -78,7 +96,7 @@ void AlertRule::Update(uint16_t dt
 }
 bool AlertRule::HasAlert()
 {
-  if(!linkedModule || !bitRead(flags,RULE_ENABLED_BIT) || !bitRead(flags,RULE_CAN_WORK_BIT))//!bEnabled || !canWork)
+  if(!linkedModule || !bitRead(flags,RULE_ENABLED_BIT) || !bitRead(flags,RULE_CAN_WORK_BIT))
     return false;
 
 
@@ -336,8 +354,9 @@ String AlertRule::GetAlertRule() // конструируем правило, к�
     }
     result += PARAM_DELIMITER;
     
-  result += String(whichTime) + PARAM_DELIMITER;
+  result += String((uint16_t)startTime) + PARAM_DELIMITER;
   result += String((uint16_t)workTime) + PARAM_DELIMITER;
+  result += String((uint8_t)dayMask) + PARAM_DELIMITER;
 
   size_t sz = linkedRulesIndices.size();
     
@@ -368,7 +387,7 @@ uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EE
   EEPROM.write(curWriteAddr++,operand); written++;// записали оператор сравнения
   EEPROM.write(curWriteAddr++,/*bEnabled*/ bitRead(flags,RULE_ENABLED_BIT)); written++;// записали флаг - активно правило или нет?
   EEPROM.write(curWriteAddr++,dataSource); written++;// записали источник, с которого надо брать установку
-  EEPROM.write(curWriteAddr++,whichTime); written++;// записали, когда работаем
+  EEPROM.write(curWriteAddr++,dayMask); written++;// записали маску дней недели
 
   // записали, сколько времени работать
   const byte* readAddr = (const byte*) &workTime;
@@ -437,9 +456,14 @@ uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EE
   EEPROM.write(curWriteAddr++,*readAddr++); written++;
   EEPROM.write(curWriteAddr++,*readAddr++); written++;
 
+  // записываем время начала работы
+  readAddr = (const byte*) &startTime;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  
   // записали всё, оставим заглушку в несколько байт, вдруг что ещё будет в правиле?
   
-  return (written + 6); // оставляем 6 байт на будущее
+  return (written + 4); // оставляем 4 байт на будущее
 }
 uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
 {
@@ -456,7 +480,7 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
   bool bEnabled = EEPROM.read(curReadAddr++); readed++;// прочитали флаг - активно правило или нет?
   bitWrite(flags,RULE_ENABLED_BIT, (bEnabled ? 1 : 0));
   dataSource = (RuleDataSource) EEPROM.read(curReadAddr++); readed++;// прочитали источник, с которого надо брать установку
-  whichTime = EEPROM.read(curReadAddr++); readed++;// прочитали, когда работаем
+  dayMask = EEPROM.read(curReadAddr++); readed++;// прочитали маску дней недели
 
 
   // прочитали, сколько времени работать
@@ -545,8 +569,16 @@ uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
   writeAddr = (byte*) &dataAlertLong;
   if(*writeAddr == 0xFF) // расширенной настройки не сохранено для правила
     dataAlertLong = dataAlert; // применяем короткую настройку
+
+  // читаем время начала работы
+   writeAddr = (byte*) &startTime;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
+
+  if(startTime == 0xFFFF) // ничего не было сохранено
+    startTime = 0; // сбрасываем на 0 часов
   
-  return (readed+6); // оставляем в хвосте 6 свободных байт на будущее
+  return (readed+4); // оставляем в хвосте 4 свободных байт на будущее
 }
 const char* AlertRule::GetLinkedRuleName(uint8_t idx)
 {
@@ -570,7 +602,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   linkedRulesIndices.Clear();
 
   uint8_t argsCnt = command.GetArgsCount();
-  if(argsCnt < 10) // мало аргументов
+  if(argsCnt < 11) // мало аргументов
     return false;
 
   uint8_t curArgIdx = 1;
@@ -638,12 +670,13 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   // дошли до температуры, после неё - настройки срабатывания
 
   // следом идёт час начала работы
-  whichTime = (uint8_t) atoi(command.GetArg(curArgIdx++));
-
-  
+  startTime = (uint16_t) atoi(command.GetArg(curArgIdx++));
+ 
   // дальше идёт продолжительность работы
   workTime = (unsigned long) atol(command.GetArg(curArgIdx++));
 
+  // дальше идёт маска дней недели
+  dayMask = (uint8_t) atoi(command.GetArg(curArgIdx++));
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
   curArg = command.GetArg(curArgIdx++);
@@ -850,7 +883,7 @@ void AlertModule::Update(uint16_t dt)
       // сначала обновляем состояние правила
       r->Update(lastUpdateCall
 #ifdef USE_DS3231_REALTIME_CLOCK
-,tm.hour, tm.minute
+,tm.hour, tm.minute, tm.dayOfWeek
 #endif
         );
 

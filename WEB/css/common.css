@@ -249,11 +249,15 @@ width: calc(100%-220px);
 }
 
 #RULES_LIST .row .row_item:nth-child(5) {
-  width:150px;
+  width:200px;
 }
 
 #RULES_LIST .row .row_item:nth-child(6) {
-  width:200px;
+  width:150px;
+}
+
+#RULES_LIST .row .row_item:nth-child(7) {
+  width:150px;
 }
 
 

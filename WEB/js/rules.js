@@ -37,11 +37,12 @@ AlertRule.prototype.Construct = function(params)
   this.Name = params[startIdx++];
   this.ModuleName = params[startIdx++];
   this.Target = params[startIdx++];
-  this.SensorIndex = params[startIdx++];
+  this.SensorIndex = parseInt(params[startIdx++]);
   this.Operand = params[startIdx++];
   this.AlertCondition = params[startIdx++];
-  this.StartTime = params[startIdx++];
-  this.WorkTime = params[startIdx++];
+  this.StartTime = parseInt(params[startIdx++]);
+  this.WorkTime = parseInt(params[startIdx++]);
+  this.DayMask = parseInt(params[startIdx++]);
   this.LinkedRules = params[startIdx++].split(',');
   
   this.TargetCommand = '';
@@ -62,7 +63,7 @@ AlertRule.prototype.getAlertRule = function()
 {
   var result = '' + this.Name + '|' + this.ModuleName + '|' + this.Target + '|' + this.SensorIndex +
   '|' + this.Operand + '|' + this.AlertCondition + '|' + this.StartTime + '|' + this.WorkTime + '|' +
-  this.LinkedRules.join(',') + '|' + this.TargetCommand;
+  this.DayMask + '|' + this.LinkedRules.join(',') + '|' + this.TargetCommand;
   
   return result;
 }
