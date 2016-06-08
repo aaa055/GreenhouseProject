@@ -257,7 +257,41 @@ bool AlertRule::HasAlert()
        } // switch
       
     }
-    break;    
+    break;  
+
+    case rtPH: // следим за pH
+    {
+     if(!linkedModule->State.HasState(StatePH))  // не поддерживаем pH
+        return false;
+
+       OneState* os = linkedModule->State.GetState(StatePH,sensorIdx);
+       if(!os) // не срослось
+        return false;
+
+     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
+        return false;
+
+       //bFirstCall = false;
+       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
+
+       HumidityPair hp = *os;
+       int8_t curHumidity = hp.Current.Value;
+
+       if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
+        return false;
+
+
+       switch(operand)
+       {
+          case roLessThan: return curHumidity < dataAlert;
+          case roLessOrEqual: return curHumidity <= dataAlert;
+          case roGreaterThan: return curHumidity > dataAlert;
+          case roGreaterOrEqual: return curHumidity >= dataAlert;
+          default: return false;
+       } // switch
+      
+    }
+    break;      
 
     case rtPinState: // следим за статусом пина
     {
@@ -313,6 +347,10 @@ String AlertRule::GetAlertRule() // конструируем правило, к�
 
       case rtSoilMoisture:
       result += PROP_SOIL;
+      break;
+
+      case rtPH:
+      result += PROP_PH;
       break;
 
       case rtUnknown:
@@ -638,6 +676,9 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   else
   if(curArg == PROP_SOIL)
     target = rtSoilMoisture; // следим за влажностью почвы
+  else
+  if(curArg == PROP_PH)
+    target = rtPH; // следим за pH
 
   sensorIdx = (uint8_t) atoi(command.GetArg(curArgIdx++));
   curArg = command.GetArg(curArgIdx++);

@@ -49,7 +49,8 @@ typedef enum
   uniTemp = 1, // только температура, значащие - два байта
   uniHumidity = 2, // влажность (первые два байта), температура (вторые два байта) 
   uniLuminosity = 3, // освещённость, 4 байта
-  uniSoilMoisture = 4 // влажность почвы (два байта)
+  uniSoilMoisture = 4, // влажность почвы (два байта)
+  uniPH = 5 // pH (два байта)
   
 } UniSensorType; // тип датчика
 
@@ -100,12 +101,14 @@ typedef struct
     AbstractModule* humidityModule; // модуль влажности
     AbstractModule* luminosityModule; // модуль освещенности
     AbstractModule* soilMoistureModule; // модуль влажности почвы
+    AbstractModule* phModule; // модуль контроля pH
 
     // жёстко указанные в прошивке датчики
     uint8_t hardCodedTemperatureCount;
     uint8_t hardCodedHumidityCount;
     uint8_t hardCodedLuminosityCount;
     uint8_t hardCodedSoilMoistureCount;
+    uint8_t hardCodedPHCount;
 
 
     // последние выданные индексы для универсальных датчиков

@@ -313,8 +313,13 @@ void TempSensors::Setup()
 
     // настраиваем пины для сдвигового регистра на выход
     pinMode(WINDOWS_SHIFT_LATCH_PIN,OUTPUT);
+    digitalWrite(WINDOWS_SHIFT_LATCH_PIN, LOW);
+    
     pinMode(WINDOWS_SHIFT_DATA_PIN,OUTPUT);
+    digitalWrite(WINDOWS_SHIFT_DATA_PIN, LOW);
+    
     pinMode(WINDOWS_SHIFT_CLOCK_PIN,OUTPUT);
+    digitalWrite(WINDOWS_SHIFT_CLOCK_PIN, LOW);
 
     // переводим все выводы в High-Z состояние (они и так уже в нём, 
     // поскольку пин, управляющий OE, подтянут к питанию,

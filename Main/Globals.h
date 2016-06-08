@@ -233,7 +233,7 @@
 // модуля STATE:  W_S(StateTemperature,0,"STATE","Tнаруж")
 // Пример для нескольких датчиков:
 // #define WAIT_SCREEN_SENSORS W_S(StateTemperature,0,"STATE","Твнутр") ,W_S(StateTemperature,1,"STATE","Tнаруж") ,W_S(StateLuminosity,0,"LIGHT","свет") ,W_S(StateHumidity,0,"HUMIDITY","влажность")
-// типы показаний: StateTemperature - температура, StateLuminosity - освещенность, StateHumidity - влажность
+// типы показаний: StateTemperature - температура, StateLuminosity - освещенность, StateHumidity - влажность, StateSoilMoisture - влажность почвы, StatePH - значение pH
 
 // определяем вид экрана ожидания тут
 #define WAIT_SCREEN_SENSORS W_S(StateTemperature,0,"STATE","T внутри") ,W_S(StateHumidity,1,"HUMIDITY","Влажность") ,W_S(StateLuminosity,0,"LIGHT","Освещенность")
@@ -256,7 +256,10 @@
 // модуля STATE:  NW_S(StateTemperature,0,"STATE")
 // Пример для нескольких датчиков:
 // #define NEXTION_WAIT_SCREEN_SENSORS NW_S(StateTemperature,0,"STATE") ,NW_S(StateTemperature,1,"STATE") ,NW_S(StateLuminosity,0,"LIGHT") ,NW_S(StateHumidity,0,"HUMIDITY")
-// типы показаний: StateTemperature - температура, StateLuminosity - освещенность, StateHumidity - влажность
+// типы показаний: StateTemperature - температура, StateLuminosity - освещенность, StateHumidity - влажность.
+// На текущий момент Nextion подддерживает вывод только этих типов датчиков, поскольку выводит подписи к типу датчика картинками,
+// следовательно - надо менять файл проекта для Nextion. Если вы читаете эти строки и вам необходима такое усовершенствование - 
+// дайте мне знать, и я постараюсь добавить этот функционал.
 
 // определяем вид экрана ожидания тут
 #define NEXTION_WAIT_SCREEN_SENSORS NW_S(StateTemperature,0,"STATE") ,NW_S(StateHumidity,1,"HUMIDITY") ,NW_S(StateLuminosity,0,"LIGHT")
@@ -438,6 +441,7 @@
 #define LOG_LUMINOSITY_TYPE F("RL") // тип для освещенности, который запишется в файл
 #define LOG_WATERFLOW_TYPE F("WF") // тип для датчика расхода воды, который запишется в файл
 #define LOG_SOIL_TYPE F("SM") // тип для датчика влажности почвы, который запишется в файл
+#define LOG_PH_TYPE F("PH") // тип для датчика pH, который запишется в файл
 #define COMMA_DELIMITER F(",") // разделитель полей в CSV
 #define LOGS_DIRECTORY F("logs") // название папки с логами на карточке
 #define ACTIONS_DIRECTORY F("actions") // название папки с логами действий на карточке
@@ -642,6 +646,7 @@
 #define PROP_HUMIDITY F("HUMIDITY") // свойство "влажность"
 #define PROP_PIN F("PIN") // свойство "пин" (для слежения за статусом пинов)
 #define PROP_SOIL F("SOIL") // свойство "влажность почвы"
+#define PROP_PH F("PH") // свойство pH
 #define PROP_NONE F("_") // нет свойства
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -662,8 +667,8 @@
 #define STATUS_COMMAND F("STAT") // получить статус внутренних состояний в виде закодированного пакета, CTGET=0|STAT
 #define RESET_COMMAND F("RST") // перезагрузить контроллер
 #define ID_COMMAND F("ID") // получить/установить ID контроллера
-#define WIRED_COMMAND F("WIRED") // получить список кол-ва проводных датчиков, CTGET=0|WIRED (Температура|Влажность|Освещенность|Влажность почвы)
-#define UNI_COUNT_COMMAND F("UNI") // получить список кол-ва универсальных датчиков, CTGET=0|UNI (Температура|Влажность|Освещенность|Влажность почвы)
+#define WIRED_COMMAND F("WIRED") // получить список кол-ва проводных датчиков, CTGET=0|WIRED (Температура|Влажность|Освещенность|Влажность почвы|PH)
+#define UNI_COUNT_COMMAND F("UNI") // получить список кол-ва универсальных датчиков, CTGET=0|UNI (Температура|Влажность|Освещенность|Влажность почвы|PH)
 #define UNI_NOT_FOUND F("U_NONE") // ответ на запрос CTGET=0|U_SEARCH, если универсального модуля не найдено
 #define UNI_SEARCH F("U_SEARCH") // запрос CTGET=0|U_SEARCH, выдаёт информацию об универсальном модуле в формате OK=ControllerID|ModuleID|Config|CalibrationFactor1|CalibrationFactor2|QueryInterval|Sensor1Type|Sensor1Index|Sensor2Type|Sensor2Index|Sensor3Type|Sensor3Index
 #define UNI_REGISTER F("U_REG") // запрос CTSET=0|U_REG, регистрирует подсоединённый к линии регистрации датчик, возвращает OK=ADDED, если датчик есть, и ERR=U_NONE, если датчика на линии нет

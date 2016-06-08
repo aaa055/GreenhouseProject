@@ -339,6 +339,8 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
                 case StateTemperature: tp = PROP_TEMP; break;
                 case StateHumidity: tp = PROP_HUMIDITY; break;
                 case StateLuminosity: tp = PROP_LIGHT; break;
+                case StateSoilMoisture: tp = PROP_SOIL; break;
+                case StatePH: tp = PROP_PH; break;
               }
               
               PublishSingleton << tp << PARAM_DELIMITER << (ds->Module1->GetID()) << PARAM_DELIMITER << ds->SensorIndex1
@@ -424,6 +426,12 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
             else
             if(arg == PROP_LIGHT)
               ds.SensorType = StateLuminosity; // дельта освещенности
+            else
+            if(arg == PROP_SOIL)
+              ds.SensorType = StateSoilMoisture; // дельта влажности почвы
+            else
+            if(arg == PROP_PH)
+              ds.SensorType = StatePH; // дельта pH
 
             String moduleName1 = command.GetArg(readIdx++); // читаем имя первого модуля
             ds.SensorIndex1 = (uint8_t) atoi(command.GetArg(readIdx++));

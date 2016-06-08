@@ -11,7 +11,8 @@ typedef enum
   rtLuminosity, // за освещенностью следим
   rtHumidity, // за влажностью следим
   rtPinState, // следим за статусом пина
-  rtSoilMoisture // следим за влажностью почвы
+  rtSoilMoisture, // следим за влажностью почвы
+  rtPH // следим за pH
 } RuleTarget; // за чем следит правило
 
 typedef enum

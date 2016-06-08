@@ -144,6 +144,7 @@ void OneState::Update(void* newData) // обновляем внутреннее 
       case StateTemperature:
       case StateHumidity: // и для влажности используем структуру температуры
       case StateSoilMoisture: // и для влажности почвы используем структуру температуры
+      case StatePH: // и для pH  используем структуру температуры
       {
         Temperature* t1 = (Temperature*) Data;
         Temperature* t2 = (Temperature*) PreviousData;
@@ -209,6 +210,7 @@ void OneState::Init(ModuleStates state, uint8_t idx)
       case StateTemperature:
       case StateHumidity: // и для влажности используем структуру температуры
       case StateSoilMoisture: // и для влажности почвы используем структуру температуры
+      case StatePH: // и для pH  используем структуру температуры
       {
       
         Temperature* t1 = new Temperature;
@@ -271,6 +273,7 @@ OneState::operator String() // выводим текущие значения к
       case StateTemperature:
       case StateHumidity: // и для влажности используем структуру температуры
       case StateSoilMoisture: // и для влажности почвы используем структуру температуры
+      case StatePH: // и для pH  используем структуру температуры
       {
       
         Temperature* t1 = (Temperature*) Data;
@@ -320,6 +323,7 @@ OneState& OneState::operator=(const OneState& rhs)
         case StateTemperature:
         case StateHumidity: // и для влажности используем структуру температуры
         case StateSoilMoisture: // и для влажности почвы используем структуру температуры
+        case StatePH: // и для pH  используем структуру температуры
         {
           Temperature* rhs_t1 = (Temperature*) rhs.Data;
           Temperature* rhs_t2 = (Temperature*) rhs.PreviousData;
@@ -387,6 +391,7 @@ bool OneState::IsChanged()
         case StateTemperature:
         case StateHumidity: // и для влажности используем структуру температуры
         case StateSoilMoisture: // и для влажности почвы используем структуру температуры
+        case StatePH: // и для pH  используем структуру температуры
         {
           Temperature* t1 = (Temperature*) Data;
           Temperature* t2 = (Temperature*) PreviousData;
@@ -442,6 +447,7 @@ OneState::~OneState()
         case StateTemperature:
         case StateHumidity: // и для влажности используем структуру температуры
         case StateSoilMoisture: // и для влажности почвы используем структуру температуры
+        case StatePH: // и для pH  используем структуру температуры
         {
           Temperature* t1 = (Temperature*) Data;
           Temperature* t2 = (Temperature*) PreviousData;
@@ -488,7 +494,7 @@ OneState::~OneState()
 }
 OneState::operator HumidityPair()
 {
-  if(!(Type == StateHumidity || Type == StateSoilMoisture)) // влажность можно получить только для двух типов датчиков
+  if(!(Type == StateHumidity || Type == StateSoilMoisture || Type == StatePH)) // влажность можно получить только для трёх типов датчиков
   {
   #ifdef _DEBUG
     Serial.println(F("[ERR] OneState:operator HumidityPair() - !StateHumidity"));
@@ -564,6 +570,7 @@ OneState operator-(const OneState& left, const OneState& right)
         case StateTemperature:
         case StateHumidity: // и для влажности используем структуру температуры
         case StateSoilMoisture: // и для влажности почвы используем структуру температуры
+        case StatePH: // и для pH  используем структуру температуры
         {
           Temperature* t1 = (Temperature*) left.Data;
           Temperature* t2 = (Temperature*) right.Data;

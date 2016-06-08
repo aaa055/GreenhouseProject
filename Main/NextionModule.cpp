@@ -458,6 +458,7 @@ void NextionModule::displayNextSensorData(int8_t dir)
       break;
 
       case StateHumidity:
+      case StateSoilMoisture:
       {
         HumidityPair hp = *os;
         if(hp.Current.Value != NO_TEMPERATURE_DATA)

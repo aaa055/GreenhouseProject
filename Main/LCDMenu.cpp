@@ -184,6 +184,7 @@ void IdlePageMenuItem::RequestSensorData(const WaitScreenInfo& info)
       break;
 
       case StateHumidity:
+      case StateSoilMoisture:
       {
         HumidityPair hp = *os;
         if(hp.Current.Value != NO_TEMPERATURE_DATA)
@@ -196,6 +197,20 @@ void IdlePageMenuItem::RequestSensorData(const WaitScreenInfo& info)
        
       }
       break;
+
+      case StatePH: // выводим значение pH
+      {
+        HumidityPair hp = *os;
+        if(hp.Current.Value != NO_TEMPERATURE_DATA)
+        {
+          sensorData = hp.Current;
+          sensorData += F(" pH");
+        }
+         else
+          sensorData = NO_DATA;
+       
+      }
+      break;      
 
       case StateLuminosity:
       {

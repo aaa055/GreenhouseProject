@@ -80,6 +80,8 @@ function newDelta()
     return;
   }
   
+  $('#delta_type').trigger('change'); 
+  
  $("#new_delta_dialog").dialog({modal:true, buttons: [{text: "Добавить", click: function(){
   
       var delta_type = $('#delta_type').val();
@@ -313,7 +315,7 @@ function editFlowCalibration()
 // получаем список дельт с контроллера
 function queryDeltasList()
 {
-
+  $("#data_requested_dialog" ).dialog('close');
   $("#data_requested_dialog" ).dialog({
                 dialogClass: "no-close",
                 modal: true,
@@ -657,6 +659,7 @@ function newRule(editedRule, editedRow)
   
   $('#rule_work_time_input').val('0');
   $('#rule_sensor_index_input').val('0');
+  $('#rule_pin_number').val('0');
   $('#rule_sensor_value_box').val('0');
   $('#linked_rules_box').empty();
   $('#rule_sensor_value_input').val('');
@@ -707,9 +710,10 @@ function newRule(editedRule, editedRow)
     $('#rule_start_minute_input').val(parseInt(editedRule.StartTime%60));
     $('#rule_work_time_input').val(editedRule.WorkTime);
     $('#rule_sensor_index_input').val(editedRule.SensorIndex);
+    $('#rule_pin_number').val(editedRule.SensorIndex);    
     $('#rule_sensor_operand').val(editedRule.Operand);
     $('#rule_sensor_value_input').val(editedRule.AlertCondition);
-    $('#rule_pin_state_input').val(editedRule.AlertCondition);
+    $('#rule_pin_state_input').val(editedRule.Operand);
     $('#rule_action_input').val(editedRule.getTargetCommandIndex()).trigger('change');
     $('#rule_additional_param_input').val(editedRule.getAdditionalParam());
     
@@ -749,6 +753,11 @@ function newRule(editedRule, editedRow)
       var ruleDaymask = __globalRuleDaymask;
         
       var sensorIndex = parseInt($('#rule_sensor_index_input').val());
+      if(ruleTarget == 'PIN')
+      {
+        sensorIndex = parseInt($('#rule_pin_number').val())   
+      }
+      
       if(isNaN(sensorIndex))
         sensorIndex = 0;
         
@@ -822,8 +831,7 @@ function newRule(editedRule, editedRow)
        // вроде всё проверили, пытаемся посмотреть
        var fullRuleString = 'dummy|dummy|dummy|' + ruleName + '|' + moduleName + '|' + ruleTarget + '|' + sensorIndex + '|' + operand + '|' + alertCondition + '|' + 
        ruleStartTime + '|' + ruleWorkTime + '|' + ruleDaymask + '|' + linked_rules + '|' + targetCommand;
-       
-       
+              
        if(newRuleRequested)
        {
         // новое правило
@@ -1105,10 +1113,62 @@ function requestRulesList(doneFunc)
 
 }
 //-----------------------------------------------------------------------------------------------------
+var totalTempSensors = 0; // кол-во температурных датчиков в прошивке
+var totalHumiditySensors = 0; // кол-во датчиков влажности в прошивке
+var totalLuminositySensors = 0; // кол-во датчиков освещённости в прошивке
+var totalSoilMoistureSensors = 0; // кол-во датчиков влажности в прошивке
+var totalPHSensors = 0; // кол-во датчиков pH в прошивке
+//-----------------------------------------------------------------------------------------------------
 // событие "Получен список модулей в прошивке"
 controller.OnGetModulesList = function(obj)
 {  
-    $('#DELTA_MENU').toggle(controller.Modules.includes('DELTA')); // работаем с дельтами только если в прошивке есть модуль дельт
+
+  $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+
+    var hasDeltaModule = controller.Modules.includes('DELTA');
+    $('#DELTA_MENU').toggle(hasDeltaModule); // работаем с дельтами только если в прошивке есть модуль дельт
+    if(hasDeltaModule)
+    {
+      // настраиваем диалог добавления дельт
+      $('#delta_type').find('option').each(function(idx,elem)
+      {
+        var moduleName = elem.value;
+        if(moduleName == 'TEMP')
+          moduleName = 'STATE';
+          
+        if(!controller.Modules.includes(moduleName))
+          $(elem).remove();
+      });
+      
+      // показываем меню дельт, если есть хотя бы из чего-нибудь получать дельты
+      $('#DELTA_MENU').toggle($('#delta_type').children().length > 0);
+      
+      
+    }
+    
+    // настраиваем диалог добавления нового правила
+      $('#rule_target_input').find('option').each(function(idx,elem)
+      {
+        var moduleName = elem.value;
+
+        if(moduleName == 'PIN' || moduleName == '_')
+          return;
+
+        if(moduleName == 'TEMP')
+          moduleName = 'STATE';
+          
+          
+        if(!controller.Modules.includes(moduleName))
+          $(elem).remove();
+      });    
+    
     
     if(controller.Modules.includes('SMS')) // если в прошивке есть модуль Neoway M590
     {
@@ -1146,10 +1206,32 @@ controller.OnGetModulesList = function(obj)
           
           if(answer.IsOK)
           {
-            $('#sensors_info_temp').html(answer.Params[1]);
-            $('#sensors_info_humidity').html(answer.Params[2]);
-            $('#sensors_info_luminosity').html(answer.Params[3]);
-            $('#sensors_info_soil').html(answer.Params[4]);
+            totalTempSensors = parseInt(answer.Params[1]);
+            totalHumiditySensors = parseInt(answer.Params[2]);
+            totalLuminositySensors = parseInt(answer.Params[3]);
+            totalSoilMoistureSensors = parseInt(answer.Params[4]);
+            totalPHSensors = parseInt(answer.Params[5]);
+            
+              controller.queryCommand(true,'0|UNI',function(obj,answer2){
+              
+                  if(answer2.IsOK)
+                  {
+                      totalTempSensors += parseInt(answer2.Params[1]);
+                      totalHumiditySensors += parseInt(answer2.Params[2]);
+                      totalLuminositySensors += parseInt(answer2.Params[3]);
+                      totalSoilMoistureSensors += parseInt(answer2.Params[4]);
+                      totalPHSensors += parseInt(answer2.Params[5]);
+
+                      $('#sensors_info_temp').html(totalTempSensors);
+                      $('#sensors_info_humidity').html(totalHumiditySensors);
+                      $('#sensors_info_luminosity').html(totalLuminositySensors);
+                      $('#sensors_info_soil').html(totalSoilMoistureSensors);
+                      $('#sensors_info_ph').html(totalPHSensors);
+
+                  }
+              
+              });
+          
           }
         
         });
@@ -1297,6 +1379,8 @@ controller.OnGetModulesList = function(obj)
     } // water
     
     
+    if(controller.Modules.includes('DELTA'))
+      queryDeltasList(); // получаем список дельт
   
 };
 //-----------------------------------------------------------------------------------------------------
@@ -1621,6 +1705,47 @@ $(document).ready(function(){
       } // switch
   });
   
+  $('#rule_module_select').change(function(){
+  
+    var moduleName = $(this).val();
+    if(moduleName == null) // ничего не надо заполнять
+      return;
+      
+   // заполняем список датчиков для выбранного модуля
+      var cnt = 0;
+      $('#rule_sensor_index_input').empty().text('');
+      switch(moduleName)
+      {
+        case 'STATE': cnt = totalTempSensors; break;
+        case 'HUMIDITY': cnt = totalHumiditySensors; break;
+        case 'LIGHT': cnt = totalLuminositySensors; break;
+        case 'SOIL': cnt = totalSoilMoistureSensors; break;
+        case 'PH': cnt = totalPHSensors; break;
+        
+        case 'DELTA':
+        {
+          // список дельт обрабатываем отдельно
+          var deltaType = $('#rule_target_input').val();
+          for(var i=0;i<deltaList.List.length;i++)
+          {
+            var delta = deltaList.List[i];
+            if(deltaType == delta.Type)
+              $('<option/>',{value: i}).text(controller.SensorsNames.getMnemonicName(new Sensor(i,'DELTA'))).appendTo('#rule_sensor_index_input');
+            
+          }// for
+        }
+        break;
+      }
+      
+      // получили кол-во датчиков выбранного модуля, добавляем их в выпадающий список
+      for(var i=0;i<cnt;i++)
+      {
+        $('<option/>',{value: i}).text(controller.SensorsNames.getMnemonicName(new Sensor(i,moduleName))).appendTo('#rule_sensor_index_input');
+      }
+          
+  
+  });
+  
   $('#rule_target_input').change(function(){
   
     var val = $(this).val();
@@ -1631,6 +1756,8 @@ $(document).ready(function(){
     
     $('#rule_module_select').empty().val('');
     $('#rule_sensor_index_description').text('Индекс датчика:');
+    $('#rule_pin_number').toggle(false);
+    $('#rule_sensor_index_input').toggle(true);
     
     switch(val)
     {
@@ -1669,15 +1796,26 @@ $(document).ready(function(){
       }
       break;
       
+      case 'PH': // следим за состоянием pH
+      {
+        addRuleModuleToList('PH');
+        addRuleModuleToList('DELTA');        
+      }
+      break;
+      
       case 'PIN': // следим за уровнем пина
       {
         $('#rule_module_box').toggle(false);
         $('#rule_sensor_index_description').text('Номер пина:');
         $('#rule_sensor_value_box').toggle(false);
         $('#rule_pin_state_box').toggle(true);
+        $('#rule_pin_number').toggle(true);
+        $('#rule_sensor_index_input').toggle(false);
       }
       break;
     } // switch
+    
+    $('#rule_module_select').trigger('change');
   
   });
   
@@ -1767,12 +1905,12 @@ $(document).ready(function(){
       }
     }).hide().css('width','100%');       
     
-    $('#delta_index1, #delta_index2, #cc_param, #flow_calibraton1, #flow_calibraton2').forceNumericOnly();     
+    $('#cc_param, #flow_calibraton1, #flow_calibraton2, #rule_pin_number').forceNumericOnly();     
 
     $('#all_watering_start_hour, #all_watering_time').forceNumericOnly();
     $('#watering_start_hour, #watering_time').forceNumericOnly(); 
 
-    $('#rule_work_time_input, #rule_sensor_index_input, #rule_start_time_input, #rule_sensor_value_input').forceNumericOnly();
+    $('#rule_work_time_input, #rule_start_time_input, #rule_sensor_value_input').forceNumericOnly();
     
     for(var i=0;i<CompositeActionsNames.length;i++)
     {
@@ -1828,11 +1966,71 @@ $(document).ready(function(){
           $('#delta_module1').append($('<option/>',{value: 'LIGHT'}).text('Модуль освещенности'));
           $('#delta_module2').append($('<option/>',{value: 'LIGHT'}).text('Модуль освещенности'));
         } // LIGHT
+        else if(delta_type == 'SOIL')
+        {
+          $('#delta_module1').append($('<option/>',{value: 'SOIL'}).text('Модуль влажности почвы'));
+          $('#delta_module2').append($('<option/>',{value: 'SOIL'}).text('Модуль влажности почвы'));
+        } // SOIL
+        else if(delta_type == 'PH')
+        {
+          $('#delta_module1').append($('<option/>',{value: 'PH'}).text('Модуль контроля pH'));
+          $('#delta_module2').append($('<option/>',{value: 'PH'}).text('Модуль контроля pH'));
+        } // PH
        
+       $('#delta_module1').trigger('change');
+       $('#delta_module2').trigger('change');
     
     });   
     
-    $('#delta_type').trigger('change');  
+    $('#delta_type').trigger('change'); 
+    
+    $('#delta_module1').change(function(){
+    
+      // заполняем список датчиков для выбранного первого модуля
+      var deltaType = $('#delta_module1').val();
+      var cnt = 0;
+      switch(deltaType)
+      {
+        case 'STATE': cnt = totalTempSensors; break;
+        case 'HUMIDITY': cnt = totalHumiditySensors; break;
+        case 'LIGHT': cnt = totalLuminositySensors; break;
+        case 'SOIL': cnt = totalSoilMoistureSensors; break;
+        case 'PH': cnt = totalPHSensors; break;
+      }
+      
+      // получили кол-во датчиков выбранного модуля, добавляем их в выпадающий список
+      $('#delta_index1').empty().text('');
+      for(var i=0;i<cnt;i++)
+      {
+        $('<option/>',{value: i}).text(controller.SensorsNames.getMnemonicName(new Sensor(i,deltaType))).appendTo('#delta_index1');
+      }
+    
+    
+    }); 
+    
+    $('#delta_module2').change(function(){
+    
+      // заполняем список датчиков для выбранного первого модуля
+      var deltaType = $('#delta_module2').val();
+      var cnt = 0;
+      switch(deltaType)
+      {
+        case 'STATE': cnt = totalTempSensors; break;
+        case 'HUMIDITY': cnt = totalHumiditySensors; break;
+        case 'LIGHT': cnt = totalLuminositySensors; break;
+        case 'SOIL': cnt = totalSoilMoistureSensors; break;
+        case 'PH': cnt = totalPHSensors; break;
+      }
+      
+      // получили кол-во датчиков выбранного модуля, добавляем их в выпадающий список
+      $('#delta_index2').empty().text('');
+      for(var i=0;i<cnt;i++)
+      {
+        $('<option/>',{value: i}).text(controller.SensorsNames.getMnemonicName(new Sensor(i,deltaType))).appendTo('#delta_index2');
+      }
+    
+    
+    });     
 
 });
 //-----------------------------------------------------------------------------------------------------

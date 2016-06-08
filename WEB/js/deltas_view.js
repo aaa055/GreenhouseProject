@@ -59,22 +59,7 @@ DeltaView.prototype.buildRow = function(delta, row_id,typeName,mname1,index1,mna
                 }
       
               });
-              /*
-   
-              $('<div/>',{'class': 'action', title: 'Редактировать'}).appendTo(actions).button({
-      icons: {
-        primary: "ui-icon-pencil"
-      }, text: false
-    }).click({row: row, delta : delta, view: view}, function(ev){
-              
-                if(ev.data.view.OnEditDelta != null)
-                {
-                  var cont = ev.data.view.Controller;
-                  ev.data.view.OnEditDelta(cont, ev.data.delta, ev.data.row);
-                }
-      
-              });
-              */
+
                           
         }
         
@@ -123,7 +108,4 @@ DeltaView.prototype.fillList = function(parentElement)
       
   } // for
 }
-//-----------------------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------

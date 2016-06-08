@@ -82,6 +82,15 @@
         <div id='sensors_info_soil'><span class='no_data'>&lt;нет данных&gt;</span></div>
       </td>
     </tr>
+
+    <tr>
+      <td>
+        Значения pH:
+      </td>
+      <td align='right' class='bold'>
+        <div id='sensors_info_ph'><span class='no_data'>&lt;нет данных&gt;</span></div>
+      </td>
+    </tr>
     
   </table>
 
@@ -124,20 +133,32 @@
 <div id="new_delta_dialog" title="Новая дельта" class='hdn'>
 
   <form>
+  <div class='button_menu_spacer'>
   Тип дельты:<br/>
   <select id='delta_type' style='width:100%;'>
   <option value='TEMP'>Температура</option>
   <option value='HUMIDITY'>Влажность</option>
   <option value='LIGHT'>Освещенность</option>
+  <option value='SOIL'>Влажность почвы</option>
+  <option value='PH'>Значение pH</option>
   </select><br/>
+  </div>
+  <div class='button_menu_spacer'>
   Модуль 1:<br/>
   <select id='delta_module1' style='width:100%;'></select><br/>
+  </div>
+  <div class='button_menu_spacer'>
   Датчик 1:<br/>
-  <input type='text' id='delta_index1' maxlength='3' value='' style='width:100%;'/><br/>
+  <select id='delta_index1' style='width:100%;'></select><br/>
+  </div>
+  <div class='button_menu_spacer'>
   Модуль 2:<br/>
   <select id='delta_module2' style='width:100%;'></select><br/>
+  </div>
+  <div class='button_menu_spacer'>
   Датчик 2:<br/>
-  <input type='text' id='delta_index2' maxlength='3' value='' style='width:100%;'/><br/>
+  <select id='delta_index2' style='width:100%;'/></select><br/>
+  </div>
   </form>
 
 </div>
@@ -175,6 +196,7 @@
               <option value='LIGHT'>Освещенностью</option>
               <option value='PIN'>Уровнем пина</option>
               <option value='SOIL'>Влажностью почвы</option>
+              <option value='PH'>Значением pH</option>
               </select>
             </div>
             
@@ -231,7 +253,8 @@
             
           <div id='rule_index_box' class='button_menu_spacer hdn'>
             <div id='rule_sensor_index_description'>Индекс датчика:</div>
-            <input type='text' id='rule_sensor_index_input' maxlength='3' value='' style='width:100%;'/>
+            <select id='rule_sensor_index_input' style='width:100%;'></select>
+            <input type='text' id='rule_pin_number' class='hdn' style='width:100%' maxlength='2'/>
           </div>
           
           

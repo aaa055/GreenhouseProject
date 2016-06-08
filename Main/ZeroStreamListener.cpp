@@ -139,6 +139,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniHumidity);
           PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniLuminosity);
           PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniSoilMoisture);
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetHardCodedSensorsCount(uniPH);
           //TODO: Тут остальные типы датчиков указывать !!!
                      
         }
@@ -153,6 +154,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetUniSensorsCount(uniHumidity);
           PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetUniSensorsCount(uniLuminosity);
           PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetUniSensorsCount(uniSoilMoisture);
+          PublishSingleton << PARAM_DELIMITER << UniDispatcher.GetUniSensorsCount(uniPH);
           //TODO: Тут остальные типы датчиков указывать !!!
                      
         }
@@ -204,10 +206,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               uint8_t waterflowCountInstant = mod->State.GetStateCount(StateWaterFlowInstant);
               uint8_t waterflowCount = mod->State.GetStateCount(StateWaterFlowIncremental);
               uint8_t soilMoistureCount = mod->State.GetStateCount(StateSoilMoisture); 
+              uint8_t phCount = mod->State.GetStateCount(StatePH); 
               
               //TODO: тут другие типы датчиков!!!
 
-              if((tempCount + humCount + lightCount + waterflowCountInstant + waterflowCount + soilMoistureCount) < 1) // пустой модуль, без интересующих нас датчиков
+              if((tempCount + humCount + lightCount + waterflowCountInstant + waterflowCount + soilMoistureCount + phCount) < 1) // пустой модуль, без интересующих нас датчиков
                 continue;
 
               uint8_t flags = 0;
@@ -217,6 +220,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               if(waterflowCountInstant) flags |= StateWaterFlowInstant;
               if(waterflowCount) flags |= StateWaterFlowIncremental;
               if(soilMoistureCount) flags |= StateSoilMoisture;
+              if(phCount) flags |= StatePH;
 
             // показание каждого модуля идут так:
             
@@ -413,6 +417,36 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               } // for
             } // soilMoistureCount > 0
 
+             // затем идут датчики pH
+             if(phCount)
+            {
+            // 1 байт - кол-во датчиков pH
+              pStream->write(WorkStatus::ToHex(phCount));
+
+              for(uint8_t cntr=0;cntr<phCount;cntr++)
+              {
+                yield(); // немного даём поработать другим модулям
+                
+                OneState* os = mod->State.GetStateByOrder(StatePH,cntr);
+                // потом идут пакеты показаний. каждый пакет состоит из:
+                // 1 байт - индекс датчика
+                pStream->write(WorkStatus::ToHex(os->GetIndex()));
+                // 2 байта - его показания, мы пишем любые показания, даже если датчика нет на линии
+                HumidityPair tp = *os;
+                if(tp.Current.Value != NO_TEMPERATURE_DATA)
+                {
+                  pStream->write(WorkStatus::ToHex(tp.Current.Value));
+                  pStream->write(WorkStatus::ToHex(tp.Current.Fract));
+                }
+                else
+                {
+                  // датчика нет на линии, пишем FFFF
+                  pStream->write(noDataByte);
+                  pStream->write(noDataByte);
+                }
+                 
+              } // for
+            } // phCount > 0
 
             
             // тут другие типы датчиков

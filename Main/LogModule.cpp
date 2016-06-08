@@ -286,6 +286,16 @@ void LogModule::TryAddFileHeader()
           statesFound |= StateWaterFlowIncremental;
           anyInterestedStatesFound = true;
         }
+        if(m->State.HasState(StateSoilMoisture))
+        {
+          statesFound |= StateSoilMoisture;
+          anyInterestedStatesFound = true;
+        }
+        if(m->State.HasState(StatePH))
+        {
+          statesFound |= StatePH;
+          anyInterestedStatesFound = true;
+        }
         
         if(anyInterestedStatesFound)
         {
@@ -350,6 +360,26 @@ void LogModule::TryAddFileHeader()
       secondLine += COMMAND_DELIMITER;
       secondLine += String(StateWaterFlowIncremental);
     }
+
+    if(statesFound & StateSoilMoisture) // есть влажность почвы
+    {
+      if(secondLine.length())
+        secondLine += LogModule::_COMMA;
+        
+      secondLine += LOG_SOIL_TYPE;
+      secondLine += COMMAND_DELIMITER;
+      secondLine += String(StateSoilMoisture);
+    }    
+
+    if(statesFound & StatePH) // есть pH
+    {
+      if(secondLine.length())
+        secondLine += LogModule::_COMMA;
+        
+      secondLine += LOG_PH_TYPE;
+      secondLine += COMMAND_DELIMITER;
+      secondLine += String(StatePH);
+    }    
     
    if(secondLine.length()) // можем записывать в файл вторую строку с привязкой датчиков к типам
    {
@@ -432,17 +462,25 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
   LOG_WATERFLOW_TYPE;
   #endif
 
-   String soilMoistureType = 
+  String soilMoistureType = 
   #ifdef LOG_CHANGE_TYPE_TO_IDX
   String(StateSoilMoisture);
   #else
   LOG_SOIL_TYPE;
   #endif
  
+  String phType = 
+  #ifdef LOG_CHANGE_TYPE_TO_IDX
+  String(StatePH);
+  #else
+  LOG_PH_TYPE;
+  #endif
  
   // он сказал - поехали
   size_t cnt = mainController->GetModulesCount();
   // он махнул рукой
+
+  //TODO: Бесит такой код, нужен рефакторинг! Очень много дублирования, работа с типами датчиков куда только не разнесена!!!
     for(size_t i=0;i<cnt;i++)
     {
       AbstractModule* m = mainController->GetModule(i);
@@ -646,7 +684,44 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
             
           } // for
           
-        } // if(stateCnt > 0)        
+        } // if(stateCnt > 0)  
+
+        // датчика влажности почвы обошли, обходим датчики pH
+        stateCnt = m->State.GetStateCount(StatePH);
+        if(stateCnt > 0)
+        {
+          // нашли pH
+          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
+          {
+            OneState* os = m->State.GetStateByOrder(StatePH,stateIdx);// обходим все датчики последовательно, вне зависимости, какой у них индекс
+            if(os)
+            {
+              String sensorIdx = String(os->GetIndex());
+              HumidityPair hp = *os;
+              String sensorData = hp.Current;
+              if(
+                #ifdef WRITE_ABSENT_SENSORS_DATA
+                true
+                #else
+                hp.Current.Value != NO_TEMPERATURE_DATA // только если датчик есть на линии
+                #endif
+                ) 
+              {
+                  // пишем строку с данными
+                  WriteLogLine(hhmm,moduleName,phType,sensorIdx,sensorData);
+              } // if
+
+            } // if(os)
+            #ifdef _DEBUG
+            else
+            {
+             Serial.println(F("[ERR] LOG - No GetState(StatePH)!"));
+            }
+            #endif
+            
+          } // for
+          
+        } // if(stateCnt > 0)              
 
         //TODO: Тут запись показаний с других типов датчиков в лог-файл!
 

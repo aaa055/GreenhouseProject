@@ -10,7 +10,8 @@ UniRegDispatcher::UniRegDispatcher()
   temperatureModule = NULL;
   humidityModule = NULL;
   luminosityModule = NULL;
-  soilMoistureModule = NULL;  
+  soilMoistureModule = NULL;
+  phModule = NULL;  
 
   currentTemperatureCount = 0;
   currentHumidityCount = 0;
@@ -21,6 +22,7 @@ UniRegDispatcher::UniRegDispatcher()
   hardCodedHumidityCount = 0;
   hardCodedLuminosityCount = 0;
   hardCodedSoilMoistureCount = 0;
+  hardCodedPHCount = 0;
     
 }
 void UniRegDispatcher::AddUniSensors(UniSensorType type, uint8_t cnt)
@@ -81,6 +83,10 @@ void UniRegDispatcher::AddUniSensors(UniSensorType type, uint8_t cnt)
         currentSoilMoistureCount += cnt;
       } 
     break;
+
+
+    case uniPH:
+    break;
   } 
 }
 uint8_t UniRegDispatcher::GetUniSensorsCount(UniSensorType type)
@@ -92,6 +98,7 @@ uint8_t UniRegDispatcher::GetUniSensorsCount(UniSensorType type)
     case uniHumidity: return currentHumidityCount;
     case uniLuminosity: return currentLuminosityCount;
     case uniSoilMoisture: return currentSoilMoistureCount;
+    case uniPH: return 0;
   }
 
   return 0;  
@@ -105,6 +112,7 @@ uint8_t UniRegDispatcher::GetHardCodedSensorsCount(UniSensorType type)
     case uniHumidity: return hardCodedHumidityCount;
     case uniLuminosity: return hardCodedLuminosityCount;
     case uniSoilMoisture: return hardCodedSoilMoistureCount;
+    case uniPH: return hardCodedPHCount;
   }
 
   return 0;
@@ -130,6 +138,10 @@ void UniRegDispatcher::Setup(ModuleController* controller)
     soilMoistureModule = mainController->GetModuleByID(F("SOIL"));
     if(soilMoistureModule)
       hardCodedSoilMoistureCount = soilMoistureModule->State.GetStateCount(StateSoilMoisture);
+
+    phModule = mainController->GetModuleByID(F("PH"));
+    if(phModule)
+      hardCodedPHCount = phModule->State.GetStateCount(StatePH);
 
 
     ReadState(); // читаем последнее запомненное состояние
@@ -282,6 +294,9 @@ bool UniRegDispatcher::GetRegisteredStates(UniSensorType type, uint8_t sensorInd
       
     }
     break;
+
+    case uniPH:
+    break;
    } // switch
 
   return false;    
@@ -395,6 +410,9 @@ bool UniRegDispatcher::RegisterSensor(UniSensorType type, UniSensorState& result
        return (resultStates.State1 != NULL);
       
     }
+    break;
+
+    case uniPH:
     break;
    } // switch
 
@@ -729,6 +747,7 @@ void AbstractUniSensor::UpdateOneState(OneState* os, uint8_t* data, bool isSenso
 
       case StateWaterFlowInstant:
       case StateWaterFlowIncremental:
+      case StatePH:
       #ifdef SAVE_RELAY_STATES
       case StateRelay:
       #endif
