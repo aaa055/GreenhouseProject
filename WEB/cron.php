@@ -38,9 +38,9 @@ function requestControllerData($controller_id,$address)
   global $modules;
   global $SIMULATION;
   
-  $NO_TEMPERATURE_DATA = "-127.00"; // нет показаний с датчика температуры
+  $NO_TEMPERATURE_DATA = "-128.00"; // нет показаний с датчика температуры
   $NO_LUMINOSITY_DATA = "-1.00"; // нет показаний с датчика освещенности
-  $NO_PH_DATA = "-127.00"; // нет показаний с датчика pH
+  $NO_PH_DATA = "-128.00"; // нет показаний с датчика pH
   
   // пытаемся законнектиться
   $tp = new SocketTransport();

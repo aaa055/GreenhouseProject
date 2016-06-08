@@ -238,6 +238,13 @@ function showChartForSerie(serieType,serie)
               $("#tooltip").html(item.series.myLabel + "<br/><div class='popup_sensor_data'>" + y  + item.series.unit + '</div><div class="popup_date">' +  dt + "</div>")
                 .css({top: item.pageY+5, left: item.pageX+5})
                 .fadeIn(200);
+                
+                var ttw = $("#tooltip").width();
+                
+                if((item.pageX + ttw) > $(window).width())
+                {
+                  $("#tooltip").css({top: item.pageY+5, left: item.pageX - ttw});
+                }
             } 
             else 
             {
@@ -511,6 +518,7 @@ $("<div id='tooltip'></div>").css({
 			border: "1px solid #fdd",
 			padding: "2px",
 			"background-color": "#fee",
+      width : "200px",
 			opacity: 0.80
 		}).appendTo("body");
 

@@ -38,7 +38,7 @@ if($authorized)
             if($sensorType == 'LIGHT')
               continue;
             else
-            if($sensor_data == -127)
+            if($sensor_data <= -127)
               continue;
         }
         
