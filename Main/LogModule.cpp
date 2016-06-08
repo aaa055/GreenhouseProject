@@ -648,6 +648,7 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
           
         } // if(stateCnt > 0)        
 
+        //TODO: Тут запись показаний с других типов датчиков в лог-файл!
 
         
     } // for

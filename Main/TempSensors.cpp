@@ -190,17 +190,21 @@ void TempSensors::WriteToShiftRegister() // ПИШЕМ В СДВИГОВЫЙ Р�
    {
     
     //Тут пишем в сдвиговый регистр
+
+    // сначала разрешаем установить состояние на выходах
+    digitalWrite(WINDOWS_SHIFT_OE_PIN,LOW);
     
     // Отключаем вывод на регистре
     digitalWrite(WINDOWS_SHIFT_LATCH_PIN, LOW);
 
     // проталкиваем все байты один за другим, начиная со старшего к младшему
+      uint8_t i=shiftRegisterDataSize;
     
-      for(uint8_t i=shiftRegisterDataSize-1;i>=0;i++)
-      {
+      do
+      {    
         // проталкиваем байт в регистр
-        shiftOut(WINDOWS_SHIFT_DATA_PIN, WINDOWS_SHIFT_CLOCK_PIN, MSBFIRST, shiftRegisterData[i]);
-      } // for
+        shiftOut(WINDOWS_SHIFT_DATA_PIN, WINDOWS_SHIFT_CLOCK_PIN, MSBFIRST, shiftRegisterData[--i]);
+      } while(i > 0);
 
       // "защелкиваем" регистр, чтобы байт появился на его выходах
       digitalWrite(WINDOWS_SHIFT_LATCH_PIN, HIGH);
@@ -311,6 +315,13 @@ void TempSensors::Setup()
     pinMode(WINDOWS_SHIFT_LATCH_PIN,OUTPUT);
     pinMode(WINDOWS_SHIFT_DATA_PIN,OUTPUT);
     pinMode(WINDOWS_SHIFT_CLOCK_PIN,OUTPUT);
+
+    // переводим все выводы в High-Z состояние (они и так уже в нём, 
+    // поскольку пин, управляющий OE, подтянут к питанию,
+    // но мы не будем мелочиться :) ).
+    pinMode(WINDOWS_SHIFT_OE_PIN,OUTPUT);
+    digitalWrite(WINDOWS_SHIFT_OE_PIN,HIGH);
+    
    
     // настраиваем кол-во байт, в котором мы будем держать состояние каналов для сдвигового регистра.
     // у нас для каждого окна - два канала, соответственно, общее кол-во бит - это
