@@ -77,35 +77,7 @@ void WindowState::SwitchRelays(uint8_t rel1State, uint8_t rel2State)
   // уведомляем родителя, что такой-то канал имеет такое-то состояние, он сам разберётся, что с этим делать
   Parent->SaveChannelState(RelayChannel1,rel1State);
   Parent->SaveChannelState(RelayChannel2,rel2State);
-
-  #ifdef SAVE_RELAY_STATES
-  if(RelayStateHolder) // сообщаем, что реле мы выключили или включили
-  {
-   uint8_t idx = RelayChannel1/8; // выясняем, какой индекс
-
-   // теперь мы должны выяснить, в какой бит писать
-   uint8_t bitNum1 = RelayChannel1 % 8;
-   uint8_t bitNum2 = RelayChannel2 % 8;
-   
-
-   OneState* os = RelayStateHolder->GetState(StateRelay,idx);
-   if(os)
-   {
-     RelayPair rp = *os;
-     uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
-
-     // устанавливаем нужные биты
-     bitWrite(curRelayStates,bitNum1, (rel1State == RELAY_ON));
-     bitWrite(curRelayStates,bitNum2, (rel2State == RELAY_ON));
-     
-     // записываем новую маску состояния реле
-     os->Update((void*)&curRelayStates);
-     
-   } // if(os)
-      
-  } // if
-  #endif
-  
+    
 }
 void WindowState::UpdateState(uint16_t dt)
 {
@@ -292,19 +264,6 @@ void TempSensors::Setup()
     tempSensor.readTemperature(&tempData,(DSSensorType)TEMP_SENSORS[i].type);
    }
    #endif
-
-   #ifdef SAVE_RELAY_STATES   
-   // добавляем N восьмиканальных состояний реле
-   uint8_t relayCnt = (SUPPORTED_WINDOWS*2)/8;
-   if((SUPPORTED_WINDOWS*2) > 8 && (SUPPORTED_WINDOWS*2) % 8)
-    relayCnt++;
-
-   if((SUPPORTED_WINDOWS*2) < 9)
-    relayCnt = 1;
-    
-   for(uint8_t i=0;i<relayCnt;i++)
-    State.AddState(StateRelay,i);
-   #endif  
 
   
    SetupWindows(); // настраиваем фрамуги

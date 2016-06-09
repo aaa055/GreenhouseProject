@@ -8,6 +8,7 @@
 class ZeroStreamListener : public AbstractModule
 {
   private:
+    void PrintSensorsValues(uint8_t totalCount,ModuleStates wantedState,AbstractModule* module, Stream* outStream);
   public:
     ZeroStreamListener() : AbstractModule(F("0")) {}
 

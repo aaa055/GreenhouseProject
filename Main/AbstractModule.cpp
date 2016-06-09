@@ -156,21 +156,6 @@ void OneState::Update(void* newData) // обновляем внутреннее 
       } 
       break;
 
-      #ifdef SAVE_RELAY_STATES
-      case StateRelay:
-      {
-        uint8_t*  ui1 = (uint8_t*) Data;
-        uint8_t*  ui2 = (uint8_t*) PreviousData;
-
-        *ui2 = *ui1; // сохраняем предыдущее состояние каналов реле
-
-        uint8_t* newState = (uint8_t*) newData;
-        *ui1 = *newState; // пишем новое состояние каналов реле
-      }  
-      break;
-      #endif
-      
-
       case StateLuminosity:
       {
         long*  ui1 = (long*) Data;
@@ -195,6 +180,9 @@ void OneState::Update(void* newData) // обновляем внутреннее 
         *ui1 = *newState; // пишем новое состояние расхода воды
         
       }
+      break;
+
+      case StateUnknown:
       break;
       
     } // switch
@@ -221,21 +209,7 @@ void OneState::Init(ModuleStates state, uint8_t idx)
       }
         
       break;
-#ifdef SAVE_RELAY_STATES
-      case StateRelay:
-        {
-        uint8_t*  ui1 = new uint8_t;
-        uint8_t*  ui2 = new uint8_t;
 
-        *ui1 = 0; // никакое реле не включено
-        *ui2 = 0;
-        
-        Data = ui1;
-        PreviousData = ui2;
-        }
-        
-      break;
-#endif
       case StateLuminosity:
       {
         long*  ui1 = new long;
@@ -263,6 +237,9 @@ void OneState::Init(ModuleStates state, uint8_t idx)
         
       }
       break;
+
+      case StateUnknown:
+      break;
     } // switch
   
 }
@@ -280,14 +257,6 @@ OneState::operator String() // выводим текущие значения к
         return *t1;
       }
         
-#ifdef SAVE_RELAY_STATES
-      case StateRelay:
-        {
-          uint8_t*  ui1 = (uint8_t*) Data;
-          return String(*ui1);
-        }
-        
-#endif
       case StateLuminosity:
       {
         long*  ul1 = (long*) Data;
@@ -300,9 +269,12 @@ OneState::operator String() // выводим текущие значения к
         unsigned long*  ul1 = (unsigned long*) Data;
         return String(*ul1);        
       }
+
+      case StateUnknown:
+        return String();
     } // switch
 
-return String();
+    return String();
 }
 OneState& OneState::operator=(const OneState& rhs)
 {
@@ -336,22 +308,7 @@ OneState& OneState::operator=(const OneState& rhs)
           
         }
         break;
-#ifdef SAVE_RELAY_STATES  
-        case StateRelay:
-        {
-          uint8_t*  rhs_ui1 = (uint8_t*) rhs.Data;
-          uint8_t*  rhs_ui2 = (uint8_t*) rhs.PreviousData;
-  
-          uint8_t*  this_ui1 = (uint8_t*) Data;
-          uint8_t*  this_ui2 = (uint8_t*) PreviousData;
 
-          *this_ui1 = *rhs_ui1;
-          *this_ui2 = *rhs_ui2;
-          
-         
-        }  
-        break;
-#endif
         case StateLuminosity:
         {
           long*  rhs_ui1 = (long*) rhs.Data;
@@ -378,6 +335,9 @@ OneState& OneState::operator=(const OneState& rhs)
           *this_ui2 = *rhs_ui2;
         }  
         break;
+
+        case StateUnknown:
+        break;
       
       } // switch
   
@@ -400,17 +360,8 @@ bool OneState::IsChanged()
             return true; // температура изменилась
         }
         break;
-#ifdef SAVE_RELAY_STATES  
-        case StateRelay:
-        {
-          uint8_t*  ui1 = (uint8_t*) Data;
-          uint8_t*  ui2 = (uint8_t*) PreviousData;
-  
-         if(*ui1 != *ui2)
-          return true; // состояние реле изменилось
-        }  
-        break;
-#endif
+
+
         case StateLuminosity:
         {
           long*  ui1 = (long*) Data;
@@ -432,11 +383,174 @@ bool OneState::IsChanged()
         }  
         break;
 
+        case StateUnknown:
+          return false;
+
       
       } // switch
 
  return false;
   
+}
+
+ModuleStates OneState::GetType(const String& stringType)
+{
+  return GetType(stringType.c_str());
+}
+String OneState::GetUnit()
+{
+ switch(Type)
+  {
+    case StateUnknown:
+      return String();
+
+    case StateTemperature:
+      return F(" C");
+
+    case StateHumidity:
+    case StateSoilMoisture:
+      return F("%");
+    
+    case StatePH:
+      return F(" pH");
+
+    case StateLuminosity:
+      return F(" люкс");
+
+    case StateWaterFlowIncremental:
+    case StateWaterFlowInstant:
+      return  F(" л");
+      
+  } 
+
+    return String();
+}
+bool OneState::HasData()
+{
+   switch(Type)
+  {
+    case StateUnknown:
+      return false;
+
+    // для всех структур ниже мы используем одну структуру
+    case StateTemperature:
+    case StateHumidity:
+    case StatePH:
+    case StateSoilMoisture:
+    {
+      Temperature* t = (Temperature*) Data;
+      return t->HasData();
+    }
+
+    case StateLuminosity:
+    {
+      long*  ui1 = (long*) Data;
+      return *ui1 != NO_LUMINOSITY_DATA;
+    }
+
+    // для датчиков расхода воды считаем,
+    // что показания есть всегда.
+    case StateWaterFlowIncremental:
+    case StateWaterFlowInstant:
+        return true;
+  } 
+
+  return false;
+}
+uint8_t OneState::GetRawData(byte* outBuffer)
+{
+  switch(Type)
+  {
+    case StateUnknown:
+      return 0;
+
+    case StateTemperature:
+    case StateHumidity:
+    case StateSoilMoisture:
+    case StatePH:
+    {
+        Temperature* t = (Temperature*) Data;
+        *outBuffer++ = t->Fract;
+        *outBuffer = t->Value;
+      return 2;
+    }
+
+    // для освещённости пишем два байта в сырые данные
+    case StateLuminosity:
+    {
+      long* lum = (long*) Data;
+      memcpy(outBuffer,lum,2);
+      return 2;
+    }
+
+    case StateWaterFlowInstant:
+    case StateWaterFlowIncremental:
+    {
+      unsigned long* flow = (unsigned long*) Data;
+      memcpy(outBuffer,flow,sizeof(unsigned long));
+      return sizeof(unsigned long);
+    }
+    
+    
+  }
+  return 0;
+}
+String OneState::GetStringType(ModuleStates type)
+{
+  switch(type)
+  {
+    case StateUnknown:
+      return PROP_NONE;
+
+    case StateTemperature:
+      return PROP_TEMP;
+
+    case StateHumidity:
+      return PROP_HUMIDITY;
+
+    case StateLuminosity:
+      return PROP_LIGHT;
+
+    case StateSoilMoisture:
+      return PROP_SOIL;
+
+    case StatePH:
+      return PROP_PH;
+
+    case StateWaterFlowIncremental:
+      return PROP_FLOW_INCREMENTAL;
+
+    case StateWaterFlowInstant:
+      return PROP_FLOW_INSTANT;
+  }
+
+  return PROP_NONE;
+}
+
+ModuleStates OneState::GetType(const char* stringType)
+{
+  if(!strcmp_P(stringType, (const char*) PROP_TEMP))
+    return StateTemperature;
+    
+  if(!strcmp_P(stringType, (const char*) PROP_HUMIDITY))
+    return StateHumidity;
+
+  if(!strcmp_P(stringType, (const char*) PROP_LIGHT))
+    return StateLuminosity;
+
+  if(!strcmp_P(stringType, (const char*) PROP_SOIL))
+    return StateSoilMoisture;
+
+  if(!strcmp_P(stringType, (const char*) PROP_PH))
+    return StatePH;
+
+  if(!strcmp_P(stringType, (const char*) PROP_FLOW_INCREMENTAL))
+    return StateWaterFlowIncremental;
+
+  if(!strcmp_P(stringType, (const char*) PROP_FLOW_INSTANT))
+    return StateWaterFlowInstant;
+
+  return StateUnknown;
 }
 OneState::~OneState()
 {
@@ -456,17 +570,7 @@ OneState::~OneState()
           delete t2;
         }
         break;
-#ifdef SAVE_RELAY_STATES  
-        case StateRelay:
-        {
-          uint8_t*  ui1 = (uint8_t*) Data;
-          uint8_t*  ui2 = (uint8_t*) PreviousData;
-  
-          delete ui1;
-          delete ui2;
-        }  
-        break;
-#endif
+
         case StateLuminosity:
         {
           long*  ui1 = (long*) Data;
@@ -486,6 +590,9 @@ OneState::~OneState()
           delete ui1;
           delete ui2;
         }  
+        break;
+
+        case StateUnknown:
         break;
       
       } // switch
@@ -539,20 +646,6 @@ OneState::operator WaterFlowPair()
   return WaterFlowPair(*((unsigned long*)PreviousData),*((unsigned long*)Data));   
 }
 
-#ifdef SAVE_RELAY_STATES
-OneState::operator RelayPair()
-{
-  if(Type != StateRelay)
-  {
-  #ifdef _DEBUG
-    Serial.println(F("[ERR] OneState:operator RelayPair() - !StateRelay"));
-  #endif
-  return RelayPair(0,0); // undefined behaviour
-  }
-
-  return RelayPair(*((uint8_t*)PreviousData),*((uint8_t*)Data)); 
-}
-#endif
 OneState operator-(const OneState& left, const OneState& right)
 {
   OneState result(left.Type,left.Index); // инициализируем
@@ -589,28 +682,7 @@ OneState operator-(const OneState& left, const OneState& right)
         
         }
         break;
-#ifdef SAVE_RELAY_STATES  
-        case StateRelay:
-        {
-          uint8_t*  ui1 = (uint8_t*) left.Data;
-          uint8_t*  ui2 = (uint8_t*) right.Data;
 
-          uint8_t* thisUi = (uint8_t*) result.Data;
-
-          // получаем дельту текущих изменений
-          *thisUi = abs((*ui1 - *ui2));
-
-          ui1 = (uint8_t*) left.PreviousData;
-          ui2 = (uint8_t*) right.PreviousData;
-
-          thisUi = (uint8_t*) result.PreviousData;
-
-          // получаем дельту предыдущих изменений
-          *thisUi = abs((*ui1 - *ui2));
-  
-        }  
-        break;
-#endif
         case StateLuminosity:
         {
           long*  ui1 = (long*) left.Data;
@@ -655,6 +727,9 @@ OneState operator-(const OneState& left, const OneState& right)
         }  
         break;
 
+        case StateUnknown:
+        break;
+
         
       } // switch
       
@@ -666,6 +741,12 @@ Temperature::Temperature()
   Value = NO_TEMPERATURE_DATA;
   Fract = 0;
 }
+Temperature::operator String() const
+{
+    sprintf_P(SD_BUFFER,(const char*) F("%d,%02u"), Value,Fract);
+    return SD_BUFFER;
+}
+
 Temperature operator-(const Temperature& left, const Temperature& right) 
 {
   

@@ -168,64 +168,13 @@ void IdlePageMenuItem::RequestSensorData(const WaitScreenInfo& info)
 
 
    //Тут получаем актуальные данные от датчиков
-   switch(info.sensorType)
-   {
-      case StateTemperature:
-      {
-        TemperaturePair tp = *os;
-        if(tp.Current.Value != NO_TEMPERATURE_DATA)
-        {
-          sensorData = tp.Current;
-          sensorData += F(" C");
-        }
-        else
-          sensorData = NO_DATA;
-      } 
-      break;
-
-      case StateHumidity:
-      case StateSoilMoisture:
-      {
-        HumidityPair hp = *os;
-        if(hp.Current.Value != NO_TEMPERATURE_DATA)
-        {
-          sensorData = hp.Current;
-          sensorData += F("%");
-        }
-         else
-          sensorData = NO_DATA;
-       
-      }
-      break;
-
-      case StatePH: // выводим значение pH
-      {
-        HumidityPair hp = *os;
-        if(hp.Current.Value != NO_TEMPERATURE_DATA)
-        {
-          sensorData = hp.Current;
-          sensorData += F(" pH");
-        }
-         else
-          sensorData = NO_DATA;
-       
-      }
-      break;      
-
-      case StateLuminosity:
-      {
-        LuminosityPair lp = *os;
-        if(lp.Current != NO_LUMINOSITY_DATA)
-        {
-          sensorData = String(lp.Current);
-          sensorData += F(" люкс");
-        }
-         else
-          sensorData = NO_DATA;
-     }
-      break;
-    
-   } // switch
+    if(os->HasData())
+    {
+      sensorData = *os;
+      sensorData += os->GetUnit();
+    }
+    else
+       sensorData = NO_DATA;
   
 }
 void IdlePageMenuItem::draw(DrawContext* dc)

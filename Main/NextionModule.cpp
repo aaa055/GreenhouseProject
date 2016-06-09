@@ -449,9 +449,11 @@ void NextionModule::displayNextSensorData(int8_t dir)
    {
       case StateTemperature:
       {
-        TemperaturePair tp = *os;
-        if(tp.Current.Value != NO_TEMPERATURE_DATA)
+        if(os->HasData())
+        {
+          TemperaturePair tp = *os;
           nextion.showTemperature(tp.Current);
+        }
         else
           rotationTimer = NEXTION_ROTATION_INTERVAL;
       } 
@@ -460,9 +462,11 @@ void NextionModule::displayNextSensorData(int8_t dir)
       case StateHumidity:
       case StateSoilMoisture:
       {
-        HumidityPair hp = *os;
-        if(hp.Current.Value != NO_TEMPERATURE_DATA)
+        if(os->HasData())
+        {
+          HumidityPair hp = *os;
           nextion.showHumidity(hp.Current);
+        }
          else
           rotationTimer = NEXTION_ROTATION_INTERVAL;
        
@@ -471,9 +475,11 @@ void NextionModule::displayNextSensorData(int8_t dir)
 
       case StateLuminosity:
       {
-        LuminosityPair lp = *os;
-        if(lp.Current != NO_LUMINOSITY_DATA)
+        if(os->HasData())
+        {
+          LuminosityPair lp = *os;
           nextion.showLuminosity(lp.Current);
+        }
          else
           rotationTimer = NEXTION_ROTATION_INTERVAL;
      }

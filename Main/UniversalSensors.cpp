@@ -748,9 +748,7 @@ void AbstractUniSensor::UpdateOneState(OneState* os, uint8_t* data, bool isSenso
       case StateWaterFlowInstant:
       case StateWaterFlowIncremental:
       case StatePH:
-      #ifdef SAVE_RELAY_STATES
-      case StateRelay:
-      #endif
+      case StateUnknown:
       
       break;
       

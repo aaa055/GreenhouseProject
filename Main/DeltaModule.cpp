@@ -333,7 +333,8 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
 
               DeltaSettings* ds = &(deltas[deltaIdx]);
               
-              String tp; // тип датчика
+              String tp = OneState::GetStringType((ModuleStates)ds->SensorType); // тип датчика
+              /*
               switch(ds->SensorType)
               {
                 case StateTemperature: tp = PROP_TEMP; break;
@@ -342,6 +343,7 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
                 case StateSoilMoisture: tp = PROP_SOIL; break;
                 case StatePH: tp = PROP_PH; break;
               }
+              */
               
               PublishSingleton << tp << PARAM_DELIMITER << (ds->Module1->GetID()) << PARAM_DELIMITER << ds->SensorIndex1
               << PARAM_DELIMITER << (ds->Module2->GetID()) << PARAM_DELIMITER << ds->SensorIndex2;
@@ -414,9 +416,10 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
             // парсим аргументы
             DeltaSettings ds; // сюда будем сохранять
             uint8_t readIdx = 1;
-            arg = command.GetArg(readIdx++); // читаем тип сенсора
-            ds.SensorType = 0;
+            //arg = command.GetArg(readIdx++); // читаем тип сенсора
+            ds.SensorType = OneState::GetType(command.GetArg(readIdx++));
 
+            /*
             // парсим тип датчика
             if(arg == PROP_TEMP)
               ds.SensorType = StateTemperature; // температурная дельта
@@ -432,6 +435,7 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
             else
             if(arg == PROP_PH)
               ds.SensorType = StatePH; // дельта pH
+            */
 
             String moduleName1 = command.GetArg(readIdx++); // читаем имя первого модуля
             ds.SensorIndex1 = (uint8_t) atoi(command.GetArg(readIdx++));

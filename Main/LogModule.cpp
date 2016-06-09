@@ -1,5 +1,6 @@
 #include "LogModule.h"
 #include "ModuleController.h"
+#include "TinyVector.h"
 
 #ifdef LOGGING_DEBUG_MODE
   #define LOG_DEBUG_WRITE(s) Serial.println((s))
@@ -475,12 +476,25 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
   #else
   LOG_PH_TYPE;
   #endif
+
+  // чтобы не дублировать код, который отличается только типом для датчика, который надо вывести в файл -
+  // делаем два вектора - в одном из них будет нужный тип датчика, в другом - указатель на строку,
+  // в котором содержится текстовое представление типа
+  Vector<ModuleStates> statesTypes;
+  Vector<String*> statesStrings;
+  // теперь добавляем в эти вектора нужные состояния, которые мы хотим писать в лог.
+  statesTypes.push_back(StateTemperature); statesStrings.push_back(&temperatureType);
+  statesTypes.push_back(StateHumidity); statesStrings.push_back(&humidityType);
+  statesTypes.push_back(StateLuminosity); statesStrings.push_back(&luminosityType);
+  statesTypes.push_back(StateWaterFlowIncremental); statesStrings.push_back(&waterflowType);
+  statesTypes.push_back(StateSoilMoisture); statesStrings.push_back(&soilMoistureType);
+  statesTypes.push_back(StatePH); statesStrings.push_back(&phType);
  
   // он сказал - поехали
   size_t cnt = mainController->GetModulesCount();
   // он махнул рукой
 
-  //TODO: Бесит такой код, нужен рефакторинг! Очень много дублирования, работа с типами датчиков куда только не разнесена!!!
+    String moduleName;
     for(size_t i=0;i<cnt;i++)
     {
       AbstractModule* m = mainController->GetModule(i);
@@ -488,244 +502,46 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
         continue;
 
         // смотрим, чего там есть у модуля
-        String moduleName = 
+        moduleName = 
         #ifdef LOG_CNANGE_NAME_TO_IDX
         String(i);
         #else
         m->GetID();
         #endif
 
-        // обходим температуру
-        uint8_t stateCnt = m->State.GetStateCount(StateTemperature);
-        if(stateCnt > 0)
+        // теперь последовательно проходим по вектору состояний, проверяя, есть ли такое
+        String sensorIdx, stateType;
+        for(size_t j=0;j<statesTypes.size();j++)
         {
-          // о, температуру нашли, да? Так и запишем.
-          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
-          {
-            OneState* os = m->State.GetStateByOrder(StateTemperature,stateIdx); // обходим все датчики последовательно, вне зависимости, какой у них индекс
-            if(os)
+            ModuleStates state = statesTypes[j]; // получили тип интересующего нас состояния            
+            uint8_t stateCnt = m->State.GetStateCount(state);
+            
+            if(stateCnt > 0)
             {
-              String sensorIdx = String(os->GetIndex());
-              TemperaturePair tp = *os;
-              String sensorData = tp.Current;
+              stateType = *(statesStrings[j]); // получили его строковое представление   
+                         
+              // есть такое состояние у модуля, записываем его, проходя по всем датчикам
+              for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
+              {
+                  OneState* os = m->State.GetStateByOrder(state,stateIdx);
+                  if(os)
+                  {
+                      sensorIdx = String(os->GetIndex());
+                      
+                      #ifndef WRITE_ABSENT_SENSORS_DATA
+                      if(os->HasData()) 
+                      #endif
+                      {
+                          // пишем строку с данными               
+                          WriteLogLine(hhmm,moduleName,stateType,sensorIdx,*os);
+                      } // if                      
+                  } // if (os)
+              } // for
               
-              if(
-                #ifdef WRITE_ABSENT_SENSORS_DATA
-                true
-                #else
-                tp.Current.Value != NO_TEMPERATURE_DATA // только если датчик есть на линии
-                #endif
-                ) 
-              {
-                  // пишем строку с данными
-                  WriteLogLine(hhmm,moduleName,temperatureType,sensorIdx,sensorData);
-              } // if
-
-            } // if(os)
-            #ifdef _DEBUG
-            else
-            {
-             Serial.println(F("[ERR] LOG - No GetState(StateTemperature)!"));
-            }
-            #endif
+            } // stateCnt > 0
             
-          } // for
-          
-        } // if(stateCnt > 0)
-
-         // температуру обошли, обходим влажность
-        stateCnt = m->State.GetStateCount(StateHumidity);
-        if(stateCnt > 0)
-        {
-          // нашли влажность
-          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
-          {
-            OneState* os = m->State.GetStateByOrder(StateHumidity,stateIdx);// обходим все датчики последовательно, вне зависимости, какой у них индекс
-            if(os)
-            {
-              String sensorIdx = String(os->GetIndex());
-              HumidityPair hp = *os;
-              String sensorData = hp.Current;
-              if(
-                #ifdef WRITE_ABSENT_SENSORS_DATA
-                true
-                #else
-                hp.Current.Value != NO_TEMPERATURE_DATA // только если датчик есть на линии
-                #endif
-                ) 
-              {
-                  // пишем строку с данными
-                  WriteLogLine(hhmm,moduleName,humidityType,sensorIdx,sensorData);
-              } // if
-
-            } // if(os)
-            #ifdef _DEBUG
-            else
-            {
-             Serial.println(F("[ERR] LOG - No GetState(StateHumidity)!"));
-            }
-            #endif
-            
-          } // for
-          
-        } // if(stateCnt > 0)
-
-        // влажность обошли, обходим освещенность
-        stateCnt = m->State.GetStateCount(StateLuminosity);
-        if(stateCnt > 0)
-        {
-          // нашли освещенность
-          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
-          {
-            OneState* os = m->State.GetStateByOrder(StateLuminosity,stateIdx);// обходим все датчики последовательно, вне зависимости, какой у них индекс
-            if(os)
-            {
-              String sensorIdx = String(os->GetIndex());
-              LuminosityPair lp = *os;
-              long dt = lp.Current;
-              
-              String sensorData = String(dt);
-              if(
-                #ifdef WRITE_ABSENT_SENSORS_DATA
-                true
-                #else
-                dt != NO_LUMINOSITY_DATA // только если датчик есть на линии
-                #endif
-                ) 
-              {
-                  // пишем строку с данными
-                  WriteLogLine(hhmm,moduleName,luminosityType,sensorIdx,sensorData);
-              } // if
-
-            } // if(os)
-            #ifdef _DEBUG
-            else
-            {
-             Serial.println(F("[ERR] LOG - No GetState(StateLuminosity)!"));
-            }
-            #endif
-          
-          } // for
-          
-        } // if(stateCnt > 0)
-
-
-        // освещенность обошли, обходим датчики постоянного расхода воды
-        stateCnt = m->State.GetStateCount(StateWaterFlowIncremental);
-        if(stateCnt > 0)
-        {
-          // нашли датчик постоянного расхода воды
-          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
-          {
-            OneState* os = m->State.GetStateByOrder(StateWaterFlowIncremental,stateIdx);// обходим все датчики последовательно, вне зависимости, какой у них индекс
-            if(os)
-            {
-              String sensorIdx = String(os->GetIndex());
-              WaterFlowPair lp = *os;
-              unsigned long dt = lp.Current;
-              
-              String sensorData = String(dt);
-              if(
-                #ifdef WRITE_ABSENT_SENSORS_DATA
-                true
-                #else
-                dt > 0 // только если у датчика уже есть сохранённый расход
-                #endif
-                ) 
-              {
-                  // пишем строку с данными
-                  WriteLogLine(hhmm,moduleName,waterflowType,sensorIdx,sensorData);
-              } // if
-
-            } // if(os)
-            #ifdef _DEBUG
-            else
-            {
-             Serial.println(F("[ERR] LOG - No GetState(StateWaterFlowIncremental)!"));
-            }
-            #endif
-          
-          } // for
-          
-        } // if(stateCnt > 0)
-
-        // датчика расхода воды обошли, обходим датчики влажности почвы
-        stateCnt = m->State.GetStateCount(StateSoilMoisture);
-        if(stateCnt > 0)
-        {
-          // нашли влажность почвы
-          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
-          {
-            OneState* os = m->State.GetStateByOrder(StateSoilMoisture,stateIdx);// обходим все датчики последовательно, вне зависимости, какой у них индекс
-            if(os)
-            {
-              String sensorIdx = String(os->GetIndex());
-              HumidityPair hp = *os;
-              String sensorData = hp.Current;
-              if(
-                #ifdef WRITE_ABSENT_SENSORS_DATA
-                true
-                #else
-                hp.Current.Value != NO_TEMPERATURE_DATA // только если датчик есть на линии
-                #endif
-                ) 
-              {
-                  // пишем строку с данными
-                  WriteLogLine(hhmm,moduleName,soilMoistureType,sensorIdx,sensorData);
-              } // if
-
-            } // if(os)
-            #ifdef _DEBUG
-            else
-            {
-             Serial.println(F("[ERR] LOG - No GetState(StateSoilMoisture)!"));
-            }
-            #endif
-            
-          } // for
-          
-        } // if(stateCnt > 0)  
-
-        // датчика влажности почвы обошли, обходим датчики pH
-        stateCnt = m->State.GetStateCount(StatePH);
-        if(stateCnt > 0)
-        {
-          // нашли pH
-          for(uint8_t stateIdx = 0; stateIdx < stateCnt;stateIdx++)
-          {
-            OneState* os = m->State.GetStateByOrder(StatePH,stateIdx);// обходим все датчики последовательно, вне зависимости, какой у них индекс
-            if(os)
-            {
-              String sensorIdx = String(os->GetIndex());
-              HumidityPair hp = *os;
-              String sensorData = hp.Current;
-              if(
-                #ifdef WRITE_ABSENT_SENSORS_DATA
-                true
-                #else
-                hp.Current.Value != NO_TEMPERATURE_DATA // только если датчик есть на линии
-                #endif
-                ) 
-              {
-                  // пишем строку с данными
-                  WriteLogLine(hhmm,moduleName,phType,sensorIdx,sensorData);
-              } // if
-
-            } // if(os)
-            #ifdef _DEBUG
-            else
-            {
-             Serial.println(F("[ERR] LOG - No GetState(StatePH)!"));
-            }
-            #endif
-            
-          } // for
-          
-        } // if(stateCnt > 0)              
-
-        //TODO: Тут запись показаний с других типов датчиков в лог-файл!
-
-        
+        } // for
+                
     } // for
 
   

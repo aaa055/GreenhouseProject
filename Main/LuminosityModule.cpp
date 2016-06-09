@@ -91,37 +91,11 @@ void LuminosityModule::Setup()
   blinker.begin(DIODE_LIGHT_MANUAL_MODE_PIN,F("LX")); // настраиваем блинкер на нужный пин
 #endif
 
-  #ifdef SAVE_RELAY_STATES
-   uint8_t relayCnt = LAMP_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
-   if(LAMP_RELAYS_COUNT > 8 && LAMP_RELAYS_COUNT % 8)
-    relayCnt++;
-
-  if(LAMP_RELAYS_COUNT < 9)
-    relayCnt = 1;
-    
-   for(uint8_t i=0;i<relayCnt;i++) // добавляем состояния реле (каждый канал - 8 реле)
-    State.AddState(StateRelay,i);
-  #endif  
-
-
  // выключаем все реле
   for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
   {
     pinMode(LAMP_RELAYS[i],OUTPUT);
     digitalWrite(LAMP_RELAYS[i],RELAY_OFF);
-
-    #ifdef SAVE_RELAY_STATES
-    uint8_t idx = i/8;
-    uint8_t bitNum1 = i % 8;
-    OneState* os = State.GetState(StateRelay,idx);
-    if(os)
-    {
-      RelayPair rp = *os;
-      uint8_t curRelayStates = rp.Current;
-      bitWrite(curRelayStates,bitNum1, bRelaysIsOn);
-      os->Update((void*)&curRelayStates);
-    }
-    #endif
   } // for
     
        
@@ -140,21 +114,7 @@ void LuminosityModule::Update(uint16_t dt)
     
     for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
     {
-      digitalWrite(LAMP_RELAYS[i],bRelaysIsOn ? RELAY_ON : RELAY_OFF); // пишем в пин нужное состояние
-  
-      #ifdef SAVE_RELAY_STATES
-      uint8_t idx = i/8;
-      uint8_t bitNum1 = i % 8;
-      OneState* os = State.GetState(StateRelay,idx);
-      if(os)
-      {
-        RelayPair rp = *os;
-        uint8_t curRelayStates = rp.Current;
-        bitWrite(curRelayStates,bitNum1, bRelaysIsOn);
-        os->Update((void*)&curRelayStates);
-      }
-      #endif
-      
+      digitalWrite(LAMP_RELAYS[i],bRelaysIsOn ? RELAY_ON : RELAY_OFF); // пишем в пин нужное состояние    
     } // for 
  } // if
 

@@ -13,6 +13,7 @@ typedef enum
   rtPinState, // следим за статусом пина
   rtSoilMoisture, // следим за влажностью почвы
   rtPH // следим за pH
+  
 } RuleTarget; // за чем следит правило
 
 typedef enum

@@ -115,19 +115,6 @@ void WateringModule::Setup()
   #endif
 
   lastAnyChannelActiveFlag = -1; // ещё не собирали активность каналов
-
-   #ifdef SAVE_RELAY_STATES
-   uint8_t relayCnt = WATER_RELAYS_COUNT/8; // устанавливаем кол-во каналов реле
-   if(WATER_RELAYS_COUNT > 8 && WATER_RELAYS_COUNT % 8)
-    relayCnt++;
-
-   if(WATER_RELAYS_COUNT < 9)
-    relayCnt = 1;
-    
-   for(uint8_t i=0;i<relayCnt;i++) // добавляем состояния реле (каждый канал - 8 реле)
-    State.AddState(StateRelay,i);
-   #endif  
-
     
   // выключаем все реле
   #if WATER_RELAYS_COUNT > 0
@@ -135,19 +122,6 @@ void WateringModule::Setup()
   {
     pinMode(WATER_RELAYS[i],OUTPUT);
     digitalWrite(WATER_RELAYS[i],RELAY_OFF);
-
-    #ifdef SAVE_RELAY_STATES
-    uint8_t idx = i/8;
-    uint8_t bitNum1 = i % 8;
-    OneState* os = State.GetState(StateRelay,idx);
-    if(os)
-    {
-      RelayPair rp = *os;
-      uint8_t curRelayStates = rp.Current;
-      bitWrite(curRelayStates,bitNum1, dummyAllChannels.IsChannelRelayOn());
-      os->Update((void*)&curRelayStates);
-    }
-    #endif
 
     // настраиваем все каналы
     wateringChannels[i].SetRelayOn(false);
@@ -363,21 +337,7 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
       if(channel->IsChanged() || internalNeedChange)
         for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
         {
-          digitalWrite(WATER_RELAYS[i],state);
-  
-           #ifdef SAVE_RELAY_STATES
-           uint8_t idx = i/8; // выясняем, какой индекс
-           uint8_t bitNum1 = i % 8;
-           OneState* os = State.GetState(StateRelay,idx);
-           if(os)
-           {
-            RelayPair rp = *os;
-            uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
-            bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn());
-            os->Update((void*)&curRelayStates);
-           }
-           #endif
-        
+          digitalWrite(WATER_RELAYS[i],state);      
         } // for
         
       return;
@@ -387,19 +347,7 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
     
     if(channel->IsChanged() || internalNeedChange)
       digitalWrite(WATER_RELAYS[channelIdx],state);
-
-     #ifdef SAVE_RELAY_STATES 
-     uint8_t idx = channelIdx/8; // выясняем, какой индекс
-     uint8_t bitNum1 = channelIdx % 8;
-     OneState* os = State.GetState(StateRelay,idx);
-     if(os)
-     {
-      RelayPair rp = *os;
-      uint8_t curRelayStates = rp.Current; // получаем текущую маску состояния реле
-      bitWrite(curRelayStates,bitNum1, channel->IsChannelRelayOn());
-      os->Update((void*)&curRelayStates);
-     }
-    #endif    
+  
 }
 
 bool WateringModule::IsAnyChannelActive(uint8_t wateringOption)

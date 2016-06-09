@@ -18,16 +18,6 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
  
  CHECK_PUBLISH_CONSISTENCY; // проверяем структуру публикации на предмет того, что там ничего нет
 
-/*
-  //TODO: тут налицо оверхед, т.к. мы вынуждены собирать строку полной команды,
-  // а это совершенно ни к чему.
-  String fullCommand = CMD_PREFIX;
-  fullCommand += cType == ctGET ? CMD_GET : CMD_SET;
-  fullCommand += COMMAND_DELIMITER;
-  fullCommand += command;
-  CommandParser* cParser = mainController->GetCommandParser();
-
-*/
   data = command; // копируем во внутренний буфер, т.к. входной параметр - const
    
   int delimIdx = data.indexOf('|');
@@ -45,9 +35,7 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
 
    data = F("");
   
- // if(cParser->ParseCommand(fullCommand,  cmd))
-  {
-
+ 
     cmd.SetInternal(isInternalCommand); // устанавливаем флаг команды
     if(wantAnwer)
     {
@@ -58,10 +46,7 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
 
     mainController->ProcessModuleCommand(cmd,NULL);
     return true;
-  }
-
-
- // return false;
+    
 }
 
 size_t InteropStream::write(uint8_t toWr)

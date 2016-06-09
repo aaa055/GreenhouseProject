@@ -61,10 +61,12 @@ struct Temperature // структура показаний с датчика т
     return (Value == rhs.Value && Fract == rhs.Fract);
   }
 
-  operator String() const // возвращаем значение температуры как строку
+  bool HasData() // есть ли данные с датчика
   {
-    return String(Value) + F(",") + (Fract < 10 ? F("0") : F("")) + String(Fract);
+    return Value != NO_TEMPERATURE_DATA;
   }
+
+  operator String() const; // возвращаем значение температуры как строку
 
   Temperature(const Temperature& rhs)
   {
@@ -95,16 +97,15 @@ typedef struct Temperature Humidity;
 
 typedef enum
 {
-StateTemperature = 1, // есть температурные датчики
-#ifdef SAVE_RELAY_STATES
-StateRelay = 2, // есть реле
-#endif
-StateLuminosity = 4, // есть датчики освещенности
-StateHumidity = 8, // есть датчики влажности
-StateWaterFlowInstant = 16, // есть датчик мгновенного расхода воды
-StateWaterFlowIncremental = 32, // есть датчик постоянного расхода воды
-StateSoilMoisture = 64, // есть датчик влажности почвы
-StatePH = 128 // есть датчики pH
+  StateUnknown = 0, // неизвестное состояние
+  StateTemperature = 1, // есть температурные датчики
+ // StateDummyState = 2, // запас :)
+  StateLuminosity = 4, // есть датчики освещенности
+  StateHumidity = 8, // есть датчики влажности
+  StateWaterFlowInstant = 16, // есть датчик мгновенного расхода воды
+  StateWaterFlowIncremental = 32, // есть датчик постоянного расхода воды
+  StateSoilMoisture = 64, // есть датчик влажности почвы
+  StatePH = 128 // есть датчики pH
 
 } ModuleStates; // вид состояния
 
@@ -130,19 +131,6 @@ struct HumidityPair
     HumidityPair();
     HumidityPair& operator=(const HumidityPair&);
 };
-#ifdef SAVE_RELAY_STATES
-struct RelayPair
-{
-  uint8_t Prev;
-  uint8_t Current;
-
-  RelayPair(uint8_t p, uint8_t c) : Prev(p), Current(c) {}
-
-  private:
-    RelayPair();
-    RelayPair& operator=(const RelayPair&);
-};
-#endif
 
 struct LuminosityPair
 {
@@ -178,12 +166,19 @@ class OneState
 
     public:
 
+    static ModuleStates GetType(const String& stringType);
+    static ModuleStates GetType(const char* stringType);
+    static String GetStringType(ModuleStates type);
+
+    String GetUnit(); // возвращает единицы измерения состояния в виде строки
 
     uint8_t GetIndex() {return Index;}
     ModuleStates GetType() {return Type;}
     
     void Update(void* newData); // обновляет состояние
     bool IsChanged(); // тестирует, есть ли изменения
+    bool HasData(); // проверяет, есть ли данные от датчика
+    uint8_t GetRawData(byte* outBuffer); // копирует сырые данные в выходной буфер, возвращает размер скопированных данных 
 
     OneState& operator=(const OneState& rhs); // копирует состояние из одной структуры в другую, если структуры одинаковых типов, индексы при этом остаются нетронутыми
 
@@ -195,9 +190,6 @@ class OneState
     operator LuminosityPair(); // получает состояние освещенности в виде пары предыдущее/текущее изменение
     operator WaterFlowPair(); // получает значения расхода воды в виде пары предыдущее/текущее изменение
     
-#ifdef SAVE_RELAY_STATES  
-    operator RelayPair(); // возвращает состояние реле
-#endif
     OneState(ModuleStates s, uint8_t idx)
     {
       Init(s,idx);

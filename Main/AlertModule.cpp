@@ -326,7 +326,7 @@ String AlertRule::GetAlertRule() // конструируем правило, к�
     result = GetName();
     result += PARAM_DELIMITER;
     result += (linkedModule ? linkedModule->GetID() : F("") ) + PARAM_DELIMITER;
-      
+
     switch(target)
     {
       case rtTemp:
@@ -358,6 +358,8 @@ String AlertRule::GetAlertRule() // конструируем правило, к�
       break;
       
     }
+    
+    
     result += String(PARAM_DELIMITER) + String(sensorIdx) + PARAM_DELIMITER;
 
     switch(operand)
