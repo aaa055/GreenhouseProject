@@ -22,7 +22,7 @@ void LogModule::Setup()
 
    lastUpdateCall = 0;
    #ifdef USE_DS3231_REALTIME_CLOCK
-   rtc = mainController->GetClock();
+   rtc = MainController->GetClock();
    #endif
 
    lastDOW = -1;
@@ -31,7 +31,7 @@ void LogModule::Setup()
    lastActionsDOW = -1;
 #endif   
 #ifdef USE_LOG_MODULE
-   hasSD = mainController->HasSDCard();
+   hasSD = MainController->HasSDCard();
 #else
    hasSD = false;  
 #endif
@@ -130,7 +130,7 @@ void LogModule::WriteAction(const LogAction& action)
 
   WRITE_TO_ACTION_LOG(hhmm); 
   WRITE_TO_ACTION_LOG(LogModule::_COMMA);
-  WRITE_TO_ACTION_LOG(action.RaisedModule->GetID());
+  WRITE_TO_ACTION_LOG(String(action.RaisedModule->GetID()));
   WRITE_TO_ACTION_LOG(LogModule::_COMMA);
   WRITE_TO_ACTION_LOG(csv(action.Message));
   WRITE_TO_ACTION_LOG(LogModule::_NEWLINE);
@@ -255,13 +255,13 @@ void LogModule::TryAddFileHeader()
     // сначала опрашиваем все модули в системе, записывая их имена в файл, и попутно сохраняя те типы датчиков, которые есть у модулей
     int statesFound = 0; // какие состояния нашли
 
-    size_t cnt = mainController->GetModulesCount();
+    size_t cnt = MainController->GetModulesCount();
     bool anyModuleNameWritten = false;
 
     
     for(size_t i=0;i<cnt;i++)
     {
-      AbstractModule* m = mainController->GetModule(i);
+      AbstractModule* m = MainController->GetModule(i);
       if(m == this) // пропускаем себя
         continue;
 
@@ -491,13 +491,13 @@ void LogModule::GatherLogInfo(const DS3231Time& tm)
   statesTypes.push_back(StatePH); statesStrings.push_back(&phType);
  
   // он сказал - поехали
-  size_t cnt = mainController->GetModulesCount();
+  size_t cnt = MainController->GetModulesCount();
   // он махнул рукой
 
     String moduleName;
     for(size_t i=0;i<cnt;i++)
     {
-      AbstractModule* m = mainController->GetModule(i);
+      AbstractModule* m = MainController->GetModule(i);
       if(m == this) // пропускаем себя
         continue;
 
@@ -785,7 +785,7 @@ if(hasSD)
 } // hasSD
   
   // отвечаем на команду
-  mainController->Publish(this,command);
+  MainController->Publish(this,command);
 
   return true;
 }

@@ -83,13 +83,41 @@ PublishStruct& PublishStruct::operator<<(long src)
 WorkStatus::WorkStatus()
 {
   memset(statuses,0,sizeof(uint8_t)*STATUSES_BYTES);
+  memset(lastStatuses,0,sizeof(uint8_t)*STATUSES_BYTES);
 }
-void WorkStatus::SetStatus(uint8_t bitNum, bool bOn)
+void WorkStatus::CopyStatusModes()
+{
+  CopyStatusMode(WINDOWS_MODE_BIT);
+  CopyStatusMode(WATER_MODE_BIT);
+  CopyStatusMode(LIGHT_MODE_BIT);
+}
+void WorkStatus::CopyStatusMode(uint8_t bitNum)
+{
+  uint8_t byte_num = bitNum/8;
+  uint8_t bit_num = bitNum%8;
+  bitWrite(lastStatuses[byte_num],bit_num,bitRead(statuses[byte_num],bit_num));  
+}
+bool WorkStatus::IsStatusModeChanged(uint8_t bitNum)
 {
   uint8_t byte_num = bitNum/8;
   uint8_t bit_num = bitNum%8;
 
+  return bitRead(statuses[byte_num],bit_num) != bitRead(lastStatuses[byte_num],bit_num);
+}
+void WorkStatus::SetStatus(uint8_t bitNum, bool bOn)
+{    
+  uint8_t byte_num = bitNum/8;
+  uint8_t bit_num = bitNum%8;
+
   bitWrite(statuses[byte_num],bit_num,(bOn ? 1 : 0));
+}
+void WorkStatus::SetModeUnchanged()
+{
+  memcpy(lastStatuses,statuses,sizeof(statuses));
+}
+bool WorkStatus::IsModeChanged()
+{
+  return IsStatusModeChanged(WINDOWS_MODE_BIT) || IsStatusModeChanged(WATER_MODE_BIT) || IsStatusModeChanged(LIGHT_MODE_BIT);
 }
 bool WorkStatus::GetStatus(uint8_t bitNum)
 {

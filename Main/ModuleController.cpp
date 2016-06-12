@@ -4,6 +4,7 @@
 #include "UniversalSensors.h"
 
 PublishStruct PublishSingleton;
+ModuleController* MainController = NULL;
 
 ModuleController::ModuleController() : cParser(NULL)
 #ifdef USE_LOG_MODULE
@@ -22,13 +23,14 @@ void ModuleController::begin()
 {
  // тут можно написать код, который выполнится непосредственно перед началом работы
  
- UniDispatcher.Setup(this); // настраиваем диспетчера универсальных датчиков
+ UniDispatcher.Setup(); // настраиваем диспетчера универсальных датчиков
  
 }
 void ModuleController::Setup()
 {  
+  MainController = this;
+
   settings.Load(); // загружаем настройки
-  ModuleInterop.SetController(this); // устанавливаем контроллер для класса взаимодействия между модулями
 
 #ifdef USE_DS3231_REALTIME_CLOCK
 _rtc.begin();
@@ -59,7 +61,6 @@ void ModuleController::RegisterModule(AbstractModule* mod)
 {
   if(mod)
   {
-    mod->SetController(this); // сохраняем указатель на нас
     mod->Setup(); // настраиваем
     modules.push_back(mod);
   }
@@ -105,25 +106,6 @@ void ModuleController::CallRemoteModuleCommand(AbstractModule* mod, const String
 #ifdef _DEBUG  
   Serial.println("BROADCAST THE COMMAND \"" + command + "\"");
 #endif
-  /* ВОТ ТУТ ПОСЫЛКА КОМАНДЫ ПО ПРОТОКОЛУ (НАПРИМЕР RS485) МОДУЛЮ И ПОЛУЧЕНИЕ ОТВЕТА ОТ НЕГО.
-   *  
-    ВОПРОС, КУДА БУДЕТ ВЫВОДИТЬСЯ ОТВЕТ. ЕСТЬ ЮЗКЕЙС, КОГДА НАДО НАСТРОИТЬ LOOP ДЛЯ ПОЛУЧЕНИЯ
-    СОСТОЯНИЯ ЧЕГО-ТО ТАМ, БЕЗ ВЫВОДА ИНФОРМАЦИИ В КАКОЙ-ЛИБО ПОТОК. ПРИ ЭТОМ К МОДУЛЮ МОГУТ
-    БЫТЬ ПРИВЯЗАНЫ ПОДПИСЧИКИ, КОТОРЫЕ ТАК И РВУТСЯ ВЫЛОЖИТЬ ЧТО-НИБУДЬ В ПОТОК, С КОТОРОГО 
-    ПРИШЛА КОМАНДА (И НЕ ТОЛЬКО В ЭТОТ ПОТОК, К СЛОВУ). ПРОБЛЕМА
-    ВОЗНИКАЕТ ВОТ ТУТ: ЕСЛИ МЫ ПИШЕМ ИЗ SERIAL, ТО И ОТВЕТ МЫ ХОТИМ ПОЛУЧИТЬ ТАМ ЖЕ. ИЛИ - 
-    НЕ ХОТИМ. ДРУГОЙ ПРИМЕР - ДОЧЕРНИЙ МОДУЛЬ ЗАПИСАЛ НАМ КОМАНДУ НА ДЕРГАНЬЕ СЕБЯ (ДЛЯ
-    СЧИТЫВАНИЯ ТЕМПЕРАТУРЫ, НАПРИМЕР) ЧЕРЕЗ WI-FI, СЛЕДОВАТЕЛЬНО, ВЫВОДИТЬ РЕЗУЛЬТАТЫ КОМАНДЫ
-    В SERIAL В ЭТОМ СЛУЧАЕ НЕ НАДО, ДАЖЕ ЕСЛИ ДЛЯ МОДУЛЯ ЕСТЬ ПОДПИСЧИК НА ПУБЛИКАЦИЮ В SERIAL.
-
-    КОРОЧЕ: ЕСТЬ СИТУАЦИЯ, КОГДА НАДО ТУПО ЗАПРЕТИТЬ ВЫВОД ОТВЕТА В ЛЮБОЙ ПОТОК, НАПРИМЕР, 
-    ЕСЛИ МЫ ПРОСТО ЦИКЛИЧЕСКИ ОПРАШИВАЕМ ДАТЧИК, ЧТОБЫ СОХРАНИТЬ ЕГО СТАТУС ГДЕ-БЫ ТО НИ БЫЛО.
-
-    ХОТЯ - ДАТЧИК И ТАК БУДЕТ ОПРАШИВАТЬСЯ ВНУТРИ UPDATE НУЖНОГО МОДУЛЯ, ЭТО ЗАВИСИТ ОТ РЕАЛИЗАЦИИ
-    МОДУЛЯ. ТОГДА В ЭТОМ СЛУЧАЕ ПРИ РАБОТЕ LOOP МОДУЛЬ ПРОСТО ВЫДАСТ НАМ ИНФОРМАЦИЮ С ДАТЧИКА.
-    НО ЭТО НЕ ОТМЕНЯЕТ ВОПРОСА О ТОМ, ВЫВОДИТЬ ИЛИ НЕТ РЕЗУЛЬТАТЫ ОТВЕТА В ПОТОК!!!
-  */
-  
   
 }
 
@@ -139,13 +121,13 @@ AbstractModule* ModuleController::GetModuleByID(const String& id)
   for(size_t i=0;i<sz;i++)
   { 
     AbstractModule* mod = modules[i];
-    if(mod->GetID() == id)
+    if(!strcmp(mod->GetID(),id.c_str()) )
       return mod;
   } // for
   return NULL;
 }
 
-void ModuleController::ProcessModuleCommand(const Command& c, AbstractModule* mod)//, bool checkDestination)
+void ModuleController::ProcessModuleCommand(const Command& c, AbstractModule* mod)
 {
 
 #ifdef _DEBUG
@@ -194,6 +176,5 @@ void ModuleController::UpdateModules(uint16_t dt, CallbackUpdateFunc func)
       func(mod);
   
   } // for
-  
 }
 

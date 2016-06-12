@@ -49,7 +49,7 @@ class LogModule : public AbstractModule // модуль логгирования
   void WriteLogLine(const String& hhmm, const String& moduleName, const String& sensorType, const String& sensorIdx, const String& sensorData);
   
   public:
-    LogModule() : AbstractModule(F("LOG")) {}
+    LogModule() : AbstractModule("LOG") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

@@ -9,7 +9,7 @@ class RemoteModule : public AbstractModule // модуль пересыла ко
 {
   private:
   public:
-    RemoteModule(const String& id) : AbstractModule(id) {}
+    RemoteModule(const char* id) : AbstractModule(id) {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

@@ -68,7 +68,7 @@ typedef struct
   public:
     UniRegDispatcher();
 
-    void Setup(ModuleController* controller); // настраивает диспетчер регистрации перед работой
+    void Setup(); // настраивает диспетчер регистрации перед работой
 
     // регистрирует датчик, возвращает состояние для датчика в системе и индекс, который датчик должен запомнить у себя
     bool RegisterSensor(UniSensorType type, UniSensorState& resultStates, uint8_t& assignedIndex);
@@ -93,8 +93,6 @@ typedef struct
     void ReadState(); // читает последнее запомненное состояние
     void RestoreState(); // восстанавливает последнее запомненное состояние
 
-
-    ModuleController* mainController; // главный контроллер
 
     // модули разного типа, для быстрого доступа к ним
     AbstractModule* temperatureModule; // модуль температуры

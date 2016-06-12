@@ -90,5 +90,6 @@ public:
 };
 
 extern PublishStruct PublishSingleton; // сюда публикуем все ответы от всех модудей
+extern ModuleController* MainController; // главный контроллер
 
 #endif

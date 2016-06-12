@@ -179,7 +179,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton.Status = true;
           PublishSingleton.AddModuleIDToAnswer = false;
           PublishSingleton = ID_COMMAND; 
-          PublishSingleton << PARAM_DELIMITER << mainController->GetSettings()->GetControllerID();
+          PublishSingleton << PARAM_DELIMITER << MainController->GetSettings()->GetControllerID();
         }
         else
         if(t == WIRED_COMMAND) // получить количество жёстко указанных в прошивке обычных датчиков
@@ -219,7 +219,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton.Status = true;
           PublishSingleton.AddModuleIDToAnswer = false;
           PublishSingleton = SMS_NUMBER_COMMAND; 
-          PublishSingleton << PARAM_DELIMITER << mainController->GetSettings()->GetSmsPhoneNumber();
+          PublishSingleton << PARAM_DELIMITER << MainController->GetSettings()->GetSmsPhoneNumber();
         }
   
         else if(t == STATUS_COMMAND) // получить статус всего железного добра
@@ -236,7 +236,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
 
             // тут можем писать остальные статусы, типа показаний датчиков и т.п.
 
-            size_t modulesCount = mainController->GetModulesCount(); // получаем кол-во зарегистрированных модулей
+            size_t modulesCount = MainController->GetModulesCount(); // получаем кол-во зарегистрированных модулей
 
           //  const char* noDataByte = "FF"; // байт - нет данных с датчика
 
@@ -248,7 +248,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
             {
               yield(); // немного даём поработать другим модулям
 
-              AbstractModule* mod = mainController->GetModule(i);
+              AbstractModule* mod = MainController->GetModule(i);
               if(mod == this) // себя пропускаем
                 continue;
 
@@ -319,10 +319,10 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton.AddModuleIDToAnswer = false;
           PublishSingleton.Status = true;
           PublishSingleton = F("");
-          size_t cnt = mainController->GetModulesCount();
+          size_t cnt = MainController->GetModulesCount();
           for(size_t i=0;i<cnt;i++)
           {
-            AbstractModule* mod = mainController->GetModule(i);
+            AbstractModule* mod = MainController->GetModule(i);
 
             if(mod != this)
             {
@@ -425,7 +425,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
        #endif
        if(t == SMS_NUMBER_COMMAND) // номер телефона для управления по SMS
        {
-          GlobalSettings* sett = mainController->GetSettings();
+          GlobalSettings* sett = MainController->GetSettings();
           sett->SetSmsPhoneNumber(command.GetArg(1));
           sett->Save();
           PublishSingleton.Status = true;
@@ -436,7 +436,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
        else if(t == ID_COMMAND)
        {
           //String newID = command.GetArg(1);
-          mainController->GetSettings()->SetControllerID((uint8_t)atoi(command.GetArg(1)));
+          MainController->GetSettings()->SetControllerID((uint8_t)atoi(command.GetArg(1)));
           PublishSingleton.Status = true;
           PublishSingleton = ID_COMMAND; 
           PublishSingleton << PARAM_DELIMITER << REG_SUCC;
@@ -570,7 +570,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
                dow -= 7;             
 
             
-             DS3231Clock cl = mainController->GetClock();
+             DS3231Clock cl = MainController->GetClock();
              cl.setTime(sec.toInt(),minute.toInt(),hour.toInt(),dow,dayint,monthint,yearint);
 
              PublishSingleton.Status = true;
@@ -589,7 +589,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
  
  // отвечаем на команду
  if(canPublish) // можем публиковать
-  mainController->Publish(this,command);
+  MainController->Publish(this,command);
  else
   PublishSingleton = F(""); // просто очищаем общий буфер
     

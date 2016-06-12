@@ -184,7 +184,7 @@
   
             <div class='button_menu_spacer'>
               Имя правила:<br/>
-              <input type='text' id='rule_name_input' maxlength='10' value='' style='width:100%;text-transform:uppercase;'/>
+              <input type='text' id='rule_name_input' maxlength='5' value='' style='width:100%;text-transform:uppercase;'/>
             </div>
             
             <div class='button_menu_spacer'> 

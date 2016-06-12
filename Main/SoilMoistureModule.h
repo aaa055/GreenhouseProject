@@ -12,7 +12,7 @@ class SoilMoistureModule : public AbstractModule // модуль датчико�
     uint16_t lastUpdateCall;
   
   public:
-    SoilMoistureModule() : AbstractModule(F("SOIL")), lastUpdateCall(SOIL_MOISTURE_UPDATE_INTERVAL-387) {}
+    SoilMoistureModule() : AbstractModule("SOIL"), lastUpdateCall(SOIL_MOISTURE_UPDATE_INTERVAL-387) {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

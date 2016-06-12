@@ -22,7 +22,7 @@ class WaterflowModule : public AbstractModule // модуль учёта рас�
   void UpdateFlow(WaterflowStruct* wf,unsigned int delta, unsigned int pulses, uint8_t writeOffset);
   
   public:
-    WaterflowModule() : AbstractModule(F("FLOW")) {}
+    WaterflowModule() : AbstractModule("FLOW") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

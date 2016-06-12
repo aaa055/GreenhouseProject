@@ -14,7 +14,7 @@ class LCDModule : public AbstractModule // модуль поддержки эк�
   bool inited;
   
   public:
-    LCDModule() : AbstractModule(F("LCD")) {}
+    LCDModule() : AbstractModule("LCD") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

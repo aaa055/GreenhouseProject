@@ -22,7 +22,6 @@ class TCPClient : public Stream
 {
   private:
 
-    ModuleController* controller; // контроллер, который всем рулит и предоставляет нам различные интерфейсы
     uint16_t MAX_PACKET_LENGTH; // максимальная длина пакета
     
     bool isConnected; // флаг, что клиент подсоединён
@@ -53,7 +52,7 @@ class TCPClient : public Stream
   public:
 
     // настраиваем клиента, передаём ему его ID, ссылку на контроллер и максимальную длину пакета, которую можно отослать за раз
-    void Setup(uint8_t clientID, ModuleController* c, uint16_t maxPacketLength) {tcpClientID = clientID; controller = c; MAX_PACKET_LENGTH = maxPacketLength;}
+    void Setup(uint8_t clientID, uint16_t maxPacketLength) {tcpClientID = clientID; MAX_PACKET_LENGTH = maxPacketLength;}
 
     // обновляем внутреннее состояние клиента в вызове Update модуля, в котором работает клиент. Как только клиент получит полный пакет данных - он
     // обработает команду, сложит весь ответ в промежуточный файл и будет готов к передаче (HasPacket будет возвращать true).

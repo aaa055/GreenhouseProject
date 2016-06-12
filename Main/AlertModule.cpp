@@ -2,26 +2,189 @@
 #include "ModuleController.h"
 #include <EEPROM.h>
 
-AlertRule::AlertRule(AlertModule* am)
+AlertModule* RulesDispatcher = NULL;
+AlertModule::AlertModule() : AbstractModule("ALERT") 
 {
-  parent = am;
-  linkedModule = NULL;
-  startTime = 0;
-  workTime = 0;
-  dayMask = 0xFF; // все дни недели работаем
-  dataAlertLong = 0;
-/*
-  canWork = true;
-  bEnabled = true;
-  bFirstCall = true;
-*/
-  bitWrite(flags,RULE_ENABLED_BIT,1);  
-  bitWrite(flags,RULE_CAN_WORK_BIT,1);  
-  bitWrite(flags,RULE_FIRST_CALL_BIT,1);  
+      RulesDispatcher = this;
+      InitRules();
 }
+
+AlertRule::~AlertRule()
+{
+  delete rawCommand;
+}
+AlertRule::AlertRule()
+{
+  rawCommand = NULL;
+  linkedModule = NULL;
+  
+  Settings.StartTime = 0;
+  Settings.WorkTime = 0;
+  Settings.DayMask = 0xFF; // все дни недели работаем
+  Settings.DataAlert = 0;
+
+  Settings.Enabled = 1;
+  Settings.CanWork = 1;
+  Settings.TargetModuleNameIndex = 0;
+  
+}
+uint8_t AlertRule::GetKnownModuleID(const char* moduleName)
+{
+  if(!strcmp_P(moduleName,(const char*) F("STATE")))
+      return moduleState;
+      
+  if(!strcmp_P(moduleName,(const char*) F("PIN")))
+    return modulePin;
+
+  if(!strcmp_P(moduleName,(const char*) F("LIGHT")))
+    return moduleLight;
+
+  if(!strcmp_P(moduleName,(const char*) F("CC")))
+    return moduleCompositeCommands;
+
+  if(!strcmp_P(moduleName,(const char*) F("HUMIDITY")))
+    return moduleHumidity;
+
+  if(!strcmp_P(moduleName,(const char*) F("DELTA")))
+    return moduleDelta;
+
+  if(!strcmp_P(moduleName,(const char*) F("SOIL")))
+    return moduleSoil;
+   
+  if(!strcmp_P(moduleName,(const char*) F("PH")))
+    return modulePH;
+
+  return 0;
+
+}
+const char* AlertRule::GetLinkedModuleName()
+{
+  return GetKnownModuleName(Settings.LinkedModuleNameIndex);
+}
+const char* AlertRule::GetKnownModuleName(uint8_t type)
+{
+  SD_BUFFER[0] = 0;
+  // возвращаем имя известного модуля по типу
+  switch(type)
+  {
+    case moduleState:
+      strcpy_P(SD_BUFFER, (const char*) F("STATE"));
+    break;
+
+    case modulePin:
+      strcpy_P(SD_BUFFER, (const char*) F("PIN"));
+    break;
+
+    case moduleLight:
+      strcpy_P(SD_BUFFER, (const char*) F("LIGHT"));
+    break;
+
+    case moduleCompositeCommands:
+      strcpy_P(SD_BUFFER, (const char*) F("CC"));
+    break;
+
+    case moduleHumidity:
+      strcpy_P(SD_BUFFER, (const char*) F("HUMIDITY"));
+    break;
+    
+    case moduleDelta:
+      strcpy_P(SD_BUFFER, (const char*) F("DELTA"));
+    break;
+    
+    case moduleSoil:
+      strcpy_P(SD_BUFFER, (const char*) F("SOIL"));
+    break;
+    
+    case modulePH:
+      strcpy_P(SD_BUFFER, (const char*) F("PH"));
+    break;
+    
+  }
+
+  return SD_BUFFER;
+    
+}
+const char* AlertRule::GetTargetCommandModuleName()
+{
+  return GetKnownModuleName(Settings.TargetModuleNameIndex);
+}
+bool AlertRule::HasTargetCommand()
+{
+  if(Settings.TargetCommandType == commandUnparsed)
+    return (rawCommand != NULL);
+
+  return true;
+}
+const char* AlertRule::GetTargetCommand()
+{
+  // возвращаем команду на выполнение, БЕЗ имени связанного модуля
+  SD_BUFFER[0] = 0;
+  switch(Settings.TargetCommandType)
+  {
+    case commandUnparsed:
+      return rawCommand;
+
+    case commandOpenAllWindows:
+    {
+      strcpy_P(SD_BUFFER,(const char*) F("WINDOW|ALL|OPEN"));
+      return SD_BUFFER;
+    }
+
+    case commandCloseAllWindows:
+    {
+      strcpy_P(SD_BUFFER,(const char*) F("WINDOW|ALL|CLOSE"));
+      return SD_BUFFER;
+    }
+
+    case commandLightOn:
+    {
+      strcpy_P(SD_BUFFER,(const char*) STATE_ON);
+      return SD_BUFFER;
+    }
+    
+    case commandLightOff:
+    {
+      strcpy_P(SD_BUFFER,(const char*) STATE_OFF);
+      return SD_BUFFER;
+    }
+
+    case commandExecCompositeCommand:
+    {
+      strcpy_P(SD_BUFFER,(const char*) F("EXEC"));
+      strcat_P(SD_BUFFER,(const char*)PARAM_DELIMITER);
+      String helper = String(Settings.TargetCommandParam);
+      strcat(SD_BUFFER,helper.c_str());
+      
+      return SD_BUFFER;
+    }
+
+    case commandSetOnePinHigh:
+    {
+      String helper = String(Settings.TargetCommandParam);
+      strcpy(SD_BUFFER,helper.c_str());
+      strcat_P(SD_BUFFER,(const char*)PARAM_DELIMITER);
+      strcat_P(SD_BUFFER,(const char*) STATE_ON);
+      
+      return SD_BUFFER;
+    } 
+
+    case commandSetOnePinLow:
+    {
+      String helper = String(Settings.TargetCommandParam);
+      strcpy(SD_BUFFER,helper.c_str());
+      strcat_P(SD_BUFFER,(const char*)PARAM_DELIMITER);
+      strcat_P(SD_BUFFER,(const char*) F("OFF"));
+      
+      return SD_BUFFER;
+    }     
+  } // switch
+
+  return rawCommand;
+}
+
 const char* AlertRule::GetName()
 {
-  return parent->GetParam(ruleNameIdx);
+  return RulesDispatcher->GetParam(Settings.RuleNameIndex);
 }
 void AlertRule::Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK 
@@ -36,12 +199,12 @@ void AlertRule::Update(uint16_t dt
   
   // считаем, что мы можем работать, если попадаем в текущий день недели
   #ifdef USE_DS3231_REALTIME_CLOCK 
-    bitWrite(flags,RULE_CAN_WORK_BIT,bitRead(dayMask,currentDOW-1));
+    Settings.CanWork = bitRead(Settings.DayMask,currentDOW-1);
   #else
-    bitWrite(flags,RULE_CAN_WORK_BIT,1); // без часов реального времени считаем, что работаем всегда
+    Settings.CanWork = 1;
   #endif  
 
-  if(startTime == 0  && workTime == 0) // работаем всегда
+  if(Settings.StartTime == 0  && Settings.WorkTime == 0) // работаем всегда
   {
      return;
   }
@@ -50,8 +213,8 @@ void AlertRule::Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK
 
   // создаём диапазон для проверки
-  uint16_t startDia = startTime;
-  uint16_t stopDia = startDia + workTime;
+  uint16_t startDia = Settings.StartTime;
+  uint16_t stopDia = startDia + Settings.WorkTime;
 
   // если мы находимся между этим диапазоном, то мы можем работать в это время,
   // иначе - не можем, и просто выставляем флаг работы в false.
@@ -71,7 +234,7 @@ void AlertRule::Update(uint16_t dt
     // правая граница диапазона перешагнула на следующие сутки,
     // отражаем диапазон текущего часа на следующие сутки
     // только в том случае, если текущее кол-во минут от начала суток меньше, чем время начала работы
-    if(checkMinutes < startTime)
+    if(checkMinutes < Settings.StartTime)
     {
       checkMinutes += mins_in_day;
       haveOverflow = true;
@@ -85,10 +248,10 @@ void AlertRule::Update(uint16_t dt
       // в диапазон попали, надо проверить попадание в дни недели.
       // считаем, что мы попали в день недели, если он выставлен
       // в флагах или у нас был перенос работы на следующие сутки.
-      canWeWork = haveOverflow || bitRead(dayMask,currentDOW-1);
+      canWeWork = haveOverflow || bitRead(Settings.DayMask,currentDOW-1);
     }
-    
-    bitWrite(flags,RULE_CAN_WORK_BIT,(canWeWork ? 1 : 0));  
+
+    Settings.CanWork = canWeWork ? 1 : 0;
 
 
   #endif  
@@ -96,28 +259,21 @@ void AlertRule::Update(uint16_t dt
 }
 bool AlertRule::HasAlert()
 {
-  if(!linkedModule || !bitRead(flags,RULE_ENABLED_BIT) || !bitRead(flags,RULE_CAN_WORK_BIT))
+  if(!linkedModule || !Settings.Enabled || !Settings.CanWork)//!bitRead(flags,RULE_ENABLED_BIT) || !bitRead(flags,RULE_CAN_WORK_BIT))
     return false;
 
 
-  switch(target)
+  switch(Settings.Target)
   {
     case rtTemp: // проверяем температуру
     {
      if(!linkedModule->State.HasState(StateTemperature))  // не поддерживаем температуру
         return false;
 
-     OneState* os = linkedModule->State.GetState(StateTemperature,sensorIdx);
+     OneState* os = linkedModule->State.GetState(StateTemperature,Settings.SensorIndex);
        
      if(!os) // не срослось
       return false;
-
-     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
-        return false;
-      
-       //bFirstCall = false;
-       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
-            
 
        TemperaturePair tp = *os; 
        int8_t curTemp = tp.Current.Value;
@@ -125,22 +281,22 @@ bool AlertRule::HasAlert()
        if(curTemp == NO_TEMPERATURE_DATA) // нет датчика на линии
         return false;
 
-       int8_t tAlert = dataAlert; // следим за переданной температурой
-       switch(dataSource)
+       int8_t tAlert = (int8_t) Settings.DataAlert; // следим за переданной температурой
+       switch(Settings.DataSource)
        {
           case tsOpenTemperature: // попросили подставить температуру открытия из настроек
-            tAlert = linkedModule->GetController()->GetSettings()->GetOpenTemp();
+            tAlert = MainController->GetSettings()->GetOpenTemp();
           break;
 
           case tsCloseTemperature: // попросили подставить температуру закрытия из настроек
-            tAlert = linkedModule->GetController()->GetSettings()->GetCloseTemp();
+            tAlert = MainController->GetSettings()->GetCloseTemp();
           break;
 
           case tsPassed:
           break;
        }
 
-       switch(operand)
+       switch(Settings.Operand)
        {
           case roLessThan: return curTemp < tAlert;
           case roLessOrEqual: return curTemp <= tAlert;
@@ -153,7 +309,7 @@ bool AlertRule::HasAlert()
 
     case rtLuminosity: // следим за освещенностью
     {
-      if(dataAlertLong == -2) 
+      if(Settings.DataAlert == -2) 
       {
         // специальное значение, означающее "работать без датчика освещённости"
         return true; // в этом случае считаем, что работать мы можем при любом раскладе
@@ -162,16 +318,10 @@ bool AlertRule::HasAlert()
      if(!linkedModule->State.HasState(StateLuminosity))  // не поддерживаем освещенность
         return false;
 
-       OneState* os = linkedModule->State.GetState(StateLuminosity,sensorIdx);
+       OneState* os = linkedModule->State.GetState(StateLuminosity,Settings.SensorIndex);
        
        if(!os) // не срослось
         return false;
-
-     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
-        return false;
-
-       //bFirstCall = false;
-       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
 
        LuminosityPair lp = *os; 
        long lum = lp.Current;
@@ -179,12 +329,12 @@ bool AlertRule::HasAlert()
        if(lum == NO_LUMINOSITY_DATA) // нет датчика на линии
         return false;
 
-       switch(operand)
+       switch(Settings.Operand)
        {
-          case roLessThan: return lum < dataAlertLong;
-          case roLessOrEqual: return lum <= dataAlertLong;
-          case roGreaterThan: return lum > dataAlertLong;
-          case roGreaterOrEqual: return lum >= dataAlertLong;
+          case roLessThan: return lum < Settings.DataAlert;
+          case roLessOrEqual: return lum <= Settings.DataAlert;
+          case roGreaterThan: return lum > Settings.DataAlert;
+          case roGreaterOrEqual: return lum >= Settings.DataAlert;
           default: return false;
        } // switch
       
@@ -196,15 +346,9 @@ bool AlertRule::HasAlert()
      if(!linkedModule->State.HasState(StateHumidity))  // не поддерживаем влажность
         return false;
 
-       OneState* os = linkedModule->State.GetState(StateHumidity,sensorIdx);
+       OneState* os = linkedModule->State.GetState(StateHumidity,Settings.SensorIndex);
        if(!os) // не срослось
         return false;
-
-     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
-        return false;
-
-       //bFirstCall = false;
-       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
 
        HumidityPair hp = *os;
        int8_t curHumidity = hp.Current.Value;
@@ -212,13 +356,12 @@ bool AlertRule::HasAlert()
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
         return false;
 
-
-       switch(operand)
+       switch(Settings.Operand)
        {
-          case roLessThan: return curHumidity < dataAlert;
-          case roLessOrEqual: return curHumidity <= dataAlert;
-          case roGreaterThan: return curHumidity > dataAlert;
-          case roGreaterOrEqual: return curHumidity >= dataAlert;
+          case roLessThan: return curHumidity < Settings.DataAlert;
+          case roLessOrEqual: return curHumidity <= Settings.DataAlert;
+          case roGreaterThan: return curHumidity > Settings.DataAlert;
+          case roGreaterOrEqual: return curHumidity >= Settings.DataAlert;
           default: return false;
        } // switch
       
@@ -230,29 +373,22 @@ bool AlertRule::HasAlert()
      if(!linkedModule->State.HasState(StateSoilMoisture))  // не поддерживаем влажность
         return false;
 
-       OneState* os = linkedModule->State.GetState(StateSoilMoisture,sensorIdx);
+       OneState* os = linkedModule->State.GetState(StateSoilMoisture,Settings.SensorIndex);
        if(!os) // не срослось
         return false;
-
-     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
-        return false;
-
-       //bFirstCall = false;
-       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
-
+       
        HumidityPair hp = *os;
        int8_t curHumidity = hp.Current.Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
         return false;
 
-
-       switch(operand)
+       switch(Settings.Operand)
        {
-          case roLessThan: return curHumidity < dataAlert;
-          case roLessOrEqual: return curHumidity <= dataAlert;
-          case roGreaterThan: return curHumidity > dataAlert;
-          case roGreaterOrEqual: return curHumidity >= dataAlert;
+          case roLessThan: return curHumidity < Settings.DataAlert;
+          case roLessOrEqual: return curHumidity <= Settings.DataAlert;
+          case roGreaterThan: return curHumidity > Settings.DataAlert;
+          case roGreaterOrEqual: return curHumidity >= Settings.DataAlert;
           default: return false;
        } // switch
       
@@ -264,15 +400,9 @@ bool AlertRule::HasAlert()
      if(!linkedModule->State.HasState(StatePH))  // не поддерживаем pH
         return false;
 
-       OneState* os = linkedModule->State.GetState(StatePH,sensorIdx);
+       OneState* os = linkedModule->State.GetState(StatePH,Settings.SensorIndex);
        if(!os) // не срослось
         return false;
-
-     if(!os->IsChanged() && !bitRead(flags,RULE_FIRST_CALL_BIT))//!bFirstCall) // ничего не изменилось
-        return false;
-
-       //bFirstCall = false;
-       bitWrite(flags,RULE_FIRST_CALL_BIT,0);
 
        HumidityPair hp = *os;
        int8_t curHumidity = hp.Current.Value;
@@ -280,13 +410,12 @@ bool AlertRule::HasAlert()
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
         return false;
 
-
-       switch(operand)
+       switch(Settings.Operand)
        {
-          case roLessThan: return curHumidity < dataAlert;
-          case roLessOrEqual: return curHumidity <= dataAlert;
-          case roGreaterThan: return curHumidity > dataAlert;
-          case roGreaterOrEqual: return curHumidity >= dataAlert;
+          case roLessThan: return curHumidity < Settings.DataAlert;
+          case roLessOrEqual: return curHumidity <= Settings.DataAlert;
+          case roGreaterThan: return curHumidity > Settings.DataAlert;
+          case roGreaterOrEqual: return curHumidity >= Settings.DataAlert;
           default: return false;
        } // switch
       
@@ -295,18 +424,18 @@ bool AlertRule::HasAlert()
 
     case rtPinState: // следим за статусом пина
     {
-       pinMode(sensorIdx,INPUT);
-       int pinState = digitalRead(sensorIdx); // читаем из пина его значение
-       // dataAlert у нас может принимать одно значение: 1, поскольку мы сравниваем
+       pinMode(Settings.SensorIndex,INPUT);
+       int pinState = digitalRead(Settings.SensorIndex); // читаем из пина его значение
+       // dataAlertLong у нас может принимать одно значение: 1, поскольку мы сравниваем
        // это значение с HIGH и LOW на пине. Поэтому не имеют смысла операнды > и <=,
        // вместо них мы принудительно используем операнды >= и <.
      
-       switch(operand)
+       switch(Settings.Operand)
        {
-          case roLessThan: return pinState < dataAlert; 
-          case roLessOrEqual: return pinState < dataAlert;
-          case roGreaterThan: return pinState >= dataAlert;
-          case roGreaterOrEqual: return pinState >= dataAlert;
+          case roLessThan: return pinState < Settings.DataAlert; 
+          case roLessOrEqual: return pinState < Settings.DataAlert;
+          case roGreaterThan: return pinState >= Settings.DataAlert;
+          case roGreaterOrEqual: return pinState >= Settings.DataAlert;
           default: return false;
          
        } // switch
@@ -320,311 +449,191 @@ bool AlertRule::HasAlert()
 
   return false;
 }
-String AlertRule::GetAlertRule() // конструируем правило, когда запрашивают его просмотр
+const char* AlertRule::GetAlertRule() // конструируем правило, когда запрашивают его просмотр
 {
-    String result; 
-    result = GetName();
-    result += PARAM_DELIMITER;
-    result += (linkedModule ? linkedModule->GetID() : F("") ) + PARAM_DELIMITER;
+    SD_BUFFER[0] = 0;
+    strcpy(SD_BUFFER,GetName());
+    strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
 
-    switch(target)
+    if(linkedModule)
+      strcat(SD_BUFFER,linkedModule->GetID());
+      
+     strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
+
+    switch(Settings.Target)
     {
       case rtTemp:
-      result += PROP_TEMP;
+         strcat_P(SD_BUFFER,(const char*) PROP_TEMP);
       break;
       
       case rtLuminosity:
-      result += PROP_LIGHT;
+        strcat_P(SD_BUFFER,(const char*) PROP_LIGHT);
       break;
 
       case rtHumidity:
-      result += PROP_HUMIDITY;
+        strcat_P(SD_BUFFER,(const char*) PROP_HUMIDITY);
       break;
 
       case rtPinState:
-      result += PROP_PIN;
+        strcat_P(SD_BUFFER,(const char*) PROP_PIN);
       break;
 
       case rtSoilMoisture:
-      result += PROP_SOIL;
+        strcat_P(SD_BUFFER,(const char*) PROP_SOIL);
       break;
 
       case rtPH:
-      result += PROP_PH;
+        strcat_P(SD_BUFFER,(const char*) PROP_PH);
       break;
 
       case rtUnknown:
-      result += PROP_NONE; // нет у нас установки, за чем следить
+        strcat_P(SD_BUFFER,(const char*) PROP_NONE);
       break;
       
     }
     
+    strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
+    String helper = String(Settings.SensorIndex);
+    strcat(SD_BUFFER,helper.c_str());
+    strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
     
-    result += String(PARAM_DELIMITER) + String(sensorIdx) + PARAM_DELIMITER;
-
-    switch(operand)
+    switch(Settings.Operand)
     {
       case roLessThan:
-        result += LESS_THAN;
+        strcat_P(SD_BUFFER,(const char*) LESS_THAN);
       break;
       case roGreaterThan:
-        result += GREATER_THAN;
+        strcat_P(SD_BUFFER,(const char*) GREATER_THAN);
       break;
       case roLessOrEqual:
-        result += LESS_OR_EQUAL_THAN;
+        strcat_P(SD_BUFFER,(const char*) LESS_OR_EQUAL_THAN);
       break;
       case roGreaterOrEqual:
-        result += GREATER_OR_EQUAL_THAN;
+        strcat_P(SD_BUFFER,(const char*) GREATER_OR_EQUAL_THAN);
       break;
     }
     
-    result += PARAM_DELIMITER;
+    strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
 
-    switch(dataSource)
+    switch(Settings.DataSource)
     {
       case tsOpenTemperature:
-        result += T_OPEN_MACRO;
+        strcat_P(SD_BUFFER,(const char*) T_OPEN_MACRO);
       break;
       case tsCloseTemperature:
-        result += T_CLOSE_MACRO;
+        strcat_P(SD_BUFFER,(const char*) T_CLOSE_MACRO);
       break;
       case tsPassed:
-        result += dataAlertLong;
+        helper = Settings.DataAlert;
+        strcat(SD_BUFFER,helper.c_str());
       break;
     }
-    result += PARAM_DELIMITER;
-    
-  result += String((uint16_t)startTime) + PARAM_DELIMITER;
-  result += String((uint16_t)workTime) + PARAM_DELIMITER;
-  result += String((uint8_t)dayMask) + PARAM_DELIMITER;
+    strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
+
+    helper = Settings.StartTime;
+    strcat(SD_BUFFER,helper.c_str());
+    strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
+
+    helper = Settings.WorkTime;
+    strcat(SD_BUFFER,helper.c_str());
+    strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
+
+    helper = Settings.DayMask;
+    strcat(SD_BUFFER,helper.c_str());
+    strcat_P(SD_BUFFER,(const char*) PARAM_DELIMITER);
 
   size_t sz = linkedRulesIndices.size();
     
   if(!sz)
-    result += F("_");
+    strcat_P(SD_BUFFER,(const char*) F("_"));
+
   else
   {
     for(size_t i=0;i<sz;i++)
     {
       if(i > 0)
-        result += F(",");
+        strcat_P(SD_BUFFER,(const char*) F(","));
         
-      result += parent->GetParam(linkedRulesIndices[i]);
+      strcat(SD_BUFFER,RulesDispatcher->GetParam(linkedRulesIndices[i]));
       
     } // for
   } // else
   
-  return result;
+  return SD_BUFFER;
 }
 uint8_t AlertRule::Save(uint16_t writeAddr) // сохраняем себя в EEPROM, возвращаем кол-во записанных байт
 {
   uint16_t curWriteAddr = writeAddr;
-  uint8_t written = 0;
 
-  EEPROM.write(curWriteAddr++,target); written++;// записали, за чем следим
-  EEPROM.write(curWriteAddr++,dataAlert); written++;// записали установку, за которой следим
-  EEPROM.write(curWriteAddr++,sensorIdx); written++;// записали индекс датчика, за которым следим
-  EEPROM.write(curWriteAddr++,operand); written++;// записали оператор сравнения
-  EEPROM.write(curWriteAddr++,/*bEnabled*/ bitRead(flags,RULE_ENABLED_BIT)); written++;// записали флаг - активно правило или нет?
-  EEPROM.write(curWriteAddr++,dataSource); written++;// записали источник, с которого надо брать установку
-  EEPROM.write(curWriteAddr++,dayMask); written++;// записали маску дней недели
+  // сохраняем настройки
+  EEPROM.put(curWriteAddr,Settings);
+  curWriteAddr += sizeof(Settings);
 
-  // записали, сколько времени работать
-  const byte* readAddr = (const byte*) &workTime;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  // затем пишем индексы связанных правил
+  uint8_t cnt = linkedRulesIndices.size();
+  EEPROM.write(curWriteAddr++,cnt);
 
-  // записали имя нашего правила
-  const char* nameptr = GetName();
-  uint8_t namelen = strlen(nameptr);
-  EEPROM.write(curWriteAddr++,namelen); written++;// записали длину имени нашего правила
-  for(uint8_t i=0;i<namelen;i++)
+  for(uint8_t i=0;i<cnt;i++)
   {
-    EEPROM.write(curWriteAddr++,*nameptr++); written++; // записываем имя посимвольно
-  }
- 
-  // записали имя связанного модуля, за показаниями которого мы следим
-  String lmName = linkedModule->GetID();
-  namelen = lmName.length();
-  nameptr = lmName.c_str();
-  EEPROM.write(curWriteAddr++,namelen); written++;// записали длину имени связанного модуля
-  for(uint8_t i=0;i<namelen;i++)
+    EEPROM.write(curWriteAddr++,linkedRulesIndices[i]);
+  } // for
+
+  // затем смотрим: если у нас команда commandUnparsed и есть сама команда - то пишем её
+  if(Settings.TargetCommandType == commandUnparsed)
   {
-    EEPROM.write(curWriteAddr++,*nameptr++); written++; // записываем имя посимвольно
-  }
-
-  // записали длину команды, которую надо отправить другому модулю при срабатывании правила
-  namelen = targetCommand.length();
-  nameptr = targetCommand.c_str();
-  EEPROM.write(curWriteAddr++,namelen); written++;
-
-  // записали саму команду
-  for(uint8_t i=0;i<namelen;i++)
-  {
-    EEPROM.write(curWriteAddr++,*nameptr++); written++; // записываем посимвольно
-  }
-
-  // записываем кол-во связанных правил
-   size_t sz = linkedRulesIndices.size();
-   EEPROM.write(curWriteAddr++,sz); written++;
-
-
-   // записываем имена связанных правил, одно за другим
-   for(size_t i=0;i<sz;i++)
-   {
-      // записываем длину имени
-      const char* lrnm = parent->GetParam(linkedRulesIndices[i]);
-
-      namelen = strlen(lrnm);
-      nameptr = lrnm;
-      EEPROM.write(curWriteAddr++,namelen); written++;
-
-      // записываем имя посимвольно
-      for(uint8_t j=0;j<namelen;j++)
+      if(rawCommand)
       {
-        EEPROM.write(curWriteAddr++,*nameptr++); written++; // записываем посимвольно
+        uint8_t len = strlen(rawCommand);
+        EEPROM.write(curWriteAddr++,len);
+        for(uint8_t i=0;i<len;i++)
+        {
+          EEPROM.write(curWriteAddr++,rawCommand[i]);
+        }
       }
-      
-     
-   } // for
- 
-  readAddr = (const byte*) &dataAlertLong;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  } // if
+  
 
-  // записываем время начала работы
-  readAddr = (const byte*) &startTime;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
-  EEPROM.write(curWriteAddr++,*readAddr++); written++;
+  return (curWriteAddr - writeAddr) + 4;
   
-  // записали всё, оставим заглушку в несколько байт, вдруг что ещё будет в правиле?
-  
-  return (written + 4); // оставляем 4 байта на будущее
 }
-uint8_t AlertRule::Load(uint16_t readAddr, ModuleController* controller)
+uint8_t AlertRule::Load(uint16_t readAddr)
 {
-  uint8_t readed = 0;
+  // загружаем правило из EEPROM
   uint16_t curReadAddr = readAddr;
-
   linkedRulesIndices.Clear();
+  delete[] rawCommand; rawCommand = NULL;
 
+  // сначала читаем настройки
+  EEPROM.get(curReadAddr,Settings);
+  curReadAddr += sizeof(Settings);
 
-  target = (RuleTarget) EEPROM.read(curReadAddr++); readed++;// прочитали, за чем следим
-  dataAlert = EEPROM.read(curReadAddr++); readed++;// прочитали установку, за которой следим
-  sensorIdx = EEPROM.read(curReadAddr++); readed++;// прочитали индекс датчика, за которым следим
-  operand = (RuleOperand) EEPROM.read(curReadAddr++); readed++;// прочитали оператор сравнения
-  bool bEnabled = EEPROM.read(curReadAddr++); readed++;// прочитали флаг - активно правило или нет?
-  bitWrite(flags,RULE_ENABLED_BIT, (bEnabled ? 1 : 0));
-  dataSource = (RuleDataSource) EEPROM.read(curReadAddr++); readed++;// прочитали источник, с которого надо брать установку
-  dayMask = EEPROM.read(curReadAddr++); readed++;// прочитали маску дней недели
+  // потом читаем индексы связанных правил
+  uint8_t cnt = EEPROM.read(curReadAddr++);
+  for(uint8_t i=0;i<cnt;i++)
+    linkedRulesIndices.push_back(EEPROM.read(curReadAddr++));
 
-
-  // прочитали, сколько времени работать
-   byte* writeAddr = (byte*) &workTime;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-
-  // прочитали имя нашего правила
-  uint8_t namelen = EEPROM.read(curReadAddr++); readed++;// прочитали длину имени нашего правила
-  //ruleName = F("");
-  char* ruleName = new char[namelen+1];
-  char* wrPtr = ruleName;
-  
-  for(uint8_t i=0;i<namelen;i++)
+  // затем смотрим: если у нас команда commandUnparsed и есть сама команда - то читаем её
+  if(Settings.TargetCommandType == commandUnparsed)
   {
-    *wrPtr++ = (char) EEPROM.read(curReadAddr++); readed++; // читаем имя посимвольно
-  }
-  *wrPtr = '\0';
-  bool added;
-  ruleNameIdx = parent->AddParam(ruleName,added);
-  if(!added) // такое правило уже было у родителя
-    delete[] ruleName;
-  
- 
-  // читаем имя связанного модуля, за показаниями которого мы следим
-  String strReaded;
-  namelen =  EEPROM.read(curReadAddr++); readed++;// читаем длину имени связанного модуля
-  
-  for(uint8_t i=0;i<namelen;i++)
-  {
-    strReaded += (char) EEPROM.read(curReadAddr++); readed++; // читаем имя посимвольно
-  }
- 
+      uint8_t len = EEPROM.read(curReadAddr++);
+      rawCommand = new char[len+1];
+      for(uint8_t i=0;i<len;i++)
+        rawCommand[i] = EEPROM.read(curReadAddr++);
+
+      rawCommand[len] = 0;
+  } // if
+
   // ищем связанный модуль
-  linkedModule = controller->GetModuleByID(strReaded);
+  linkedModule = MainController->GetModuleByID(GetLinkedModuleName());
 
- 
-  // читаем длину команды, которую надо отправить другому модулю при срабатывании правила
-  targetCommand = F("");
-  namelen = EEPROM.read(curReadAddr++); readed++;
- 
-  // читаем саму команду
-  for(uint8_t i=0;i<namelen;i++)
-  {
-    targetCommand += (char) EEPROM.read(curReadAddr++); readed++; // читаем посимвольно
-  }
-
-
-  // читаем кол-во связанных правил
-   uint8_t lrCnt = EEPROM.read(curReadAddr++); readed++;
-
-
-   // читаем имена связанных правил, одно за другим
-   for(uint8_t i=0;i<lrCnt;i++)
-   {
-      // читаем длину имени
-      namelen = EEPROM.read(curReadAddr++); readed++;
-
-     char* nm = new char[namelen+1];
-     char* nmPtr = nm;
-        
-
-      // читаем имя посимвольно
-      for(uint8_t j=0;j<namelen;j++)
-      {
-       *nmPtr++ = (char) EEPROM.read(curReadAddr++); readed++; // читаем посимвольно
-      }
-      *nmPtr = '\0';
-
-      bool added;
-      linkedRulesIndices.push_back(parent->AddParam(nm,added)); // привязываем имя связанного правила к его индексу
-      
-      if(!added) // такое имя уже существовало, освобождаем память
-        delete [] nm;
-     
-   } // for
-   
-   writeAddr = (byte*) &dataAlertLong;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-
-  writeAddr = (byte*) &dataAlertLong;
-  if(*writeAddr == 0xFF) // расширенной настройки не сохранено для правила
-    dataAlertLong = dataAlert; // применяем короткую настройку
-
-  // читаем время начала работы
-   writeAddr = (byte*) &startTime;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-  *writeAddr++ = EEPROM.read(curReadAddr++); readed++;
-
-  if(startTime == 0xFFFF) // ничего не было сохранено
-    startTime = 0; // сбрасываем на 0 часов
+  return (curReadAddr - readAddr) + 4;
   
-  return (readed+4); // оставляем в хвосте 4 свободных байта на будущее
 }
 const char* AlertRule::GetLinkedRuleName(uint8_t idx)
 {
 
  if(idx < linkedRulesIndices.size())
-  return parent->GetParam(linkedRulesIndices[idx]);
+  return RulesDispatcher->GetParam(linkedRulesIndices[idx]);
 
  return NULL;
   
@@ -637,6 +646,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
 {
   // конструируем команду
   linkedModule = lm;
+  Settings.LinkedModuleNameIndex = GetKnownModuleID(lm->GetID());
 
   // чистим имена связанных правил, об удалении памяти имён заботится родитель
   linkedRulesIndices.Clear();
@@ -644,6 +654,8 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   uint8_t argsCnt = command.GetArgsCount();
   if(argsCnt < 11) // мало аргументов
     return false;
+
+  delete[] rawCommand; rawCommand = NULL;
 
   uint8_t curArgIdx = 1;
   
@@ -653,7 +665,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   char* rName = new char[curArg.length()+1];
   strcpy(rName,curArg.c_str());
   bool added;
-  ruleNameIdx = parent->AddParam(rName,added);
+  Settings.RuleNameIndex = (uint8_t) RulesDispatcher->AddParam(rName,added);
   if(!added) // имя уже было у родителя
     delete[] rName;
  
@@ -662,64 +674,61 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   
   curArg = command.GetArg(curArgIdx++);
 
-  target = rtUnknown; // да ни за чем не следим
+  Settings.Target = rtUnknown; // да ни за чем не следим
   
   if(curArg == PROP_TEMP) // следим за температурой
-    target = rtTemp;
+    Settings.Target = rtTemp;
   else
   if(curArg == PROP_LIGHT) // следим за освещенностью
-    target = rtLuminosity;
+    Settings.Target = rtLuminosity;
   else
   if(curArg == PROP_HUMIDITY) // следим за влажностью
-    target = rtHumidity;
+    Settings.Target = rtHumidity;
   else
   if(curArg == PROP_PIN)
-    target = rtPinState; // следим за состоянием пина
+    Settings.Target = rtPinState; // следим за состоянием пина
   else
   if(curArg == PROP_SOIL)
-    target = rtSoilMoisture; // следим за влажностью почвы
+    Settings.Target = rtSoilMoisture; // следим за влажностью почвы
   else
   if(curArg == PROP_PH)
-    target = rtPH; // следим за pH
+    Settings.Target = rtPH; // следим за pH
 
-  sensorIdx = (uint8_t) atoi(command.GetArg(curArgIdx++));
+  Settings.SensorIndex = (uint8_t) atoi(command.GetArg(curArgIdx++));
   curArg = command.GetArg(curArgIdx++);
 
   
   if(curArg == GREATER_THAN)
-    operand = roGreaterThan;
+    Settings.Operand = roGreaterThan;
   else if(curArg == LESS_THAN)
-    operand = roLessThan;
+    Settings.Operand = roLessThan;
   else if(curArg == LESS_OR_EQUAL_THAN)
-    operand = roLessOrEqual;
+    Settings.Operand = roLessOrEqual;
   else if(curArg == GREATER_OR_EQUAL_THAN)
-    operand = roGreaterOrEqual;
+    Settings.Operand = roGreaterOrEqual;
 
 
   curArg = command.GetArg(curArgIdx++);
 
   // выясняем, за какой температурой следим
   if(curArg == T_OPEN_MACRO)
-    dataSource = tsOpenTemperature;
+    Settings.DataSource = tsOpenTemperature;
   else if(curArg == T_CLOSE_MACRO)
-    dataSource = tsCloseTemperature;
+    Settings.DataSource = tsCloseTemperature;
   else
-    dataSource = tsPassed;
+    Settings.DataSource = tsPassed;
     
   
-  dataAlertLong = curArg.toInt();
-  dataAlert = dataAlertLong;
+  Settings.DataAlert = curArg.toInt();
   
-  // дошли до температуры, после неё - настройки срабатывания
-
   // следом идёт час начала работы
-  startTime = (uint16_t) atoi(command.GetArg(curArgIdx++));
+  Settings.StartTime = (uint16_t) atoi(command.GetArg(curArgIdx++));
  
   // дальше идёт продолжительность работы
-  workTime = (unsigned long) atol(command.GetArg(curArgIdx++));
+  Settings.WorkTime = (unsigned long) atol(command.GetArg(curArgIdx++));
 
   // дальше идёт маска дней недели
-  dayMask = (uint8_t) atoi(command.GetArg(curArgIdx++));
+  Settings.DayMask = (uint8_t) atoi(command.GetArg(curArgIdx++));
   
   // далее идут правила, при срабатывании которых данное правило работать не будет
   curArg = command.GetArg(curArgIdx++);
@@ -739,7 +748,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
               char* lrnm = new char[curArg.length()+1];
               strcpy(lrnm,curArg.c_str());
               bool added;
-              linkedRulesIndices.push_back(parent->AddParam(lrnm,added));
+              linkedRulesIndices.push_back(RulesDispatcher->AddParam(lrnm,added));
               if(!added) // имя правила уже существовало
                 delete[] lrnm;
            }
@@ -753,7 +762,7 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
               char* lrnm = new char[param.length()+1];
               strcpy(lrnm,param.c_str());
               bool added;
-              linkedRulesIndices.push_back(parent->AddParam(lrnm,added));
+              linkedRulesIndices.push_back(RulesDispatcher->AddParam(lrnm,added));
               if(!added) // имя правила уже существовало
                 delete[] lrnm;
           }
@@ -765,22 +774,97 @@ bool AlertRule::Construct(AbstractModule* lm, const Command& command)
   } // if
 
   // сохраняем команду, которую надо передать какому-либо модулю
-  
-  targetCommand = F("");
-  
-  for(uint8_t i=curArgIdx;i<argsCnt;i++)
-  { 
-    if(targetCommand.length())
-      targetCommand += PARAM_DELIMITER;
+  Settings.TargetCommandType = commandUnparsed; // неразобранная команда
 
-      targetCommand += command.GetArg(i);
-  } // for
- 
+  // тут парсим команду
+   SD_BUFFER[0] = 0;
+   for(uint8_t i=curArgIdx;i<argsCnt;i++)
+   {
+      if(i > curArgIdx)
+        strcat_P(SD_BUFFER,(const char*)PARAM_DELIMITER);
+        
+      strcat(SD_BUFFER,command.GetArg(i));
+   } // for
+
+   // собрали всю команду в кучу
+   if(strlen(SD_BUFFER) > 0)
+   {
+    // есть команда на выполнение
+    const char* tcBegin = SD_BUFFER;
+    const char* tcModuleName = strchr(tcBegin,'=');
+    tcModuleName++;
+    const char* tcParams = strchr(tcBegin,'|');
+
+    SD_BUFFER[tcParams - tcBegin] = 0;
+
+    Settings.TargetModuleNameIndex = GetKnownModuleID(tcModuleName);
+
+    
+    tcParams++;
+    
+    // в tcParams лежат все параметры, в tcModuleName - имя модуля.
+    // начинаем искать известную нам команду.
+    
+        if(!strcmp_P(tcModuleName,(const char*)F("LIGHT"))) // чего-то делаем с досветкой
+        {
+          if(strstr_P(tcParams,(const char*)STATE_ON)) // включить
+            Settings.TargetCommandType = commandLightOn;
+          else
+            Settings.TargetCommandType = commandLightOff;
+          
+        } // LIGHT
+        else
+        if(!strcmp_P(tcModuleName,(const char*)F("STATE"))) // чего-то делаем с окнами
+        {
+            if(!strcmp_P(tcParams,(const char*)F("WINDOW|ALL|OPEN")))
+              Settings.TargetCommandType = commandOpenAllWindows;
+            else
+            if(!strcmp_P(tcParams,(const char*)F("WINDOW|ALL|CLOSE")))
+              Settings.TargetCommandType = commandCloseAllWindows;
+        } // STATE
+        else
+        if(!strcmp_P(tcModuleName,(const char*)F("CC"))) // чего-то делаем с составными командами
+        {
+            Settings.TargetCommandType = commandExecCompositeCommand;
+            Settings.TargetCommandParam = atoi(command.GetArg(argsCnt-1)); // последним параметром у команды идёт индекс списка
+        } // CC
+        else
+        if(!strcmp_P(tcModuleName,(const char*)F("PIN"))) // чего-то делаем с пинами
+        {
+            // получаем номера пинов
+            const char* pins = command.GetArg(argsCnt-2);
+            // проверяем, если там есть запятая - значит пинов несколько, не пойдёт.
+            // иначе - это наш случай.
+            
+            if(!strchr(pins,',')) // номер одного пина, можем сохранить его в параметр
+            {
+                  Settings.TargetCommandParam = atoi(pins);
+                  
+                  if(!strcmp_P(command.GetArg(argsCnt-1),(const char*) STATE_ON))
+                    Settings.TargetCommandType = commandSetOnePinHigh;
+                  else
+                    Settings.TargetCommandType = commandSetOnePinLow;
+                     
+            } // if
+            
+        } // CC
+    
+       if(Settings.TargetCommandType == commandUnparsed)
+       {
+        // так и не смогли разобрать команду, просто копируем все её параметры в сырую команду
+        uint8_t len = strlen(tcParams);
+        rawCommand = new char[len+1];
+        strcpy(rawCommand,tcParams);
+        rawCommand[len] = 0;
+        
+       } // if
+        
+   } // if(strlen(SD_BUFFER) > 0)
+
   return true;
 }
 void AlertModule::LoadRules() // читаем настройки из EEPROM
-{
-  
+{  
   for(uint8_t i=0;i<rulesCnt;i++)
   {
     AlertRule* r = alertRules[i];
@@ -795,28 +879,72 @@ void AlertModule::LoadRules() // читаем настройки из EEPROM
   h1 = EEPROM.read(readAddr++);
   h2 = EEPROM.read(readAddr++);
 
-  if(!(h1 == SETT_HEADER1 && h2 == SETT_HEADER2)) // ничего не записано
+  if(!(h1 == RULE_SETT_HEADER1 && h2 == RULE_SETT_HEADER2)) // ничего не записано
     return;
+
+  ClearParams(); // очищаем параметры
+  // потом читаем кол-во сохранённых имён правил
+  uint8_t namesCnt = EEPROM.read(readAddr++);
+
+  // потом читаем имена правил
+  for(uint8_t i=0;i<namesCnt;i++)
+  {
+      uint8_t len = EEPROM.read(readAddr++);
+      char* param = new char[len+1];
+      for(uint8_t j=0;j<len;j++)
+        param[j] = EEPROM.read(readAddr++);
+
+       param[len] = 0;
+       paramsArray.push_back(param);
+  } // for
   
   // потом читаем количество правил
  rulesCnt = EEPROM.read(readAddr++);
+
+  if(rulesCnt > MAX_ALERT_RULES)
+    rulesCnt = MAX_ALERT_RULES;
  
   // потом читаем правила
   for(uint8_t i=0;i<rulesCnt;i++)
   {
-    AlertRule* r = new AlertRule(this);
+    AlertRule* r = new AlertRule();
     alertRules[i] = r;
-    readAddr += r->Load(readAddr,mainController); // просим правило прочитать своё внутреннее состояние
+    readAddr += r->Load(readAddr); // просим правило прочитать своё внутреннее состояние
   } // for
   
+}
+void AlertModule::ClearParams()
+{
+    for(size_t i=0;i<paramsArray.size();i++)
+    {
+      char* param = paramsArray[i];
+      delete[] param;
+    }
+    paramsArray.Clear();
 }
 void AlertModule::SaveRules() // сохраняем настройки в EEPROM
 {
   uint16_t writeAddr = EEPROM_RULES_START_ADDR; // пишем с этого смещения
 
   // сначала пишем заголовок
-  EEPROM.write(writeAddr++,SETT_HEADER1);
-  EEPROM.write(writeAddr++,SETT_HEADER2);
+  EEPROM.write(writeAddr++,RULE_SETT_HEADER1);
+  EEPROM.write(writeAddr++,RULE_SETT_HEADER2);
+
+  // потом пишем кол-во сохранённых имён правил
+  EEPROM.write(writeAddr++,(uint8_t)paramsArray.size());
+
+  // потом пишем все сохранённые имена правил
+  for(size_t i=0;i<paramsArray.size();i++)
+  {
+    char* param = paramsArray[i];
+    uint8_t len = strlen(param);
+    EEPROM.write(writeAddr++,len);
+    while(*param)
+    {
+      EEPROM.write(writeAddr++,*param);
+      param++;
+    }
+  }
   
   // потом пишем количество правил
   EEPROM.write(writeAddr++,rulesCnt);
@@ -855,7 +983,7 @@ bool AlertModule::AddRule(AbstractModule* m, const Command& c)
   if(rulesCnt >=  MAX_ALERT_RULES)
     return false;
 
-   AlertRule* ar = new AlertRule(this);
+   AlertRule* ar = new AlertRule();
    if(!ar)
     return false;
 
@@ -872,24 +1000,11 @@ bool AlertModule::AddRule(AbstractModule* m, const Command& c)
 
 void AlertModule::Setup()
 {
-  // настройка модуля алертов тут
-#if MAX_STORED_ALERTS > 0
-  curAlertIdx = 0; // нет событий пока
-  cntAlerts = 0;
-
-  
-  for(uint8_t i = 0;i<MAX_STORED_ALERTS;i++)
-  {
-    strAlerts[i] = F(""); // резервируем события
-  } // for
-#endif
-
+  // настройка модуля алертов тут  
   // загружаем правила
   LoadRules();
 
   lastUpdateCall = 0;
-
-  cParser = mainController->GetCommandParser();
 }
 void AlertModule::InitRules()
 {
@@ -910,7 +1025,7 @@ void AlertModule::Update(uint16_t dt)
     return;
      
 #ifdef USE_DS3231_REALTIME_CLOCK
-  DS3231Clock rtc = mainController->GetClock();
+  DS3231Clock rtc = MainController->GetClock();
   DS3231Time tm = rtc.getTime();
 #endif
 
@@ -952,38 +1067,63 @@ void AlertModule::Update(uint16_t dt)
   
   // тут можем работать со сработавшими правилами спокойно
   size_t sz = workRules.size();
+
+
+
+  if(WORK_STATUS.IsModeChanged())
+  {
+    WORK_STATUS.SetModeUnchanged();
+    lastIterationRaisedRules.Clear();
+  }
   
   for(size_t i=0;i<sz;i++)
   {
     // для каждого правила в списке вызываем связанную команду
     AlertRule* r = workRules[i];
-    
-    String tc = r->GetTargetCommand();
 
-    if(tc.length()) // надо отправлять команду
+    if(IsRuleRaisedOnLastIteration(r)) // если правило срабатывало на предыдущей итерации - не надо ещё раз посылать эту команду.
+    {
+      continue;
+    }
+      
+    
+    if(r->HasTargetCommand()) // надо отправлять команду
     {
       Command cmd;
-      if(cParser->ParseCommand(tc, cmd))
-      {
+      
+         // копируем имя модуля в строку, потому что методы GetTargetCommandModuleName и GetTargetCommand пользуют общий буфер,
+         // и перезатрут данные друг друга.
+         String moduleId = r->GetTargetCommandModuleName();
+         cmd.Construct(moduleId.c_str(),r->GetTargetCommand(),ctSET);
          cmd.SetInternal(true); // говорим, что команда - от одного модуля к другому
 
         // НЕ БУДЕМ НИКУДА ПЛЕВАТЬСЯ ОТВЕТОМ ОТ МОДУЛЯ
-        //cmd.SetIncomingStream(pStream);
-        mainController->ProcessModuleCommand(cmd,NULL);
+        //cmd.SetIncomingStream(&Serial);
+        MainController->ProcessModuleCommand(cmd,NULL);
 
         // дёргаем функцию обновления других вещей - типа, кооперативная работа
         yield();
-      } // if  
 
       
     } // if(tc.length())
-   #if MAX_STORED_ALERTS > 0 
-   AddAlert(r->GetAlertRule());
-   #endif   
+ 
   } // for
+
+  lastIterationRaisedRules = workRules; // сохраняем список сработавших на этой итерации правил
 
   lastUpdateCall = lastUpdateCall - ALERT_UPDATE_INTERVAL;
   
+}
+bool AlertModule::IsRuleRaisedOnLastIteration(AlertRule* rule)
+{
+    for(size_t i=0;i<lastIterationRaisedRules.size();i++)
+    {
+      AlertRule* r = lastIterationRaisedRules[i];
+      if(r == rule)
+        return true;
+    }
+
+    return false;
 }
 bool AlertModule::CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule, RulesVector& raisedAlerts)
 {
@@ -1071,30 +1211,6 @@ void AlertModule::SolveConflicts(RulesVector& raisedAlerts,RulesVector& workRule
           
     } // for
 }
-#if MAX_STORED_ALERTS > 0
-String& AlertModule::GetAlert(uint8_t idx)
-{
-  if(idx >= MAX_STORED_ALERTS) 
-    idx = MAX_STORED_ALERTS-1;
-    
-  return strAlerts[idx];
-}
-
-void AlertModule::AddAlert(const String& strAlert)
-{
-  
-  if(curAlertIdx >= MAX_STORED_ALERTS) // заворачиваем в начало
-    curAlertIdx = 0;
-    
-    strAlerts[curAlertIdx] = strAlert;
-    curAlertIdx++;
-
-    cntAlerts++;
-    if(cntAlerts > MAX_STORED_ALERTS)
-      cntAlerts = MAX_STORED_ALERTS;
-}
-#endif
-
 bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
 {
   if(wantAnswer) 
@@ -1118,7 +1234,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
           if(t == ADD_RULE)
           {
             t =  command.GetArg(2); // имя модуля
-            AbstractModule* m = mainController->GetModuleByID(t);
+            AbstractModule* m = MainController->GetModuleByID(t);
             if(m && m != this && AddRule(m,command))
             {
               PublishSingleton.Status = true;
@@ -1203,6 +1319,9 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                      alertRules[i] = NULL;
                   } // for
 
+                  // чистим все параметры, поскольку у нас больше нет правил
+                  ClearParams();
+
                   rulesCnt = 0;
                   
                   PublishSingleton.Status = true;
@@ -1233,6 +1352,8 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                       } // for
 
                     rulesCnt--;
+
+                    //TODO: Удалять из параметров имя правила и у всех связанных правил удалять индекс этого имени!!!
  
                     PublishSingleton.Status = true;
                     PublishSingleton = RULE_DELETE; 
@@ -1256,15 +1377,6 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
     {
         String t = command.GetArg(0);
         
-        #if MAX_STORED_ALERTS > 0
-        if(t == CNT_COMMAND) // запросили данные о  кол-ве алертов
-        {
-          PublishSingleton.Status = true;
-          PublishSingleton = CNT_COMMAND; 
-          PublishSingleton << PARAM_DELIMITER << cntAlerts;
-        }
-        else
-        #endif
         if(t == RULE_CNT) // запросили данные о количестве правил
         {
           PublishSingleton.Status = true;
@@ -1273,26 +1385,6 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
         }
         else
         {
-              #if MAX_STORED_ALERTS > 0
-              if(t == VIEW_ALERT_COMMAND) // запросили данные об алерте
-              {
-                    
-                    if(argsCount < 2)
-                    {
-                        PublishSingleton.Status = false;
-                        PublishSingleton = PARAMS_MISSED;
-                    }
-                    else
-                    {
-                        uint8_t idx = (uint8_t) atoi(command.GetArg(1));
-                          
-                        PublishSingleton.Status = true;
-                        PublishSingleton = VIEW_ALERT_COMMAND; 
-                        PublishSingleton << PARAM_DELIMITER << (command.GetArg(1)) << PARAM_DELIMITER << (GetAlert(idx));
-                    }
-              }
-              else
-              #endif
                
               if(t == RULE_VIEW) // просмотр правила
               {
@@ -1308,14 +1400,18 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
                           AlertRule* rule = alertRules[idx];
                           if(rule) // нашли правило
                           {
-                            String ar = rule->GetAlertRule();
-                            String tc = rule->GetTargetCommand();
-                            if(tc.length())
-                              ar += PARAM_DELIMITER;
-                              
                             PublishSingleton.Status = true;
                             PublishSingleton = RULE_VIEW; 
-                            PublishSingleton << PARAM_DELIMITER <<  (command.GetArg(1)) << PARAM_DELIMITER << ar << tc;
+                            PublishSingleton << PARAM_DELIMITER << (command.GetArg(1)) << PARAM_DELIMITER
+                            << (rule->GetAlertRule());
+
+                            if(rule->HasTargetCommand())
+                            {
+                              PublishSingleton << PARAM_DELIMITER << F("CTSET=") << (rule->GetTargetCommandModuleName())
+                              << PARAM_DELIMITER;
+                              PublishSingleton << (rule->GetTargetCommand());
+                            }
+                            
                           }
                         } // if
                     } // else
@@ -1357,7 +1453,7 @@ bool  AlertModule::ExecCommand(const Command& command, bool wantAnswer)
   } // if ctGET
  
  // отвечаем на команду
-  mainController->Publish(this,command);
+  MainController->Publish(this,command);
   return true;
 }
 

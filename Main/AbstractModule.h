@@ -244,25 +244,21 @@ public:
 class AbstractModule
 {
   private:
-    String moduleID;    
+    const char* moduleID;    
     
 protected:
 
-  ModuleController* mainController;
-    
 public:
 
-  AbstractModule(const String& id) : moduleID(id),mainController(NULL)
+  AbstractModule(const char* id) : moduleID(id)
   { 
 
   }
 
   ModuleState State; // текущее состояние модуля
  
-  void SetController(ModuleController* c) {mainController = c;}
-  ModuleController* GetController() {return mainController;}
-  String GetID() {return moduleID;}
-  void SetID(const String& id) {moduleID = id;}
+  const char* GetID() {return moduleID;}
+  void SetID(const char* id) {moduleID = id;}
 
   // функции, перегружаемые наследниками
   virtual bool ExecCommand(const Command& command, bool wantAnswer) = 0; // вызывается при приходе текстовой команды для модуля (wantAnswer - ждут ли от нас текстового ответа) 
@@ -274,12 +270,19 @@ public:
 class WorkStatus
 {
   uint8_t statuses[STATUSES_BYTES];
+  uint8_t lastStatuses[STATUSES_BYTES];
+
+  void CopyStatusModes();
+  void CopyStatusMode(uint8_t bitNum);
+  bool IsStatusModeChanged(uint8_t bitNum);
 
   public:
   
     void SetStatus(uint8_t bitNum, bool bOn);
     void WriteStatus(Stream* pStream, bool bAsTextHex);
     bool GetStatus(uint8_t bitNum);
+    bool IsModeChanged();
+    void SetModeUnchanged();
     WorkStatus();
 
   static const char* ToHex(int i);

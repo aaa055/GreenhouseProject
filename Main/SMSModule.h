@@ -51,7 +51,7 @@ class SMSModule : public AbstractModule // модуль поддержки уп�
     void ProcessIncomingSMS(const String& line); // обрабатываем входящее СМС
         
   public:
-    SMSModule() : AbstractModule(F("SMS")) {}
+    SMSModule() : AbstractModule("SMS") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

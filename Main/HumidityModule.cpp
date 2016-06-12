@@ -187,7 +187,7 @@ bool  HumidityModule::ExecCommand(const Command& command,bool wantAnswer)
   } // ctGET
   
 
-  mainController->Publish(this,command);    
+  MainController->Publish(this,command);    
   return true;
 }
 

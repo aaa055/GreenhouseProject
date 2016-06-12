@@ -289,7 +289,7 @@ bool  CompositeCommandsModule::ExecCommand(const Command& command, bool wantAnsw
   } // ctSET 
   
   // отвечаем на команду
-  mainController->Publish(this,command);
+  MainController->Publish(this,command);
     
   return PublishSingleton.Status;
   

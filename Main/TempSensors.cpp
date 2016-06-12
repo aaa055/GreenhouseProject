@@ -379,7 +379,7 @@ void TempSensors::Update(uint16_t dt)
 }
 bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
 {
-  GlobalSettings* sett = mainController->GetSettings();
+  GlobalSettings* sett = MainController->GetSettings();
   if(wantAnswer) 
     PublishSingleton = PARAMS_MISSED;
       
@@ -494,7 +494,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
             else
             {
               // сменили позицию, пишем в лог действие
-              mainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
+              MainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
 
               SAVE_STATUS(WINDOWS_STATUS_BIT,bOpen ? 1 : 0); // сохраняем состояние окон
               SAVE_STATUS(WINDOWS_MODE_BIT,workMode == wmAutomatic ? 1 : 0); // сохраняем режим работы окон
@@ -508,7 +508,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
               if(Windows[channelIdx].ChangePosition( bOpen ? dirOPEN : dirCLOSE, bOpen ? interval : 0) ) // смогли сменить позицию окна
               {
                   // сменили позицию, пишем в лог действие
-                  mainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
+                  MainController->Log(this,commandRequested + String(PARAM_DELIMITER) + whichCommand);
                   if(wantAnswer) 
                     PublishSingleton = (bOpen ? STATE_OPENING : STATE_CLOSING);
 
@@ -807,7 +807,7 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
   } // if GET
   
  // отвечаем на команду
-    mainController->Publish(this,command);
+  MainController->Publish(this,command);
 
   return PublishSingleton.Status;
 }

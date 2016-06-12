@@ -149,7 +149,7 @@ bool  SoilMoistureModule::ExecCommand(const Command& command, bool wantAnswer)
       } // else
   }
   
-  mainController->Publish(this,command); 
+  MainController->Publish(this,command); 
   
   return true;
 }

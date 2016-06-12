@@ -12,14 +12,11 @@ class InteropStream : public Stream
 private:
   String data;
 
-  ModuleController* mainController;
 
 public:
 
    InteropStream();
   virtual ~InteropStream() {}
-    void SetController(ModuleController* c) {mainController = c;}
-    ModuleController* GetController() {return mainController;};
 
     bool QueryCommand(COMMAND_TYPE cType, const String& command, bool isInternalCommand,bool wantAnwer=true); // вызывает команду для зарегистрированного модуля
 

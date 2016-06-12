@@ -45,7 +45,7 @@ class NextionModule : public AbstractModule // модуль управления
     int8_t currentSensorIndex;
   
   public:
-    NextionModule() : AbstractModule(F("NXT")) {}
+    NextionModule() : AbstractModule("NXT") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

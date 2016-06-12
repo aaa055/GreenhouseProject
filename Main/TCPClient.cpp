@@ -69,7 +69,7 @@ bool TCPClient::Prepare(const char* command)
 
   CloseSDFile(); // закрываем файл
 
-  CommandParser* cParser = controller->GetCommandParser();
+  CommandParser* cParser = MainController->GetCommandParser();
 
  COMMAND_TYPE cType = ctUNKNOWN;
  
@@ -94,7 +94,7 @@ bool TCPClient::Prepare(const char* command)
      // команду разобрали, надо назначить поток вывода в неё
      cmd.SetIncomingStream(this);
      // и просим контроллер выполнить эту команду
-     controller->ProcessModuleCommand(cmd);
+     MainController->ProcessModuleCommand(cmd);
 
      // в файл всё записано на этом этапе
    }

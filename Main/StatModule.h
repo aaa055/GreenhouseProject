@@ -11,7 +11,7 @@ class StatModule : public AbstractModule
   private:
    unsigned long uptime;
   public:
-    StatModule() : AbstractModule(F("STAT")) {}
+    StatModule() : AbstractModule("STAT") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

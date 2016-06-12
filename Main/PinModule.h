@@ -28,7 +28,7 @@ class PinModule : public AbstractModule
     PIN_STATE* GetPin(uint8_t pinNumber);
    
   public:
-    PinModule() : AbstractModule(F("PIN")) {}
+    PinModule() : AbstractModule("PIN") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

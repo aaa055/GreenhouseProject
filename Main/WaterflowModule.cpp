@@ -267,7 +267,7 @@ bool  WaterflowModule::ExecCommand(const Command& command, bool wantAnswer)
   } // if
  
  // отвечаем на команду
-  mainController->Publish(this,command);
+  MainController->Publish(this,command);
     
   return PublishSingleton.Status;
 }

@@ -197,7 +197,7 @@ void NextionModule::SetSleep(bool bSleep)
 void NextionModule::Setup()
 {
   // настройка модуля тут
-  sett = mainController->GetSettings();
+  sett = MainController->GetSettings();
 
   rotationTimer = NEXTION_ROTATION_INTERVAL;
   currentSensorIndex = -1;
@@ -428,7 +428,7 @@ void NextionModule::displayNextSensorData(int8_t dir)
 
 
  // теперь получаем показания от модулей
-  AbstractModule* mod = mainController->GetModuleByID(wsi.moduleName);
+  AbstractModule* mod = MainController->GetModuleByID(wsi.moduleName);
 
   if(!mod) // не нашли такой модуль
   {

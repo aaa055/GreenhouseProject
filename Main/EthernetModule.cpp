@@ -62,7 +62,7 @@ void EthernetModule::Update(uint16_t dt)
       {
         // пытаемся распарсить команду
         Command cmd;
-        CommandParser* cParser = mainController->GetCommandParser();
+        CommandParser* cParser = MainController->GetCommandParser();
 
         if(cParser->ParseCommand(clientCommands[sockNumber], cmd))
         {
@@ -71,7 +71,7 @@ void EthernetModule::Update(uint16_t dt)
           cmd.SetIncomingStream(&client); // назначаем команде поток, куда выводить данные
 
           // запустили команду в обработку
-          mainController->ProcessModuleCommand(cmd);
+          MainController->ProcessModuleCommand(cmd);
         }
 
         // останавливаем клиента, т.к. все данные ему уже посланы.

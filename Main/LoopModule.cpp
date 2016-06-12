@@ -31,12 +31,12 @@ void LoopModule::Update(uint16_t dt)
           // конструируем команду
        
           Command com;
-          com.Construct(lnk->linkedModule->GetID().c_str(),lnk->paramsToPass.c_str(),lnk->typeOfCommand.c_str());
+          com.Construct(lnk->linkedModule->GetID(),lnk->paramsToPass.c_str(),lnk->typeOfCommand.c_str());
 
 
           com.SetInternal(true); // говорим, что команда - от одного модуля к другому
 
-          mainController->ProcessModuleCommand(com,lnk->linkedModule);
+          MainController->ProcessModuleCommand(com,lnk->linkedModule);
 
         if(lnk->countPasses > 0)
         {
@@ -63,7 +63,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
     if(wantAnswer) 
       PublishSingleton = PARAMS_MISSED;
       
-    mainController->Publish(this,command); // публикуем их от своего имени
+    MainController->Publish(this,command); // публикуем их от своего имени
     return NULL;
   }
 
@@ -79,7 +79,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
       if(wantAnswer) 
         PublishSingleton = UNKNOWN_MODULE;
         
-      mainController->Publish(this,command); // публикуем
+      MainController->Publish(this,command); // публикуем
       return false;
     }
     // добавляем новую связь
@@ -114,7 +114,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
       PublishSingleton = REG_SUCC;
       
      PublishSingleton.Status = true;
-     mainController->Publish(this,command); // публикуем их от своего имени
+     MainController->Publish(this,command); // публикуем их от своего имени
 
     return lnk;
 
@@ -122,7 +122,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
 
 AbstractModule* LoopModule::GetRegisteredModule(const String& moduleID)
 {
-    return mainController->GetModuleByID(moduleID);
+    return MainController->GetModuleByID(moduleID);
 }
 
 LoopLink* LoopModule::GetLink(const String& loopName)

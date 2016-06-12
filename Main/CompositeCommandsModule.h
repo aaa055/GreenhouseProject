@@ -44,7 +44,7 @@ class CompositeCommandsModule : public AbstractModule // модуль обраб
     void ProcessCommand(uint8_t idx); // выполняем составную команду
     
   public:
-    CompositeCommandsModule() : AbstractModule(F("CC")) {}
+    CompositeCommandsModule() : AbstractModule("CC") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

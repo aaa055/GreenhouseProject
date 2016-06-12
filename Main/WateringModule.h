@@ -72,7 +72,7 @@ class WateringModule : public AbstractModule // модуль управлени�
 
     
   public:
-    WateringModule() : AbstractModule(F("WATER")) {}
+    WateringModule() : AbstractModule("WATER") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

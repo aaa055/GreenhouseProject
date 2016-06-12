@@ -104,7 +104,7 @@ bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
     
 
   // отвечаем на команду
-    mainController->Publish(this,command);
+    MainController->Publish(this,command);
     return PublishSingleton.Status;
     
   } // if ctGET
@@ -191,7 +191,7 @@ bool  PinModule::ExecCommand(const Command& command, bool wantAnswer)
       
     } // if
 
-    mainController->Publish(this,command);
+    MainController->Publish(this,command);
     return PublishSingleton.Status;
 
   } // if ctSET

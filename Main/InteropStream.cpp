@@ -4,7 +4,7 @@
 InteropStream ModuleInterop;
 
 
-InteropStream::InteropStream() : Stream(), mainController(NULL)
+InteropStream::InteropStream() : Stream()
 {
   
 }
@@ -12,9 +12,6 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
 {
 //  data = F("");    
   
- 
-  if(!mainController)
-    return false; 
  
  CHECK_PUBLISH_CONSISTENCY; // проверяем структуру публикации на предмет того, что там ничего нет
 
@@ -44,7 +41,7 @@ bool InteropStream::QueryCommand(COMMAND_TYPE cType, const String& command, bool
     else
       cmd.SetIncomingStream(NULL);
 
-    mainController->ProcessModuleCommand(cmd,NULL);
+    MainController->ProcessModuleCommand(cmd,NULL);
     return true;
     
 }

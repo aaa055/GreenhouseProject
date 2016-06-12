@@ -679,13 +679,12 @@ function newRule(editedRule, editedRow)
     
     if(editedRule && editedRule.Name == rule.Name)
       continue;
-      
-     
+       
     
     var row = $('<div/>');
     var chb = $('<input/>',{type: 'checkbox', id: 'linked_rule_index', value: i});
     chb.appendTo(row);
-    
+        
     if(editedRule && editedRule.LinkedRules.includes(rule.Name))
       chb.get(0).checked = true;
     
@@ -842,6 +841,7 @@ function newRule(editedRule, editedRow)
        else
        {
         // редактируем правило
+        
         editedRule.Construct(fullRuleString.split('|'));
         editedRow.find('#rule_name').html(editedRule.Name);
         
@@ -1084,7 +1084,7 @@ function requestRulesList(doneFunc)
                 controller.queryCommand(true,cmd,function(obj,ruleSettings){
                 
                   if(ruleSettings.IsOK)
-                  {
+                  {                    
                     var rule = rulesList.Add();
                     rule.Construct(ruleSettings.Params);
                     

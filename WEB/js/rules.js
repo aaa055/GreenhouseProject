@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------------------------------
 // Классы для работы с правилами
 //-----------------------------------------------------------------------------------------------------
-MAX_RULES = 20; // максимальное кол-во правил
+MAX_RULES = 30; // максимальное кол-во правил
 RULE_TARGETS = {'_': 'нет слежения', 'TEMP': 'температурой', 'LIGHT' : 'освещенностью', 'HUMIDITY': 'влажностью', 'PIN': 'пином', 'SOIL': 'влажностью почвы', 'PH' : 'значением pH'};
 RULE_COMMANDS = {
   '.+STATE\\|WINDOW\\|.*\\|OPEN' : [0, 'открываем окна']
@@ -45,6 +45,7 @@ AlertRule.prototype.Construct = function(params)
   this.DayMask = parseInt(params[startIdx++]);
   this.LinkedRules = params[startIdx++].split(',');
   
+  
   this.TargetCommand = '';
   
   for(var i=startIdx;i<params.length;i++)
@@ -61,6 +62,7 @@ AlertRule.prototype.Construct = function(params)
 // возвращает строку с правилом
 AlertRule.prototype.getAlertRule = function()
 {
+
   var result = '' + this.Name + '|' + this.ModuleName + '|' + this.Target + '|' + this.SensorIndex +
   '|' + this.Operand + '|' + this.AlertCondition + '|' + this.StartTime + '|' + this.WorkTime + '|' +
   this.DayMask + '|' + this.LinkedRules.join(',') + '|' + this.TargetCommand;

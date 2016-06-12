@@ -78,7 +78,7 @@ void LuminosityModule::Setup()
 
   
   // настройка модуля тут
-  settings = mainController->GetSettings();
+  settings = MainController->GetSettings();
 
   workMode = lightAutomatic; // автоматический режим работы
   bRelaysIsOn = false; // все реле выключены
@@ -177,7 +177,7 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
             if(!bRelaysIsOn)
             {
               // значит - досветка была выключена и будет включена, надо записать в лог событие
-              mainController->Log(this,s); 
+              MainController->Log(this,s); 
             }
 
             bRelaysIsOn = true; // включаем реле досветки
@@ -217,7 +217,7 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
             if(bRelaysIsOn)
             {
               // значит - досветка была включена и будет выключена, надо записать в лог событие
-              mainController->Log(this,s); 
+              MainController->Log(this,s); 
             }
 
             bRelaysIsOn = false; // выключаем реле досветки
@@ -353,7 +353,7 @@ bool  LuminosityModule::ExecCommand(const Command& command, bool wantAnswer)
   } // if
  
  // отвечаем на команду
-    mainController->Publish(this,command);
+    MainController->Publish(this,command);
     
   return true;
 }

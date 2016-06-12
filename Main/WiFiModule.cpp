@@ -361,13 +361,13 @@ void WiFiModule::Setup()
 {
   // настройка модуля тут
   
-  Settings = mainController->GetSettings();
+  Settings = MainController->GetSettings();
   nextClientIDX = 0;
   currentClientIDX = 0;
   inSendData = false;
   
   for(uint8_t i=0;i<MAX_WIFI_CLIENTS;i++)
-    clients[i].Setup(i, mainController,WIFI_PACKET_LENGTH);
+    clients[i].Setup(i, WIFI_PACKET_LENGTH);
 
  // waitForQueryCompleted = false;
   WaitForDataWelcome = false; // не ждём приглашения
@@ -841,7 +841,7 @@ bool  WiFiModule::ExecCommand(const Command& command, bool wantAnswer)
       PublishSingleton = PARAMS_MISSED; // мало параметров
   } // GET
 
-  mainController->Publish(this,command);
+  MainController->Publish(this,command);
 
   return PublishSingleton.Status;
 }

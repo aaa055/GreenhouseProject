@@ -29,7 +29,7 @@ class LoopModule : public AbstractModule
   LoopLink* AddLink(const Command& command, bool wantAnswer);
   
   public:
-    LoopModule() : AbstractModule(F("LOOP")) {}
+    LoopModule() : AbstractModule("LOOP") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

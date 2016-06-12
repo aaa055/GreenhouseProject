@@ -29,7 +29,7 @@ class HumidityModule : public AbstractModule // модуль управлени�
 
     
   public:
-    HumidityModule() : AbstractModule(F("HUMIDITY"))
+    HumidityModule() : AbstractModule("HUMIDITY")
     , lastUpdateCall(256) // разнесём опросы датчиков по времени
     {}
 

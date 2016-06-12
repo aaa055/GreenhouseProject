@@ -15,7 +15,7 @@ bool SMSModule::IsKnownAnswer(const String& line, bool& okFound)
 
 void SMSModule::Setup()
 {
-  Settings = mainController->GetSettings();
+  Settings = MainController->GetSettings();
 
   // будем смотреть этот пин на предмет наличия питания у модуля NEOWAY
   pinMode(NEOWAY_VCCIO_CHECK_PIN,INPUT);
@@ -433,7 +433,7 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
   else
   {
   #ifdef NEOWAY_DEBUG_MODE
-    Serial.println(F("Message decoding ERROR!"));
+    Serial.println(F("Message decoding error or message is received from unknown number!"));
   #endif
   }
 
@@ -601,7 +601,7 @@ void SMSModule::ProcessQueue()
         #endif
         
         SendCommand(commandToSend);
-        commandToSend = F("");
+        commandToSend = "";
       
        
       }
@@ -615,7 +615,7 @@ void SMSModule::ProcessQueue()
       
         SendCommand(smsToSend,false);
         NEOWAY_SERIAL.write(0x1A); // посылаем символ окончания посыла
-        smsToSend = F("");
+        smsToSend = "";
         
         
       }
@@ -696,14 +696,14 @@ void SMSModule::ProcessQueuedWindowCommand(uint16_t dt)
         {
           strPtr += idx + 1;
           
-              if(strstr(strPtr,String(STATE_OPEN).c_str()) || strstr(strPtr,String(STATE_CLOSED).c_str()))
+              if((strstr_P(strPtr,(const char*)STATE_OPEN) && !strstr_P(strPtr,(const char*)STATE_OPENING)) || strstr_P(strPtr,(const char*)STATE_CLOSED))
               {
                 // окна не двигаются, можем отправлять команду
                  if(ModuleInterop.QueryCommand(ctSET,queuedWindowCommand,false))
                  {
            
                   // команда разобрана, можно выполнять
-                    queuedWindowCommand = F(""); // очищаем команду, нам она больше не нужна
+                    queuedWindowCommand = ""; // очищаем команду, нам она больше не нужна
 
                     // всё, команда выполнена, когда окна не находились в движении
                  } // if
@@ -730,7 +730,7 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     return;
   }
 
-  AbstractModule* stateModule = mainController->GetModuleByID(F("STATE"));
+  AbstractModule* stateModule = MainController->GetModuleByID(F("STATE"));
 
   if(!stateModule)
   {
@@ -787,7 +787,7 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     #endif
 
     const char* strPtr = PublishSingleton.Text.c_str();
-     if(strstr(strPtr,String(STATE_OPEN).c_str()))
+     if(strstr_P(strPtr,(const char*) STATE_OPEN))
         sms += W_OPEN;
       else
         sms += W_CLOSED;
@@ -809,8 +809,7 @@ void SMSModule::SendStatToCaller(const String& phoneNum)
     #endif
 
     const char* strPtr = PublishSingleton.Text.c_str();
-    String sOFF = STATE_OFF;
-    if(strstr(strPtr,sOFF.c_str()))
+    if(strstr_P(strPtr,(const char*) STATE_OFF))
       sms += WTR_OFF;
     else
       sms += WTR_ON;
@@ -900,7 +899,7 @@ bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
   } // if
  
  // отвечаем на команду
-    mainController->Publish(this,command);
+    MainController->Publish(this,command);
     
   return PublishSingleton.Status;
 }

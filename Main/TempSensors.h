@@ -109,7 +109,7 @@ class TempSensors : public AbstractModule // модуль опроса темп�
     DS18B20Temperature tempData;
     
   public:
-    TempSensors() : AbstractModule(F("STATE")){}
+    TempSensors() : AbstractModule("STATE"){}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

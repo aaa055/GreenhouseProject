@@ -41,7 +41,7 @@ class DeltaModule : public AbstractModule // модуль регистрации
   void SaveDeltas();
   
   public:
-    DeltaModule() : AbstractModule(F("DELTA")), lastUpdateCall(876) {}
+    DeltaModule() : AbstractModule("DELTA"), lastUpdateCall(876) {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

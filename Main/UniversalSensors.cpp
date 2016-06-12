@@ -6,7 +6,6 @@ UniRegDispatcher UniDispatcher;
 
 UniRegDispatcher::UniRegDispatcher()
 {
-  mainController = NULL;
   temperatureModule = NULL;
   humidityModule = NULL;
   luminosityModule = NULL;
@@ -117,29 +116,25 @@ uint8_t UniRegDispatcher::GetHardCodedSensorsCount(UniSensorType type)
 
   return 0;
 }
-void UniRegDispatcher::Setup(ModuleController* controller)
+void UniRegDispatcher::Setup()
 {
-  mainController = controller;
-  if(!mainController)
-    return;
-
-    temperatureModule = mainController->GetModuleByID(F("STATE"));
+    temperatureModule = MainController->GetModuleByID(F("STATE"));
     if(temperatureModule)
       hardCodedTemperatureCount = temperatureModule->State.GetStateCount(StateTemperature);
     
-    humidityModule = mainController->GetModuleByID(F("HUMIDITY"));
+    humidityModule = MainController->GetModuleByID(F("HUMIDITY"));
     if(humidityModule)
       hardCodedHumidityCount = humidityModule->State.GetStateCount(StateHumidity);
     
-    luminosityModule = mainController->GetModuleByID(F("LIGHT"));
+    luminosityModule = MainController->GetModuleByID(F("LIGHT"));
     if(luminosityModule)
       hardCodedLuminosityCount = luminosityModule->State.GetStateCount(StateLuminosity);
 
-    soilMoistureModule = mainController->GetModuleByID(F("SOIL"));
+    soilMoistureModule = MainController->GetModuleByID(F("SOIL"));
     if(soilMoistureModule)
       hardCodedSoilMoistureCount = soilMoistureModule->State.GetStateCount(StateSoilMoisture);
 
-    phModule = mainController->GetModuleByID(F("PH"));
+    phModule = MainController->GetModuleByID(F("PH"));
     if(phModule)
       hardCodedPHCount = phModule->State.GetStateCount(StatePH);
 
@@ -420,7 +415,7 @@ bool UniRegDispatcher::RegisterSensor(UniSensorType type, UniSensorState& result
 }
 uint8_t UniRegDispatcher::GetControllerID()
 {
-  return mainController->GetSettings()->GetControllerID(); 
+  return MainController->GetSettings()->GetControllerID(); 
 }
 
 

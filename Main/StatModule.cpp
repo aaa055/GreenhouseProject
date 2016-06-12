@@ -68,7 +68,7 @@ bool  StatModule::ExecCommand(const Command& command, bool wantAnswer)
      #ifdef USE_DS3231_REALTIME_CLOCK   
         else if(t == CURDATETIME_COMMAND)
         {
-           DS3231Clock rtc = mainController->GetClock();
+           DS3231Clock rtc = MainController->GetClock();
            DS3231Time tm = rtc.getTime();
            if(wantAnswer) 
            {
@@ -90,7 +90,7 @@ bool  StatModule::ExecCommand(const Command& command, bool wantAnswer)
   } // if
  
  // отвечаем на команду
-    mainController->Publish(this,command);
+    MainController->Publish(this,command);
     
   return PublishSingleton.Status;
 }

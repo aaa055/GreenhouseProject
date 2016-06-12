@@ -25,8 +25,8 @@ void DeltaModule::OnDeltaRead(uint8_t& _sensorType, String& moduleName1,uint8_t&
 
   // сначала получаем два модуля, они должны быть уже зарегистрированы, поскольку мы инициализируем дельты в методе Update, который вызывается уже в loop().
   DeltaSettings ds;
-  ds.Module1 = DeltaModule::_thisDeltaModule->mainController->GetModuleByID(moduleName1);
-  ds.Module2 = DeltaModule::_thisDeltaModule->mainController->GetModuleByID(moduleName2);
+  ds.Module1 = MainController->GetModuleByID(moduleName1);
+  ds.Module2 = MainController->GetModuleByID(moduleName2);
 
   // проверяем, всё ли мы получили правильно
   if(!(ds.Module1 && ds.Module2))
@@ -127,7 +127,7 @@ void DeltaModule::Setup()
 {
   // настройка модуля тут
   isDeltasInited = false;
-  settings = mainController->GetSettings();
+  settings = MainController->GetSettings();
 }
 void DeltaModule::SaveDeltas()
 {
@@ -443,8 +443,8 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
             String moduleName2 = command.GetArg(readIdx++); // читаем имя второго модуля
             ds.SensorIndex2 = (uint8_t) atoi(command.GetArg(readIdx++));
 
-            ds.Module1 = mainController->GetModuleByID(moduleName1);
-            ds.Module2 = mainController->GetModuleByID(moduleName2);
+            ds.Module1 = MainController->GetModuleByID(moduleName1);
+            ds.Module2 = MainController->GetModuleByID(moduleName2);
 
             // проверяем все параметры
             if(!ds.SensorType || // если тип датчика не задан
@@ -492,6 +492,6 @@ bool  DeltaModule::ExecCommand(const Command& command, bool wantAnswer)
   } // SET
 
 
-  mainController->Publish(this,command);
+  MainController->Publish(this,command);
   return true;
 }

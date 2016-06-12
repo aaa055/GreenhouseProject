@@ -34,61 +34,99 @@ typedef enum
 } RuleOperand; // какой операнд использовать
 class AlertModule; // forward declaration
 
-typedef Vector<size_t> LinkedRulesToIdxVector;
+typedef Vector<uint8_t> LinkedRulesToIdxVector;
 
 
-// флаги правила:
-// бит 0 - включено или выключено
-// бит 1 - может работать или нет
-// бит 2 - флаг первого вызова
-#define RULE_ENABLED_BIT 0
-#define RULE_CAN_WORK_BIT 1
-#define RULE_FIRST_CALL_BIT 2
+typedef struct
+{
+  uint8_t Operand : 2; // операнд, которым проверяем
+  uint8_t SensorIndex : 6; // индекс датчика, за которым следим
+
+  uint8_t DataSource  : 2; // источник, с которого получаем установку значения для правила
+  uint8_t Enabled : 1;
+  uint8_t CanWork : 1;
+  uint8_t Target  : 4; // за чем следит правило
+  
+  uint8_t TargetModuleNameIndex : 4; // индекс имени модуля, для которого посылается команда
+  uint8_t LinkedModuleNameIndex : 4; // индекс имени модуля, с которым мы связаны
+
+  uint8_t RuleNameIndex; // индекс имени правила у родителя
+  uint8_t DayMask; // маска дней недели, когда работает правило
+  uint16_t StartTime; // начало работы (минут от начала суток)
+  uint16_t WorkTime; // продолжительность работы, минут
+  long DataAlert; // настройка, за которой следим (4 байта)
+
+  uint8_t TargetCommandType; // тип команды на выполнение
+  uint8_t TargetCommandParam; // дополнительный параметр для команды
+      
+} RuleSettings; // структура настроек правила
+
+typedef enum
+{
+  moduleState = 1, // STATE - получаем температуру, открываем/закрываем окна
+  modulePin, // PIN - выставляем уровни на пинах
+  moduleLight, // LIGHT - получаем освещённость, включаем/выключаем досветку
+  moduleCompositeCommands, // CC - выполняем составные команды
+  moduleHumidity, // HUMIDITY - получаем влажность
+  moduleDelta, // DELTA - получаем дельты показаний с датчиков
+  moduleSoil, // SOIL - получаем влажность почвы
+  modulePH // PH - получаем значение pH
+  
+} RuleKnownModules; // список модулей, с которых мы можем получать показания и для которых можем выполнять команды
+
+typedef enum
+{
+  commandUnparsed,              // команду не разобрали как известную, тупо копируем её всю
+  commandOpenAllWindows,        // открыть все окна
+  commandCloseAllWindows,       // закрыть все окна
+  commandLightOn,               // включить досветку
+  commandLightOff,              // выключить досветку
+  commandExecCompositeCommand,   // выполнить составную команду
+  commandSetOnePinHigh,         // выставить на одном пине высокий уровень
+  commandSetOnePinLow           // выставить на одном пине низкий уровень 
+  
+} RuleKnownCommands; // известные правилу команды, которые оно может перевести в краткую форму
+
+#define RULE_SETT_HEADER1 0xAB
+#define RULE_SETT_HEADER2 0xBA
 
 class AlertRule
 {
   private:
-  
-    AlertModule* parent; // родитель, который нас создал
-    
-    uint8_t target; // за чем следит правило
-    int8_t dataAlert; // установка, за которой следим
-    uint8_t sensorIdx; // индекс датчика, за которым следим
-    uint8_t operand; // операнд, которым проверяем
-    String targetCommand; // команда, которую надо выполнить при срабатывании правила
+
+    RuleSettings Settings; // наши настройки
+
+    char* rawCommand; // сырая команда, если Settings.TargetCommandType == commandUnparsed, то вся команда будет здесь    
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
-    long dataAlertLong; // настройка, за которой следим (4 байта)
-
-
-    uint8_t flags; // флаги состояний
-    
-    uint8_t dataSource; // источник, с которого получаем установку значения для правила
-
-    size_t ruleNameIdx; // индекс имени правила у родителя
-    uint16_t startTime; // начало работы (минут от начала суток)
-    unsigned long workTime; // продолжительность работы
-    uint8_t dayMask; // маска дней недели, когда работает правило
-
-   LinkedRulesToIdxVector linkedRulesIndices; // привязка имён связанных правил к их индексу у родителя
-
-    
+    LinkedRulesToIdxVector linkedRulesIndices; // привязка имён связанных правил к их индексу у родителя
+    const char* GetKnownModuleName(uint8_t type);
     
   public:
-    AlertRule(AlertModule* am);
+    AlertRule();
+    ~AlertRule();
 
-    bool GetEnabled() {return /*bEnabled*/ bitRead(flags,RULE_ENABLED_BIT);}
-    void SetEnabled(bool e) {/*bEnabled = e;*/ bitWrite(flags,RULE_ENABLED_BIT, (e ? 1 : 0));}
+    bool GetEnabled() {return  Settings.Enabled; }
+    void SetEnabled(bool e)  { Settings.Enabled = e ? 1 : 0; }
+    
     const char* GetName();
-    bool Construct(AbstractModule* linkedModule, const Command& command);
-    String GetTargetCommand() {return targetCommand;}
-    String GetAlertRule();
     AbstractModule* GetModule() {return linkedModule;}
+    
+    bool Construct(AbstractModule* linkedModule, const Command& command);
+    
+    const char* GetTargetCommand();
+    bool HasTargetCommand();
+    
+    const char* GetAlertRule();
+
+    const char* GetTargetCommandModuleName();
+    const char* GetLinkedModuleName();
+    uint8_t GetKnownModuleID(const char* moduleName);
 
     size_t GetLinkedRulesCount();
     const char* GetLinkedRuleName(uint8_t idx);
 
     uint8_t Save(uint16_t writeAddr); // сохраняем себя в EEPROM, возвращаем кол-во записанных байт
-    uint8_t Load(uint16_t readAddr, ModuleController* c); // читаем себя из EEPROM, возвращаем кол-во прочитанных байт
+    uint8_t Load(uint16_t readAddr); // читаем себя из EEPROM, возвращаем кол-во прочитанных байт
 
     void Update(uint16_t dt
   #ifdef USE_DS3231_REALTIME_CLOCK 
@@ -108,19 +146,13 @@ class AlertModule : public AbstractModule
 {
   private:
   
-  #if MAX_STORED_ALERTS > 0
-    uint8_t curAlertIdx;
-    uint8_t cntAlerts;
-    String strAlerts[MAX_STORED_ALERTS];
-    String& GetAlert(uint8_t idx);
-    void AddAlert(const String& strAlert);
-    
-#endif
+    RulesVector lastIterationRaisedRules; // список правил, сработавших на текущей итерации
+    bool IsRuleRaisedOnLastIteration(AlertRule* rule);
 
     NamesVector paramsArray; // всякие общие имена храним здесь
+    void ClearParams();
 
     unsigned long lastUpdateCall;
-    CommandParser* cParser;
 
     uint8_t rulesCnt;
     AlertRule* alertRules[MAX_ALERT_RULES];
@@ -135,13 +167,7 @@ class AlertModule : public AbstractModule
     void SaveRules();
     
   public:
-    AlertModule() : AbstractModule(F("ALERT")) 
-    {
-      #if MAX_STORED_ALERTS > 0
-        cntAlerts = 0; curAlertIdx = 0;
-      #endif 
-      InitRules();
-    }
+    AlertModule();
 
     size_t AddParam(char* nm, bool& added); // добавляем строку в общий массив
     char* GetParam(size_t idx); // возвращает строку из массива по индексу
@@ -149,5 +175,9 @@ class AlertModule : public AbstractModule
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();
     void Update(uint16_t dt);
+
 };
+
+extern AlertModule* RulesDispatcher;
+
 #endif

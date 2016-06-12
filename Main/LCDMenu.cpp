@@ -149,7 +149,7 @@ void IdlePageMenuItem::RequestSensorData(const WaitScreenInfo& info)
   if(!info.sensorType) // нечего показывать
     return;
 
-  AbstractModule* mod = parentMenu->mainController->GetModuleByID(info.moduleName);
+  AbstractModule* mod = MainController->GetModuleByID(info.moduleName);
 
   if(!mod) // не нашли такой модуль
   {
@@ -203,7 +203,7 @@ void IdlePageMenuItem::draw(DrawContext* dc)
 
         cur_top += HINT_FONT_HEIGHT + 6;
         
-        DS3231Clock rtc = parentMenu->mainController->GetClock();
+        DS3231Clock rtc = MainController->GetClock();
         DS3231Time tm = rtc.getTime();
 
         static char dt_buff[20] = {0};
@@ -667,7 +667,7 @@ void SettingsMenuItem::init(LCDMenu* parent)
 {
   AbstractLCDMenuItem::init(parent);
 
-  GlobalSettings* s = parentMenu->mainController->GetSettings();
+  GlobalSettings* s = MainController->GetSettings();
   
   openTemp = s->GetOpenTemp();
   closeTemp = s->GetCloseTemp();
@@ -738,7 +738,7 @@ void SettingsMenuItem::update(uint16_t dt, LCDMenu* menu)
   // вызывать метод wantRedraw родительского меню можно только, если на экране
   // текущее меню, иначе - слишком частые отрисовки могут быть.
   // поэтому вызываем notifyMenuUpdated только тогда, когда были изменения.
-  GlobalSettings* s = parentMenu->mainController->GetSettings();
+  GlobalSettings* s = MainController->GetSettings();
 
  uint8_t lastOT = openTemp;
  uint8_t lastCT = closeTemp; 
@@ -760,7 +760,7 @@ void SettingsMenuItem::setFocus(bool f)
   if(lastFocus && !f)
   {
     // был фокус и мы его потеряли, значит, надо сохранить настройки
-    GlobalSettings* s = parentMenu->mainController->GetSettings();
+    GlobalSettings* s = MainController->GetSettings();
     s->SetOpenTemp(openTemp);
     s->SetCloseTemp(closeTemp);
     s->Save();
@@ -776,7 +776,7 @@ bool SettingsMenuItem::OnEncoderPositionChanged(int dir, LCDMenu* menu)
 
     if(dir != 0)
     {
-      GlobalSettings* s = parentMenu->mainController->GetSettings();
+      GlobalSettings* s = MainController->GetSettings();
       
        // есть смена позиции энкодера, смотрим, какой пункт у нас выбран
        switch(cursorPos)
@@ -924,12 +924,11 @@ void LCDMenu::backlight(bool en)
   backlightCheckingEnabled = false;
   backlightCounter = 0;
 }
-void LCDMenu::init(ModuleController* c)
+void LCDMenu::init()
 {
   // устанавливаем выбранный шрифт
   setFont(SELECTED_FONT);
 
-  mainController = c;
   // инициализируем пин подсветки
   pinMode(SCREEN_BACKLIGHT_PIN,OUTPUT);
   backlight(); // включаем подсветку экрана

@@ -13,11 +13,11 @@ void WateringModule::Setup()
 {
   // настройка модуля тут
 
-  settings = mainController->GetSettings();
+  settings = MainController->GetSettings();
   
    #ifdef USE_DS3231_REALTIME_CLOCK
     bIsRTClockPresent = true; // есть часы реального времени
-    DS3231Clock watch =  mainController->GetClock();
+    DS3231Clock watch =  MainController->GetClock();
     DS3231Time t =   watch.getTime();
   #else
     bIsRTClockPresent = false; // нет часов реального времени
@@ -50,7 +50,7 @@ void WateringModule::Setup()
 
     #ifdef USE_LOG_MODULE
 
-    if(mainController->HasSDCard())
+    if(MainController->HasSDCard())
     {
 
       char file_name[13] = {0};
@@ -73,7 +73,7 @@ void WateringModule::Setup()
         
       } // if(sdFile)
 
-    } // if(mainController->HasSDCard())
+    } // if(MainController->HasSDCard())
 
     #endif // USE_LOG_MODULE
 
@@ -137,7 +137,7 @@ void WateringModule::Setup()
 
     #ifdef USE_LOG_MODULE
 
-    if(mainController->HasSDCard())
+    if(MainController->HasSDCard())
     {
       char file_name[13] = {0};
       sprintf_P(file_name,(const char*)F("%u.WTR"),(i+1));
@@ -157,7 +157,7 @@ void WateringModule::Setup()
         sdFile.close();
         
       } // if(sdFile)
-    } // if(mainController->HasSDCard())
+    } // if(MainController->HasSDCard())
 
     #endif // USE_LOG_MODULE
       
@@ -298,7 +298,7 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
          // теперь пишем в файл для дублирования, чтобы не потерять настройки при слетании EEPROM
           #ifdef USE_LOG_MODULE
 
-          if(mainController->HasSDCard())
+          if(MainController->HasSDCard())
           {
             char file_name[13] = {0};
             sprintf_P(file_name,(const char*)F("%u.WTR"),(channelIdx+1));
@@ -313,7 +313,7 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
                
             } // if(sdFile)
 
-          } // if(mainController->HasSDCard())
+          } // if(MainController->HasSDCard())
       
           #endif // USE_LOG_MODULE
             
@@ -419,7 +419,7 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
   #ifdef USE_DS3231_REALTIME_CLOCK
 
     // обновляем состояние часов
-    DS3231Clock watch =  mainController->GetClock();
+    DS3231Clock watch =  MainController->GetClock();
     DS3231Time t =   watch.getTime();
 
 
@@ -507,7 +507,7 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
       // если любой канал активен - значит, полив включили, а по умолчанию он выключен.
       // значит, надо записать в лог
       String mess = lastAnyChannelActiveFlag? STATE_ON : STATE_OFF;
-      mainController->Log(this,mess);
+      MainController->Log(this,mess);
     }
   }
   else
@@ -520,7 +520,7 @@ SAVE_STATUS(WATER_MODE_BIT,workMode == wwmAutomatic ? 1 : 0); // сохраня�
       lastAnyChannelActiveFlag = nowAnyChannelActive; // сохраняем последний статус, чтобы не дёргать запись в лог лишний раз
       // состояние каналов изменилось, пишем в лог
       String mess = lastAnyChannelActiveFlag ? STATE_ON : STATE_OFF;
-      mainController->Log(this,mess);
+      MainController->Log(this,mess);
     }
   } // else
 
@@ -808,7 +808,7 @@ bool  WateringModule::ExecCommand(const Command& command, bool wantAnswer)
   } // if ctGET
  
  // отвечаем на команду
-    mainController->Publish(this,command);
+    MainController->Publish(this,command);
     
   return PublishSingleton.Status;
 }

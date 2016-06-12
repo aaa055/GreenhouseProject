@@ -21,7 +21,7 @@ unsigned int PDUMessageEncoder::utf8GetCharSize(unsigned char bt)
   return 6; 
 
  
-  return 0; 
+  return 1; 
 } 
 
 
@@ -92,6 +92,28 @@ String PDUMessageEncoder::UTF8ToUCS2(const String& s, unsigned int& bytesProcess
 }
 String PDUMessageEncoder::EncodePhoneNumber(const String& nm)
 {
+    String result;
+    
+    result.reserve(nm.length()+1);
+    result = nm;
+    
+    if(result.length() % 2 > 0)
+      result += F("F");
+       
+    uint8_t i=0;
+    while(i < result.length())
+    {
+      char ch = result[i+1];
+      result[i+1] = result[i];
+      result[i] = ch;
+      
+      i+=2;
+    }
+
+  return result;
+  
+  // дебильный код, заменил кодом выше.
+  /*
   String result;
   String num = nm;
  
@@ -107,18 +129,21 @@ String PDUMessageEncoder::EncodePhoneNumber(const String& nm)
     }
     
     return result;
-  
+ */ 
 }
 String PDUMessageEncoder::ToHex(int i)
 {  
   
-  String Out;
+  String Out; Out.reserve(2);
   int idx = i & 0xF;
   char char1 = (char) pgm_read_byte_near( HEX_CHARS + idx );
   i>>=4;
   idx = i & 0xF;
   char char2 = (char) pgm_read_byte_near( HEX_CHARS + idx );
-  Out = String(char2); Out += String(char1);
+
+  Out[0] = char2;
+  Out[1] = char1;
+  //Out = String(char2); Out += String(char1);
   
   return Out;
 

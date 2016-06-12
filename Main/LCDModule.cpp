@@ -18,7 +18,7 @@ inited = false;
   rotaryEncoder.begin(); // инициализируем энкодер
 
   // инициализируем меню
-  lcdMenu.init(mainController);
+  lcdMenu.init();
 #endif  
  }
 

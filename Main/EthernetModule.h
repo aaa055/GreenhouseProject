@@ -13,7 +13,7 @@ class EthernetModule : public AbstractModule // модуль поддержки 
     String clientCommands[MAX_LAN_CLIENTS]; // наши команды с клиентов
   
   public:
-    EthernetModule() : AbstractModule(F("LAN")) {}
+    EthernetModule() : AbstractModule("LAN") {}
 
     bool ExecCommand(const Command& command, bool wantAnswer);
     void Setup();

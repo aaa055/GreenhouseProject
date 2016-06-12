@@ -76,7 +76,7 @@ class LuminosityModule : public AbstractModule // модуль управлен�
   uint16_t lastUpdateCall;
     
   public:
-    LuminosityModule() : AbstractModule(F("LIGHT"))
+    LuminosityModule() : AbstractModule("LIGHT")
     , lastUpdateCall(678) // разнесём опросы датчиков по времени
     {}
 

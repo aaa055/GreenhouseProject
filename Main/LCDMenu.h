@@ -356,7 +356,7 @@ class LCDMenu : public DrawContext
     LCDMenu(uint8_t sck, uint8_t mosi, uint8_t cs);
     ~LCDMenu();
 
-    void init(ModuleController* c); // инициализируем
+    void init(); // инициализируем
 
     void draw(); // рисует меню
     void update(uint16_t dt); // обновляем меню
@@ -380,9 +380,6 @@ class LCDMenu : public DrawContext
     friend class LuminosityMenuItem;
 #endif    
 
-
-   ModuleController* mainController;
- 
    void wantRedraw(); // ставим флаг необходимости перерисовки 
    void resetTimer(); // сбрасываем таймер перехода в меню ожидания
     void notifyMenuUpdated(AbstractLCDMenuItem* mi); // пункт меню уведомляет, что он изменил своё внутреннее состояние
