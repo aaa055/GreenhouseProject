@@ -70,7 +70,8 @@ typedef enum
   moduleHumidity, // HUMIDITY - получаем влажность
   moduleDelta, // DELTA - получаем дельты показаний с датчиков
   moduleSoil, // SOIL - получаем влажность почвы
-  modulePH // PH - получаем значение pH
+  modulePH, // PH - получаем значение pH
+  moduleZero // модуль "0"
   
 } RuleKnownModules; // список модулей, с которых мы можем получать показания и для которых можем выполнять команды
 

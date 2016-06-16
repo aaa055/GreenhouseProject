@@ -54,6 +54,9 @@ uint8_t AlertRule::GetKnownModuleID(const char* moduleName)
   if(!strcmp_P(moduleName,(const char*) F("PH")))
     return modulePH;
 
+  if(!strcmp_P(moduleName,(const char*) F("0")))
+    return moduleZero;
+
   return 0;
 
 }
@@ -67,6 +70,10 @@ const char* AlertRule::GetKnownModuleName(uint8_t type)
   // возвращаем имя известного модуля по типу
   switch(type)
   {
+    case moduleZero:
+      strcpy_P(SD_BUFFER, (const char*) F("0"));
+    break;
+    
     case moduleState:
       strcpy_P(SD_BUFFER, (const char*) F("STATE"));
     break;
