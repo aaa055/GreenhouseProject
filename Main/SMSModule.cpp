@@ -123,15 +123,18 @@ void SMSModule::ProcessAnswerLine(const String& line)
           #ifdef NEOWAY_DEBUG_MODE
             Serial.println(F("[OK] => AON is ON."));
           #endif
+        }
           actionsQueue.pop(); // убираем последнюю обработанную команду     
           currentAction = smaIdle;
+        /*
         } // if
         else
         {
           // пробуем ещё раз
-        //  needToWaitTimer = 1500; // через некоторое время
-        //  currentAction = smaIdle;
+          needToWaitTimer = 1500; // через некоторое время
+          currentAction = smaIdle;
         }
+        */
       } // known answer
       
     }
