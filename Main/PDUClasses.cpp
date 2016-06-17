@@ -135,18 +135,23 @@ String PDUMessageEncoder::EncodePhoneNumber(const String& nm)
 String PDUMessageEncoder::ToHex(int i)
 {  
   
-  String Out; Out.reserve(2);
+  //String Out; Out.reserve(2);
+  char out[3] = {0};
   int idx = i & 0xF;
-  char char1 = (char) pgm_read_byte_near( HEX_CHARS + idx );
+  //char char1 
+  out[1] = (char) pgm_read_byte_near( HEX_CHARS + idx );
   i>>=4;
   idx = i & 0xF;
-  char char2 = (char) pgm_read_byte_near( HEX_CHARS + idx );
+  //char char2
+  out[0] = (char) pgm_read_byte_near( HEX_CHARS + idx );
 
+
+  return out;
   //Out[0] = char2;
  // Out[1] = char1;
-  Out = String(char2); Out += String(char1);
+  //Out = String(char2); Out += String(char1);
   
-  return Out;
+  //return Out;
 
   
 }

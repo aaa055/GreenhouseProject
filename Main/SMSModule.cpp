@@ -5,6 +5,8 @@
 
 bool SMSModule::IsKnownAnswer(const String& line, bool& okFound)
 {
+  okFound = false;
+  
   if(line == F("OK"))
   {
     okFound = true;
@@ -42,6 +44,7 @@ void SMSModule::InitQueue()
   currentAction = smaIdle; // свободны, ничего не делаем
   actionsQueue.push_back(smaWaitReg); // ждём регистрации
   actionsQueue.push_back(smaSMSSettings); // настройки вывода SMS
+  actionsQueue.push_back(smaUCS2Encoding); // кодировка сообщений
   actionsQueue.push_back(smaPDUEncoding); // формат сообщений
   actionsQueue.push_back(smaAON); // включение АОН
   actionsQueue.push_back(smaDisableCellBroadcastMessages); // выключение броадкастовых SMS
@@ -59,7 +62,7 @@ void SMSModule::ProcessAnswerLine(const String& line)
     Serial.print(F("<== Receive \"")); Serial.print(line); Serial.println(F("\" answer from NEOWAY..."));
   #endif
 
-  bool okFound;
+  bool okFound = false;
 
   switch(currentAction)
   {
@@ -126,22 +129,22 @@ void SMSModule::ProcessAnswerLine(const String& line)
         else
         {
           // пробуем ещё раз
-          needToWaitTimer = 1500; // через некоторое время
-          currentAction = smaIdle;
+        //  needToWaitTimer = 1500; // через некоторое время
+        //  currentAction = smaIdle;
         }
       } // known answer
       
     }
     break;
 
-    case smaPDUEncoding: // кодировка PDU
+    case smaPDUEncoding: // формат PDU
     {
       if(IsKnownAnswer(line,okFound))
       {
         if(okFound)
         {
           #ifdef NEOWAY_DEBUG_MODE
-            Serial.println(F("[OK] => PDU encoding is set."));
+            Serial.println(F("[OK] => PDU format is set."));
           #endif
          actionsQueue.pop(); // убираем последнюю обработанную команду     
          currentAction = smaIdle;
@@ -157,6 +160,31 @@ void SMSModule::ProcessAnswerLine(const String& line)
       
     }
     break;
+
+    case smaUCS2Encoding: // кодировка UCS2
+    {
+      if(IsKnownAnswer(line,okFound))
+      {
+        if(okFound)
+        {
+          #ifdef NEOWAY_DEBUG_MODE
+            Serial.println(F("[OK] => UCS2 encoding is set."));
+          #endif
+         actionsQueue.pop(); // убираем последнюю обработанную команду     
+         currentAction = smaIdle;
+        }
+        else
+        {
+            // пробуем ещё раз
+          needToWaitTimer = 1500; // через некоторое время
+          currentAction = smaIdle;
+        
+        }
+      }
+      
+    }
+    break;
+    
 
     case smaSMSSettings: // установили режим отображения входящих SMS сразу в порт
     {
@@ -552,14 +580,27 @@ void SMSModule::ProcessQueue()
       }
       break;
 
-      case smaPDUEncoding: // устанавливаем кодировку сообщений
+      case smaPDUEncoding: // устанавливаем формат сообщений
       {
 
       #ifdef NEOWAY_DEBUG_MODE
-        Serial.println(F("Set PDU encoding..."));
+        Serial.println(F("Set PDU format..."));
       #endif
       
        SendCommand(F("AT+CMGF=0"));
+        
+      }
+      break;
+
+
+      case smaUCS2Encoding: // устанавливаем кодировку сообщений
+      {
+
+      #ifdef NEOWAY_DEBUG_MODE
+        Serial.println(F("Set UCS2 format..."));
+      #endif
+      
+       SendCommand(F("AT+CSCS=\"UCS2\""));
         
       }
       break;

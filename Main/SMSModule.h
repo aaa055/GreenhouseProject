@@ -13,6 +13,7 @@ typedef enum
   smaDisableCellBroadcastMessages, // AT+CSCB=0
   smaAON, // включаем АОН (AT+CLIP=1)
   smaPDUEncoding, // включаем кодировку PDU (AT+CMGF=0)
+  smaUCS2Encoding, // включаем кодировку UCS2 (AT+CSCS="UCS2")
   smaSMSSettings, // включаем вывод входящих смс сразу в порт (AT+CNMI=2,2)
   smaWaitReg, // ждём регистрации (AT+CREG?)
   smaHangUp, // кладём трубку (ATH)
