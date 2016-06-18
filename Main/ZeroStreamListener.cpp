@@ -8,21 +8,13 @@
 
 #ifdef USE_UNIVERSAL_SENSORS
 
-#ifdef UNI_USE_REGISTRATION_LINE
-UniRegistrationLine uniRegistrator(UNI_REGISTRATION_PIN,
-#ifdef UNI_AUTO_REGISTRATION_MODE
-true
-#else
-false
-#endif
-);
-
-#endif // UNI_USE_REGISTRATION_LINE
-
-#if UNI_WIRED_SENSORS_COUNT > 0
-  UniPermanentSensor uniWiredSensors[UNI_WIRED_SENSORS_COUNT] = { UNI_WIRED_SENSORS };
-#endif
-
+  #ifdef UNI_USE_REGISTRATION_LINE
+    UniRegistrationLine uniRegistrator(UNI_REGISTRATION_PIN);
+  #endif // UNI_USE_REGISTRATION_LINE
+  
+  #if UNI_WIRED_MODULES_COUNT > 0
+    UniPermanentLine uniWiredModules[UNI_WIRED_MODULES_COUNT] = { UNI_WIRED_MODULES };
+  #endif
 
 #endif // USE_UNIVERSAL_SENSORS
 
@@ -37,13 +29,10 @@ void ZeroStreamListener::Update(uint16_t dt)
 {
 #ifdef USE_UNIVERSAL_SENSORS
 
-  #ifdef UNI_USE_REGISTRATION_LINE
-  uniRegistrator.Update(dt);
-  #endif
 
-  #if UNI_WIRED_SENSORS_COUNT > 0
-    for(uint8_t i=0;i<UNI_WIRED_SENSORS_COUNT;i++)
-      uniWiredSensors[i].Update(dt);
+  #if UNI_WIRED_MODULES_COUNT > 0
+    for(uint8_t i=0;i<UNI_WIRED_MODULES_COUNT;i++)
+      uniWiredModules[i].Update(dt);
   #endif
   
 #endif // USE_UNIVERSAL_SENSORS
@@ -145,10 +134,24 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
         {
           PublishSingleton.AddModuleIDToAnswer = false;
           
-          if(uniRegistrator.IsSensorPresent())
+          if(uniRegistrator.IsModulePresent())
           {
             // датчик найден, отправляем его внутреннее состояние
             PublishSingleton.Status = true;
+
+            UniRawScratchpad scratch;
+            uniRegistrator.CopyScratchpad(&scratch);
+            byte* raw = (byte*) &scratch;
+            
+            PublishSingleton = "";
+            
+            // теперь пишем весь скратчпад вызывающему, пущай сам разбирается, как с ним быть
+            for(byte i=0;i<sizeof(UniRawScratchpad);i++)
+            {
+              PublishSingleton << WorkStatus::ToHex(raw[i]);
+            } // for
+
+            /*
 
             uint8_t sensorType, sensorIndex;
             
@@ -164,7 +167,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               uniRegistrator.GetSensorInfo(tt,sensorType,sensorIndex);
               PublishSingleton << PARAM_DELIMITER << sensorType << PARAM_DELIMITER << sensorIndex;
             }
-        
+            */
           } // if
           else
           {
@@ -346,7 +349,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
     
   } // ctGET
   else
-  if(command.GetType() == ctSET) //ЗАРЕГИСТРИРОВАТЬ МОДУЛИ
+  if(command.GetType() == ctSET)
   {
 
     if(!argsCnt) // нет аргументов
@@ -365,37 +368,11 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
         {
           resetFunc(); // ресетимся, писать в ответ ничего не надо
         } // RESET_COMMAND
-        
-        #if defined(USE_UNIVERSAL_SENSORS) && defined(UNI_USE_REGISTRATION_LINE)
-        else
-        if(t == UNI_REGISTER) // автоматически зарегистрировать универсальный модуль, висящий на линии
-        {
-          PublishSingleton.AddModuleIDToAnswer = false;
-          
-          if(uniRegistrator.IsSensorPresent())
-          {
-            // модуль есть на линии
-            if(!uniRegistrator.IsRegistered()) // если не был зарегистрирован у нас
-              uniRegistrator.SensorRegister(true); // регистрируем его в системе
-            
-            PublishSingleton.Status = true;
-            PublishSingleton = REG_SUCC;
-            
-          } // if
-          else
-          {
-            // модуля нет на линии
-            PublishSingleton = UNI_NOT_FOUND;
-          }
-          
-        } // UNI_REGISTER
-        #endif // UNI_USE_REGISTRATION_LINE
-        
+                
       } // if
       else
       {
         String t = command.GetArg(0); // получили команду
-       // t.toUpperCase();
         
       #ifdef USE_REMOTE_MODULES 
       if(t == ADD_COMMAND) // запросили регистрацию нового модуля
@@ -433,6 +410,58 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton << PARAM_DELIMITER << REG_SUCC;
           
        }
+        #if defined(USE_UNIVERSAL_SENSORS) && defined(UNI_USE_REGISTRATION_LINE)
+        else
+        if(t == UNI_REGISTER) // зарегистрировать универсальный модуль, висящий на линии
+        {
+          PublishSingleton.AddModuleIDToAnswer = false;
+
+              if(uniRegistrator.IsModulePresent())
+              {
+                // модуль есть на линии, регистрируем его в системе.
+                // сначала вычитываем переданный скратчпад и назначаем его модулю.
+                // считаем, что на вызывающей стороне разобрались, что с чем, с остальным
+                // разберётся модуль регистрации.
+                const char* scratchData = command.GetArg(1);
+                // теперь конвертируем данные скратчпада из текстового представления в нормальное
+                char buff[3] = {0};
+                uint8_t len = strlen(scratchData);
+
+                UniRawScratchpad scratch;
+                byte* raw = (byte* )&scratch;
+
+                for(uint8_t i=0;i<len;i+=2)
+                {
+                  buff[0] = scratchData[i];
+                  buff[1] = scratchData[i+1];
+                  *raw = WorkStatus::FromHex(buff);
+                  raw++;
+                } // for
+                
+                if(uniRegistrator.SetScratchpadData(&scratch))
+                {
+                  uniRegistrator.Register();
+                              
+                  PublishSingleton.Status = true;
+                  PublishSingleton = REG_SUCC;
+                } // if
+                else
+                {
+                   // разные типы скратчпадов, возможно, подсоединили другой модуль
+                   PublishSingleton = UNI_DIFFERENT_SCRATCHPAD;
+                }
+                
+              } // if
+              else
+              {
+                // модуля нет на линии
+                PublishSingleton = UNI_NOT_FOUND;
+              }
+              
+          
+        } // UNI_REGISTER
+        #endif // UNI_USE_REGISTRATION_LINE
+       
        else if(t == ID_COMMAND)
        {
           //String newID = command.GetArg(1);
@@ -441,74 +470,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
           PublishSingleton = ID_COMMAND; 
           PublishSingleton << PARAM_DELIMITER << REG_SUCC;
         
-       }
-       
-       #if defined(USE_UNIVERSAL_SENSORS) && defined(UNI_USE_REGISTRATION_LINE)
-       else if(t == UNI_REBIND) // переназначить индексы универсальному модулю, и зарегистрировать его в системе
-       {
-          PublishSingleton.AddModuleIDToAnswer = false;
-          if(argsCnt < 7)
-          {
-            PublishSingleton = PARAMS_MISSED;
-          }
-          else
-          {
-              if(uniRegistrator.IsSensorPresent())
-              {
-                 // модуль есть на линии, можно с ним работать
-                 // при записи информации в модуль ему косвенно привязывается ID нашего контроллера.
-
-                 int iVal = atoi(command.GetArg(1));
-
-                 if(iVal != 0xFF)
-                  uniRegistrator.SetConfig(iVal);
-                 
-                 
-                 iVal = atoi(command.GetArg(2));
-                 if(iVal != 0xFF)
-                  uniRegistrator.SetCalibrationFactor(0,iVal);
-
-                 iVal = atoi(command.GetArg(3));
-                 if(iVal != 0xFF)
-                  uniRegistrator.SetCalibrationFactor(1,iVal);
-
-                 iVal = atoi(command.GetArg(4));
-                 if(iVal != 0xFF)
-                  uniRegistrator.SetQueryInterval(iVal);
-
-                 iVal = atoi(command.GetArg(5));
-                 if(iVal != 0xFF)
-                  uniRegistrator.SetSensorIndex(0,iVal);
-                  
-                 iVal = atoi(command.GetArg(6));
-                 if(iVal != 0xFF)
-                  uniRegistrator.SetSensorIndex(1,iVal);
-
-                 iVal = atoi(command.GetArg(7));
-                 if(iVal != 0xFF)
-                  uniRegistrator.SetSensorIndex(2,iVal);
-
-                 // индексы датчиков мы назначили, можем работать дальше. 
-                 // сначала сохраняем конфигурацию в модуле
-                  uniRegistrator.SaveConfiguration();
-                  // настраивать внутренние состояния модуля нам не нужно, потому что линия регистрации работает только для беспроводных датчиков.
-                 // uniRegistrator.SensorSetup();
-
-                  // здесь мы должны иметь уже настроенный датчик, с перепривязанными индексами, настройкой интервала опроса и факторами калибровки.
-
-                 PublishSingleton.Status = true;
-                 PublishSingleton = REG_SUCC;
-
-              }
-              else
-              {
-                // модуля нет на линии
-                PublishSingleton = UNI_NOT_FOUND;
-              }
-          } // else
-       }
-       #endif // UNI_USE_REGISTRATION_LINE
-       
+       }       
        #ifdef USE_DS3231_REALTIME_CLOCK
        else if(t == SETTIME_COMMAND)
        {

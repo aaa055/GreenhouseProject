@@ -125,6 +125,44 @@ bool WorkStatus::GetStatus(uint8_t bitNum)
   uint8_t bit_num = bitNum%8;
   return bitRead(statuses[byte_num],bit_num) ? true : false; 
 }
+byte WorkStatus::MakeNum(char ch) 
+{
+  if((ch >= '0') && (ch <= '9'))
+    return ((byte) ch) - '0';
+  
+  switch(ch) 
+  {
+    case 'A':
+    case 'a': return 10;
+    
+    case 'B':
+    case 'b': return 11;
+    
+    case 'C':
+    case 'c': return 12;
+    
+    case 'D':
+    case 'd': return 13;
+
+    case 'E':
+    case 'e': return 14;
+    
+    case 'F':
+    case 'f': return 15;
+    
+    default: return 16;
+    }
+}
+byte WorkStatus::FromHex(char* buff)
+{
+  byte tens = WorkStatus::MakeNum(*buff++);
+  byte ones = WorkStatus::MakeNum(*buff);
+
+   if(ones == 'X') 
+    return  0;
+    
+  return  (tens * 16) + ones; 
+}
 
 const char HEX_CHARS[]  PROGMEM = {"0123456789ABCDEF"};
 const char* WorkStatus::ToHex(int i)

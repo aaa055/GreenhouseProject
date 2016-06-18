@@ -9,13 +9,11 @@
 // НАСТРОЙКИ УНИВЕРСАЛЬНЫХ МОДУЛЕЙ С ДАТЧИКАМИ
 //--------------------------------------------------------------------------------------------------------------------------------
 #define USE_UNIVERSAL_SENSORS // закомментировать, если не нужно использовать универсальные модули с датчиками на борту
-#define UNI_REGISTRATION_PIN 28 // номер пина, на котором будут регистрироваться модули, работающие в беспроводном режиме
+#define UNI_REGISTRATION_PIN 28 // номер пина, на котором будут регистрироваться модули в системе
 #define UNI_USE_REGISTRATION_LINE // закомментировать, если не нужна проводная линия 1-Wire для регистрации универсальных модулей
-//#define UNI_AUTO_REGISTRATION_MODE // закомментировать, если не нужен режим автоматической регистрации модули (вся регистрация будет только вручную, через конфигуратор)
-#define UNI_SENSOR_UPDATE_INTERVAL 5000 // через сколько мс обновлять показания с универсального модуля
-#define UNI_SENSOR_REGISTER_QUERY_INTERVAL 2000 // через сколько мс искать новые модули на линии регистрации
-#define UNI_WIRED_SENSORS_COUNT 1 // сколько проводных универсальных модулей используется (0 - нисколько)
-#define UNI_WIRED_SENSORS 30 // номера пинов (через запятую), на которых висят универсальные модули, кол-вом  UNI_WIRED_SENSORS_COUNT
+#define UNI_MODULE_UPDATE_INTERVAL 1000 // через сколько мс обновлять показания с универсального модуля
+#define UNI_WIRED_MODULES_COUNT 1 // сколько проводных линий для универсальных модулей используется (0 - нисколько)
+#define UNI_WIRED_MODULES 30 // номера пинов (через запятую), на которых висят универсальные модули, кол-вом  UNI_WIRED_SENSORS_COUNT
 
 //--------------------------------------------------------------------------------------------------------------------------------
 // директивы условной компиляции 
@@ -26,7 +24,7 @@
 #define USE_WINDOWS_SHIFT_REGISTER // использовать ли сдвиговый регистр 74HC595 для управления окнами, вместо контроля пинов напрямую (см. настройки фрамуг ниже)
 #define USE_LOOP_MODULE // закомментировать, если не нужна поддержка модуля LOOP
 #define USE_STAT_MODULE // закомментировать, если не нужна поддержка модуля статистики (FREERAM, UPTIME, DATETIME)
-//#define USE_SMS_MODULE // закомментировать, если не нужна поддержка управления по SMS
+#define USE_SMS_MODULE // закомментировать, если не нужна поддержка управления по SMS
 #define USE_WATERING_MODULE // закомментировать, если не нужно управление поливом
 #define USE_LUMINOSITY_MODULE // закомментировать, если не нужен модуль контроля освещенности (BH1750)
 #define USE_HUMIDITY_MODULE // закомментировать, если не нужен модуль работы с датчиками влажности DHT и Si7021
@@ -669,10 +667,9 @@
 #define WIRED_COMMAND F("WIRED") // получить список кол-ва проводных датчиков, CTGET=0|WIRED (Температура|Влажность|Освещенность|Влажность почвы|PH)
 #define UNI_COUNT_COMMAND F("UNI") // получить список кол-ва универсальных датчиков, CTGET=0|UNI (Температура|Влажность|Освещенность|Влажность почвы|PH)
 #define UNI_NOT_FOUND F("U_NONE") // ответ на запрос CTGET=0|U_SEARCH, если универсального модуля не найдено
-#define UNI_SEARCH F("U_SEARCH") // запрос CTGET=0|U_SEARCH, выдаёт информацию об универсальном модуле в формате OK=ControllerID|ModuleID|Config|CalibrationFactor1|CalibrationFactor2|QueryInterval|Sensor1Type|Sensor1Index|Sensor2Type|Sensor2Index|Sensor3Type|Sensor3Index
-#define UNI_REGISTER F("U_REG") // запрос CTSET=0|U_REG, регистрирует подсоединённый к линии регистрации датчик, возвращает OK=ADDED, если датчик есть, и ERR=U_NONE, если датчика на линии нет
-#define UNI_REBIND F("U_UPD") // запрос CTSET=0|U_UPD|Config|CalibrationFactor1|CalibrationFactor2|QueryInterval|Sensor1Index|Sensor2Index|Sensor3Index, настраивает факторы калибровки, назначает интервал опроса, переназначает индексы датчику и регистрирует его в контроллере, возвращает OK=ADDED, если датчик есть, и ERR=U_NONE, если датчика на линии нет
-
+#define UNI_SEARCH F("U_SEARCH") // запрос CTGET=0|U_SEARCH, выдаёт информацию об универсальном модуле в формате OK=SCRATCHPAD_DATA и ERR=U_NONE, если датчика на линии нет
+#define UNI_REGISTER F("U_REG") // запрос CTSET=0|U_REG|SCRATCHPAD_DATA, регистрирует подсоединённый к линии регистрации датчик, возвращает OK=ADDED, если датчик есть, и ERR=U_NONE, если датчика на линии нет
+#define UNI_DIFFERENT_SCRATCHPAD F("SCRATCH_TYPE_ERROR") // ошибка при регистрации, разные типы скратчпада переданы
 /*
  * MODULE_NAME|PROP_NAME|IDX|FROM|TO\r\n
  * MODULE_NAME|PROP_NAME|IDX|FROM|TO\r\n

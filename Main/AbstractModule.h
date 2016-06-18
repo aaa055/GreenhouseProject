@@ -276,6 +276,8 @@ class WorkStatus
   void CopyStatusMode(uint8_t bitNum);
   bool IsStatusModeChanged(uint8_t bitNum);
 
+  static byte MakeNum(char symbol);
+
   public:
   
     void SetStatus(uint8_t bitNum, bool bOn);
@@ -286,6 +288,7 @@ class WorkStatus
     WorkStatus();
 
   static const char* ToHex(int i);
+  static byte FromHex(char* buff);
   
 }; // структура статусов работы 
 
