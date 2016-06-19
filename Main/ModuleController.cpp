@@ -36,7 +36,7 @@ void ModuleController::Setup()
 _rtc.begin();
 #endif
 
-#if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
+#if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE) || defined(USE_SMS_MODULE)
   sdCardInitFlag = SD.begin(SDCARD_CS_PIN); // пробуем инициализировать SD-модуль
 #endif
   

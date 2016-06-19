@@ -479,6 +479,15 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
         if(MainController->HasSDCard())
         {
           unsigned int hash = hash_str(message.Message.c_str());
+         
+
+          #ifdef NEOWAY_DEBUG_MODE
+            Serial.print(F("passed message = "));
+            Serial.println(message.Message);
+            Serial.print(F("computed hash = "));
+            Serial.println(hash);
+          #endif
+                        
           String filePath = F("sms");
           filePath += F("/");
           filePath += hash;
@@ -487,6 +496,10 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
           File smsFile = SD.open(filePath);
           if(smsFile)
           {
+      
+          #ifdef NEOWAY_DEBUG_MODE
+            Serial.println(F("SMS file found, continue..."));
+          #endif            
             // нашли такой файл, будем читать с него данные
             String answerMessage, commandToExecute;
             char ch = 0;
@@ -520,12 +533,19 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
     
             // закрываем файл
             smsFile.close();
-    
+
+          #ifdef NEOWAY_DEBUG_MODE
+            Serial.print(F("command to execute = "));
+            Serial.println(commandToExecute);
+          #endif  
             // парсим команду
             CommandParser* cParser = MainController->GetCommandParser();
             Command cmd;
             if(cParser->ParseCommand(commandToExecute,cmd))
             {
+          #ifdef NEOWAY_DEBUG_MODE
+            Serial.println(F("Command parsed, execute it..."));
+          #endif                
               // команду разобрали, можно исполнять
               customSMSCommandAnswer = "";
               cmd.SetIncomingStream(this);
@@ -541,6 +561,12 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
     
             return; // возвращаемся, т.к. мы сами пошлём СМС с текстом, отличным от ОК
           } // if(smsFile)
+          #ifdef NEOWAY_DEBUG_MODE
+          else
+          {
+            Serial.println(F("SMS file NOT FOUND, skip the SMS."));
+          }
+          #endif            
           
         } // if(MainController->HasSDCard())
         
@@ -550,7 +576,7 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
   else
   {
   #ifdef NEOWAY_DEBUG_MODE
-    Serial.println(F("Message decoding error or message is received from unknown number!"));
+    Serial.println(F("Message decoding error or message received from unknown number!"));
   #endif
   }
 
@@ -1034,6 +1060,12 @@ bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
               // получаем его хэш
               unsigned int hash = hash_str(message.c_str());
 
+              #ifdef NEOWAY_DEBUG_MODE
+                Serial.print(F("passed message = "));
+                Serial.println(message);
+                Serial.print(F("computed hash = "));
+                Serial.println(hash);
+              #endif
               // создаём имя файлв
               String filePath = F("sms");
               SD.mkdir(filePath);

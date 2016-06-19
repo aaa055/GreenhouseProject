@@ -16,7 +16,7 @@
 #include "LogModule.h"
 #endif
 
-#if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
+#if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE) || defined(USE_SMS_MODULE)
 #include <SD.h>
 #endif
 
@@ -42,7 +42,7 @@ class ModuleController
   LogModule* logWriter;
 #endif
 
-#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
+#if defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE) || defined(USE_SMS_MODULE)
   bool sdCardInitFlag;
 #endif
 
@@ -56,7 +56,7 @@ public:
 
   bool HasSDCard() 
   {
-#if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
+#if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE) || defined(USE_SMS_MODULE)
     return sdCardInitFlag;
 #else
     return false;
