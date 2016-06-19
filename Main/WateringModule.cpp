@@ -48,7 +48,6 @@ void WateringModule::Setup()
 
     bool needToReadFromEEPROM = true; // считаем, что мы должны читать из EEPROM
 
-    #ifdef USE_LOG_MODULE
 
     if(MainController->HasSDCard())
     {
@@ -75,7 +74,6 @@ void WateringModule::Setup()
 
     } // if(MainController->HasSDCard())
 
-    #endif // USE_LOG_MODULE
 
     if(needToReadFromEEPROM)
     {
@@ -135,8 +133,6 @@ void WateringModule::Setup()
       savedDOW = 0xFF;
       needToReadFromEEPROM = true;
 
-    #ifdef USE_LOG_MODULE
-
     if(MainController->HasSDCard())
     {
       char file_name[13] = {0};
@@ -158,10 +154,7 @@ void WateringModule::Setup()
         
       } // if(sdFile)
     } // if(MainController->HasSDCard())
-
-    #endif // USE_LOG_MODULE
       
-
       if(needToReadFromEEPROM)
       {
           curReadAddr = WATERING_STATUS_EEPROM_ADDR + (i+1)*5;
@@ -296,8 +289,6 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
 
 
          // теперь пишем в файл для дублирования, чтобы не потерять настройки при слетании EEPROM
-          #ifdef USE_LOG_MODULE
-
           if(MainController->HasSDCard())
           {
             char file_name[13] = {0};
@@ -315,7 +306,6 @@ void WateringModule::UpdateChannel(int8_t channelIdx, WateringChannel* channel, 
 
           } // if(MainController->HasSDCard())
       
-          #endif // USE_LOG_MODULE
             
         } // if(channel->IsChannelRelayOn())
 

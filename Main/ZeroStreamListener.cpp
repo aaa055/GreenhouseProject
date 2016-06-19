@@ -5,6 +5,7 @@
 #endif
 
 #include "UniversalSensors.h"
+#include "InteropStream.h"
 
 #ifdef USE_UNIVERSAL_SENSORS
 
@@ -368,6 +369,22 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
         {
           resetFunc(); // ресетимся, писать в ответ ничего не надо
         } // RESET_COMMAND
+        else
+        if(t == F("AUTO")) // CTSET=0|AUTO - перевести в автоматический режим
+        {
+          // очищаем общий буфер ответов
+          PublishSingleton = "";
+
+          // выполняем команды
+          ModuleInterop.QueryCommand(ctSET, F("STATE|MODE|AUTO"),false,false);
+          ModuleInterop.QueryCommand(ctSET, F("WATER|MODE|AUTO"),false,false);
+          ModuleInterop.QueryCommand(ctSET, F("LIGHT|MODE|AUTO"),false,false);
+
+          // говорим, что выполнили
+          PublishSingleton = REG_SUCC;
+          PublishSingleton.Status = true;
+        
+        } // AUTO
                 
       } // if
       else

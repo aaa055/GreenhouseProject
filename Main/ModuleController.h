@@ -54,9 +54,14 @@ public:
   void Setup(); // настраивает контроллер на работу (инициализация нужных железок и т.п.)
   void begin(); // начинаем работу
 
+  bool HasSDCard() 
+  {
 #if  defined(USE_WIFI_MODULE) || defined(USE_LOG_MODULE)
-  bool HasSDCard() {return sdCardInitFlag;}
+    return sdCardInitFlag;
+#else
+    return false;
 #endif
+  }
   #ifdef USE_DS3231_REALTIME_CLOCK
   // модуль реального времени
   DS3231Clock& GetClock();

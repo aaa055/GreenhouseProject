@@ -25,7 +25,7 @@ typedef enum
 
 typedef Vector<SMSActions> SMSActionsVector;
 
-class SMSModule : public AbstractModule // модуль поддержки управления по SMS
+class SMSModule : public AbstractModule, public Stream // модуль поддержки управления по SMS
 {
   private:
     GlobalSettings* Settings;
@@ -50,6 +50,8 @@ class SMSModule : public AbstractModule // модуль поддержки уп�
 
     void ProcessIncomingCall(const String& line); // обрабатываем входящий звонок
     void ProcessIncomingSMS(const String& line); // обрабатываем входящее СМС
+
+    String customSMSCommandAnswer;
         
   public:
     SMSModule() : AbstractModule("SMS") {}
@@ -64,7 +66,13 @@ class SMSModule : public AbstractModule // модуль поддержки уп�
     void ProcessAnswerLine(const String& line);
     volatile bool WaitForSMSWelcome; // флаг, что мы ждём приглашения на отсыл SMS - > (плохое ООП, негодное :) )
 
-        
+    virtual int available(){ return false; };
+    virtual int read(){ return -1;};
+    virtual int peek(){return -1;};
+    virtual void flush(){};
+
+ 
+    virtual size_t write(uint8_t toWr);         
 
 };
 

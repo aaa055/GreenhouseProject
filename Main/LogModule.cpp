@@ -30,11 +30,8 @@ void LogModule::Setup()
 #ifdef LOG_ACTIONS_ENABLED   
    lastActionsDOW = -1;
 #endif   
-#ifdef USE_LOG_MODULE
+
    hasSD = MainController->HasSDCard();
-#else
-   hasSD = false;  
-#endif
    loggingInterval = LOGGING_INTERVAL; // по умолчанию, берём из Globals.h. Позже - будет из настроек.
   // настройка модуля тут
  }

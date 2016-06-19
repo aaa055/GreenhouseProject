@@ -153,7 +153,7 @@ byte WorkStatus::MakeNum(char ch)
     default: return 16;
     }
 }
-byte WorkStatus::FromHex(char* buff)
+byte WorkStatus::FromHex(const char* buff)
 {
   byte tens = WorkStatus::MakeNum(*buff++);
   byte ones = WorkStatus::MakeNum(*buff);

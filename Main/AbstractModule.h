@@ -288,7 +288,7 @@ class WorkStatus
     WorkStatus();
 
   static const char* ToHex(int i);
-  static byte FromHex(char* buff);
+  static byte FromHex(const char* buff);
   
 }; // структура статусов работы 
 

@@ -3,6 +3,19 @@
 #include "PDUClasses.h"
 #include "InteropStream.h"
 
+// функция хэширования строки
+#define A_PRIME 54059 /* a prime */
+#define B_PRIME 76963 /* another prime */
+#define C_PRIME 86969 /* yet another prime */
+unsigned int hash_str(const char* s)
+{
+   unsigned int h = 31 /* also prime */;
+   while (*s) {
+     h = (h * A_PRIME) ^ (s[0] * B_PRIME);
+     s++;
+   }
+   return h; // or return h % C;
+}
 bool SMSModule::IsKnownAnswer(const String& line, bool& okFound)
 {
   okFound = false;
@@ -459,6 +472,79 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
       // возвращаемся, поскольку нет необходимости посылать СМС с ответом ОК - вместо этого придёт статистика
       return;
     }
+
+    if(!shouldSendSMS)
+    {
+        // тут пробуем найти файл по хэшу переданной команды
+        if(MainController->HasSDCard())
+        {
+          unsigned int hash = hash_str(message.Message.c_str());
+          String filePath = F("sms");
+          filePath += F("/");
+          filePath += hash;
+          filePath += F(".sms");
+    
+          File smsFile = SD.open(filePath);
+          if(smsFile)
+          {
+            // нашли такой файл, будем читать с него данные
+            String answerMessage, commandToExecute;
+            char ch = 0;
+    
+            // в первой строке у нас лежит сообщение, которое надо послать после выполнения команды.
+            while(1)
+            {
+              ch = (char) smsFile.read();
+              if(ch == -1)
+                break;
+                
+              if(ch == '\r')
+                continue;
+              else if(ch == '\n')
+                break;
+             else
+              answerMessage += ch;
+            } // while
+    
+            ch = 0;
+    
+            // во второй строке - команда
+            while(1)
+            {
+              ch = (char) smsFile.read();
+              if(ch == -1 || ch =='\r' || ch == '\n')
+                break;
+    
+             commandToExecute += ch;    
+            } // while
+    
+            // закрываем файл
+            smsFile.close();
+    
+            // парсим команду
+            CommandParser* cParser = MainController->GetCommandParser();
+            Command cmd;
+            if(cParser->ParseCommand(commandToExecute,cmd))
+            {
+              // команду разобрали, можно исполнять
+              customSMSCommandAnswer = "";
+              cmd.SetIncomingStream(this);
+              MainController->ProcessModuleCommand(cmd);
+
+              // теперь получаем ответ
+              if(!answerMessage.length())
+                SendSMS(customSMSCommandAnswer);
+              else
+                SendSMS(answerMessage);
+              
+            } // if
+    
+            return; // возвращаемся, т.к. мы сами пошлём СМС с текстом, отличным от ОК
+          } // if(smsFile)
+          
+        } // if(MainController->HasSDCard())
+        
+    } // !shouldSendSMS
     
   }
   else
@@ -473,6 +559,11 @@ void SMSModule::ProcessIncomingSMS(const String& line) // обрабатывае
 
 
   
+}
+size_t SMSModule::write(uint8_t toWr)
+{
+ customSMSCommandAnswer += (char) toWr;
+ return 1; 
 }
 void SMSModule::ProcessIncomingCall(const String& line) // обрабатываем входящий звонок
 {
@@ -902,7 +993,6 @@ void SMSModule::SendSMS(const String& sms)
   actionsQueue.push_back(smaStartSendSMS); // добавляем команду на обработку
   
 }
-
 bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
 {
   UNUSED(wantAnswer);
@@ -911,7 +1001,93 @@ bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
   
   if(command.GetType() == ctSET) 
   {
-      PublishSingleton = NOT_SUPPORTED;
+    if(!argsCount) // нет аргументов
+    {
+      PublishSingleton = PARAMS_MISSED;
+    }
+    else
+    {
+      String t = command.GetArg(0);
+      if(t == F("ADD"))
+      {
+        if(argsCount < 4)
+        {
+          PublishSingleton = PARAMS_MISSED;
+        }
+        else
+        {
+            if(MainController->HasSDCard())
+            {
+              // добавить кастомное СМС
+
+              // получаем закодированное в HEX сообщение
+              const char* hexMessage = command.GetArg(1);
+              String message;
+
+              // переводим его в UTF-8
+              while(*hexMessage)
+              {
+                message += (char) WorkStatus::FromHex(hexMessage);
+                hexMessage += 2;
+              }
+
+              // получаем его хэш
+              unsigned int hash = hash_str(message.c_str());
+
+              // создаём имя файлв
+              String filePath = F("sms");
+              SD.mkdir(filePath);
+              filePath += F("/");
+              filePath += hash;
+              filePath += F(".sms");
+
+              File smsFile = SD.open(filePath,FILE_WRITE | O_TRUNC);
+              if(smsFile)
+              {
+                // в аргументе номер 2 у нас лежит ответ, который надо послать
+                hexMessage = command.GetArg(2);
+                message = "";
+    
+                  // переводим его в UTF-8
+                  while(*hexMessage)
+                  {
+                    message += (char) WorkStatus::FromHex(hexMessage);
+                    hexMessage += 2;
+                  }
+
+                // пишем первой строчкой ответ, который надо послать
+                smsFile.print(message.c_str());
+                smsFile.println("");
+                
+                // теперь пишем команду, которую надо выполнить
+                for(uint8_t i=3;i<argsCount;i++)
+                {
+                  const char* arg = command.GetArg(i);
+                  smsFile.print(arg);
+                  if(i < (argsCount-1))
+                    smsFile.write('|');
+                } // for
+                
+                smsFile.println("");
+
+                // закрываем файл
+                smsFile.close();
+              } // if(smsFile)
+
+    
+              PublishSingleton = REG_SUCC;
+              PublishSingleton.Status = true;
+              
+            } // if(MainController->HasSDCard())
+            else
+            {
+              PublishSingleton = NOT_SUPPORTED;
+            }
+        } // else
+        
+      } // ADD
+      
+    } // else have args
   }
   else
   if(command.GetType() == ctGET) //получить статистику
