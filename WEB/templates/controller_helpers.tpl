@@ -77,6 +77,7 @@ controller.OnStatus = function(obj)
       controller.queryTemperatureSettings();
     }
   
+    $('#wait_block').hide();
     $('#offline_block').hide();
     $('#online_block').show();
   }
@@ -85,6 +86,7 @@ controller.OnStatus = function(obj)
     tempAndMotorDataRequested = false;
     tempAndMotorSettingsCounter = 0;
     
+    $('#wait_block').hide();
     $('#offline_block').show();
     $('#online_block').hide();
   }

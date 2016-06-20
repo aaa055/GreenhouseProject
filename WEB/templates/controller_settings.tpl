@@ -372,6 +372,10 @@
 
 {include file='controller_head.tpl' additional_text=', настройки'}
 
+<div id='wait_block' style='padding-left:20px;'>
+<img src='images/wait.gif'/ align='absmiddle'> Подождите, идёт обработка данных...
+</div>
+
 <div id='offline_block' class='hdn'>
 {include file='controller_offline.tpl'}
 </div>

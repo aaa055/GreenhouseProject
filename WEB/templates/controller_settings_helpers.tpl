@@ -381,12 +381,14 @@ controller.OnStatus = function(obj)
   
   
   if(is_online)
-  {  
+  { 
+    $('#wait_block').hide();
     $('#offline_block').hide();
     $('#online_block').show();
   }
   else
   {
+    $('#wait_block').hide();
     $('#offline_block').show();
     $('#online_block').hide();
   }
