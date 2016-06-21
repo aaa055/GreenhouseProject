@@ -342,7 +342,7 @@ width:300px;
 #SOIL_LIST .row .actions,
 #DELTA_LIST .row .actions,
 #CC_LIST .row .actions,
-#WATER_CHANNELS_LIST .row .actions
+#WATER_CHANNELS_LIST .row .actions,
 #SMS_LIST .row .actions
 {
   width: auto;
