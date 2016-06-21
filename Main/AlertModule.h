@@ -95,6 +95,7 @@ class AlertRule
 {
   private:
 
+    RuleSettings Settings; // наши настройки
 
     char* rawCommand; // сырая команда, если Settings.TargetCommandType == commandUnparsed, то вся команда будет здесь    
     AbstractModule* linkedModule; // модуль, показания которого надо отслеживать
@@ -104,8 +105,6 @@ class AlertRule
   public:
     AlertRule();
     ~AlertRule();
-
-    RuleSettings Settings; // наши настройки
 
     bool GetEnabled() {return  Settings.Enabled; }
     void SetEnabled(bool e)  { Settings.Enabled = e ? 1 : 0; }

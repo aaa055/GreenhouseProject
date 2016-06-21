@@ -130,7 +130,7 @@ void WindowState::UpdateState(uint16_t dt)
         
         OnMyWay = false;
 
-        // говорим, что мы прекратили инициализироваться
+        // говорим, что мы сменили позицию
         SAVE_STATUS(WINDOWS_POS_CHANGED_BIT,1);
 
         return;

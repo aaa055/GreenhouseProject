@@ -1118,6 +1118,8 @@ bool  SMSModule::ExecCommand(const Command& command, bool wantAnswer)
         } // else
         
       } // ADD
+      else
+        PublishSingleton = UNKNOWN_COMMAND;
       
     } // else have args
   }

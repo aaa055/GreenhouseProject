@@ -271,6 +271,19 @@ width: calc(100%-220px);
   width:150px;
 }
 
+#SMS_LIST .row .row_item:nth-child(1) {
+  width:30px;
+}
+#SMS_LIST .row .row_item:nth-child(2) {
+  width:150px;
+}
+#SMS_LIST .row .row_item:nth-child(3) {
+  width:250px;
+}
+#SMS_LIST .row .row_item:nth-child(4) {
+  width:350px;
+}
+
 
 /* ширина столбцов в списке дельт */
 #DELTA_LIST .row .row_item{
@@ -330,6 +343,7 @@ width:300px;
 #DELTA_LIST .row .actions,
 #CC_LIST .row .actions,
 #WATER_CHANNELS_LIST .row .actions
+#SMS_LIST .row .actions
 {
   width: auto;
   text-align: center;

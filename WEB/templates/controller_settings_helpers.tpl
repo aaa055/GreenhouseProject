@@ -6,6 +6,7 @@
 <script type="text/javascript" src="js/cc.js"></script>
 <script type="text/javascript" src="js/water_settings.js"></script>
 <script type="text/javascript" src="js/rules.js"></script>
+<script type="text/javascript" src="js/sms.js"></script>
 
 
 <script type='text/javascript'>
@@ -19,6 +20,7 @@ var deltaView = new DeltaView(controller, deltaList);
 var compositeCommands = new CompositeCommands(); // список составных команд
 var wateringSettings = new WateringSettings(); // настройки полива
 var rulesList = new RulesList(); // список правил из контроллера
+var smsList = new SMSList(); // список СМС
 
 {literal}
 //-----------------------------------------------------------------------------------------------------
@@ -598,6 +600,49 @@ function addRuleRow(parentElement, rule, num)
   
 }
 //-----------------------------------------------------------------------------------------------------
+// добавляет строку в таблицу SMS
+function addSMSRow(parentElement, sms, num)
+{
+  if(!sms)
+  {
+    // запросили заголовок
+    var row = $('<div/>',{'class': 'row', id: 'sms_list_header'});
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("#").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Текст СМС").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Ответ от контроллера").appendTo(row);
+    $('<div/>',{'class': 'row_item ui-widget-header'}).html("Команда").appendTo(row);    
+    row.appendTo(parentElement);
+    return;
+  }
+  
+    var row = $('<div/>',{'class': 'row sms', id: 'sms_' + num});
+    $('<div/>',{'class': 'row_item', id: 'sms_index'}).html(num + 1).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'sms_text'}).html(sms.SMSText).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'sms_answer'}).html(sms.AnswerText).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'sms_command'}).html(sms.Command).appendTo(row);
+    
+        
+    var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
+    
+              
+    $('<div/>',{'class': 'action', title: 'Удалить SMS'}).appendTo(actions).button({
+      icons: {
+        primary: "ui-icon-close"
+      }, text: false
+    }).click({row: row, sms : sms}, function(ev){
+              
+                ev.data.row.remove();
+                smsList.List.remove(ev.data.sms);
+                
+                controller.queryServerScript("/x_delete_sms.php",{sms_text: ev.data.sms.SMSText}, function(obj,result){});
+                
+              });                  
+    
+    row.appendTo(parentElement);
+    
+  
+}
+//-----------------------------------------------------------------------------------------------------
 var __globalRuleDaymask = 0xFF;
 // показывает диалог редактирования правил
 function adjustRuleDaymask()
@@ -873,6 +918,69 @@ function newRule(editedRule, editedRow)
   
 }
 //-----------------------------------------------------------------------------------------------------
+function newSms()
+{
+  $('#sms_add_form').get(0).reset();
+  
+  $("#new_sms_dialog").dialog({modal:true, width:350, buttons: [{text: "OK", click: function(){
+  
+    var txt = $('#sms_text_input').val().trim();
+    var ans = $('#sms_answer_input').val().trim();
+    
+    
+    if(txt == '' || ans == '')
+    {
+      showMessage("Пожалуйста, укажите текст СМС и ответ контроллера!");
+      return;
+    }
+    
+    var list_index = parseInt($('#sms_commands_list').val());
+    var cmd = SMS_BUILD_COMMANDS[list_index];
+    
+    var wantParam = cmd[1];
+    var smsParam = $('#sms_param_text').val().trim();
+    if(wantParam && smsParam == '')
+    {
+      showMessage('Пожалуйста, укажите дополнительный параметр!');
+      return;
+    }
+    
+    var targetCommand = cmd[0];
+    
+    if(wantParam)
+      targetCommand = cmd[0].replace('{0}',smsParam);
+      
+    var addedSms = smsList.Add(txt,ans,targetCommand);
+    
+    // теперь ищем, есть ли такое же в списке
+    var found = false;
+    $('#SMS_LIST').find('DIV.row.sms').each(function(idx,elem){
+    
+      var e  = $(elem).find('DIV#sms_text');
+      if(e.html() == txt)
+      {
+        found = true;
+        $(elem).find('DIV#sms_answer').html(ans);
+        $(elem).find('DIV#sms_command').html(targetCommand);
+      }
+    
+    });
+        
+    if(!found) // новое СМС
+    {
+      addSMSRow('#SMS_LIST', addedSms, smsList.List.length-1);
+    }
+    
+    controller.queryServerScript("/x_add_sms.php",{sms_text: txt, sms_answer: ans, sms_command: targetCommand}, function(obj,result){});
+    
+    $(this).dialog('close');
+  
+  } } ] 
+  
+  });
+
+}
+//-----------------------------------------------------------------------------------------------------
 // сохраняем список правил
 function saveRulesList()
 {
@@ -924,6 +1032,54 @@ function saveRulesList()
 
 }
 //-----------------------------------------------------------------------------------------------------
+function saveSmsList()
+{
+
+    $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+              
+     var smsToProcess = smsList.List.length;
+     var processedSms = 0;
+          
+     // на будущее оставим такую команду для удаления всех СМС    
+     controller.queryCommand(false,"SMS|DELETE|ALL",function(obj,answer){
+     
+          for(var i=0;i<smsList.List.length;i++)
+          {
+            var sms = smsList.List[i];
+            var cmd = 'SMS|ADD|' + sms.getSMSCommand();
+            controller.queryCommand(false,cmd, function(obj, processResult){
+            
+              processedSms++;
+              if(processedSms >= smsToProcess)
+              {
+                  
+                
+                    $("#data_requested_dialog" ).dialog('close');
+                
+               
+              }
+            
+            });
+          } // for
+          
+          
+          if(!smsToProcess)
+          {
+            $("#data_requested_dialog" ).dialog('close');
+            
+          }
+     
+     });
+
+}
+//-----------------------------------------------------------------------------------------------------
 // заполняем список правил
 function fillRulesList()
 {
@@ -934,6 +1090,19 @@ function fillRulesList()
   {
     var rule = rulesList.Rules[i];
     addRuleRow('#RULES_LIST', rule, i);
+  } // for  
+}
+//-----------------------------------------------------------------------------------------------------
+// заполняем список СМС
+function fillSMSList()
+{
+  $('#SMS_LIST').html('');
+  addSMSRow('#SMS_LIST', null);
+  
+  for(var i=0;i<smsList.List.length;i++)
+  {
+    var sms = smsList.List[i];
+    addSMSRow('#SMS_LIST', sms, i);
   } // for  
 }
 //-----------------------------------------------------------------------------------------------------
@@ -1174,6 +1343,8 @@ controller.OnGetModulesList = function(obj)
     
     if(controller.Modules.includes('SMS')) // если в прошивке есть модуль Neoway M590
     {
+    
+    
         controller.queryCommand(true,'0|PHONE',function(obj,answer){
            
           $('#phone_number').toggle(answer.IsOK);
@@ -1184,7 +1355,44 @@ controller.OnGetModulesList = function(obj)
           }
         
         });
-    }
+        
+        controller.queryServerScript("/x_get_sms.php",{}, function(obj,result){
+           
+          $('#SMS_MENU').toggle(true);
+          var answer = result.sms_list;
+          smsList.Clear();
+          
+          for(var i=0;i<answer.length;i++)
+          {            
+            var sms = answer[i];
+           
+            smsList.Add(sms.sms_text, sms.sms_answer, sms.sms_command);
+            
+          } // for
+          fillSMSList();
+          
+          // тут заполняем список команд для СМС
+          $('#sms_commands_list').html('');
+          // 
+          for(var i=0;i<SMS_BUILD_COMMANDS.length;i++)
+          {
+            var cmd = SMS_BUILD_COMMANDS[i];
+            $('#sms_commands_list').append($('<option/>',{value: i }).text(cmd[2]));
+          } // for
+          
+           $('#sms_commands_list').change(function(){
+          
+            var list_index = parseInt($(this).val());
+            
+            var cmd = SMS_BUILD_COMMANDS[list_index];
+            $('#sms_param').toggle(cmd[1]);
+            $('#sms_param_caption').html(cmd[3]);
+            
+          });
+                     
+        });       
+        
+    } // includes('SMS'
     
     if(controller.Modules.includes('FLOW')) // если в прошивке есть модуль расходомеров
     {
@@ -1837,13 +2045,13 @@ $(document).ready(function(){
       }
     });
     
-  $( "#save_delta_button, #save_cc_button, #save_watering_button, #save_rules_button" ).button({
+  $( "#save_delta_button, #save_cc_button, #save_watering_button, #save_rules_button, #save_sms_button" ).button({
       icons: {
         primary: "ui-icon-arrowthickstop-1-n"
       }
     }); 
     
-  $( "#new_delta_button, #new_cc_button, #new_rule_button" ).button({
+  $( "#new_delta_button, #new_cc_button, #new_rule_button, #new_sms_button" ).button({
       icons: {
         primary: "ui-icon-document"
       }
@@ -1853,7 +2061,7 @@ $(document).ready(function(){
       icons: {
         primary: "ui-icon-note"
       }
-    }).hide().css('width','100%');
+    });
     
       $( "#sensors_info_button" ).button({
       icons: {

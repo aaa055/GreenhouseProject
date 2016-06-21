@@ -14,6 +14,26 @@
   <p>Пожалуйста, подождите, пока данные обрабатываются...</p>
 </div>
 
+<div id='new_sms_dialog' title='Новое СМС' class='hdn'>
+  <form id='sms_add_form'>
+  
+    Текст СМС:<br/>
+    <input type='text' id='sms_text_input' name='sms_text_input' maxlength='50' value='' style='width:100%;'/><br/>
+    Ответ контроллера:<br/>
+    <input type='text' id='sms_answer_input' name='sms_answer_input' maxlength='100' value='' style='width:100%;'/><br/>
+    
+    Выполнить команду:<br/>
+    <select id='sms_commands_list' style='width:100%;' name='sms_commands_list'>
+    </select>
+
+    <div id='sms_param' class='hdn'>
+      <span id='sms_param_caption'>Дополнительный параметр:</span><br/>
+      <input type='text' id='sms_param_text' name='sms_param_text' maxlength='100' value='' style='width:100%;'/><br/>
+    </div>
+    
+  </form>
+</div>
+
 <div id='phone_number_dialog' title='Номер телефона' class='hdn'>
   <form>
     Номер телефона:<br/>
@@ -388,12 +408,12 @@
       <div class='menuitem ui-corner-all hdn' id='CC_MENU' onclick="content(this);">Составные команды</div>
       <div class='menuitem ui-corner-all hdn' id='RULES_MENU' onclick="content(this);">Правила</div>
       <div class='menuitem ui-corner-all hdn' id='WATER_MENU' onclick="content(this);">Настройки полива</div>
+      <div class='menuitem ui-corner-all hdn' id='SMS_MENU' onclick="content(this);">Список SMS</div>
       <div class='menuitem ui-corner-all' id='COMMAND_PROMPT_MENU' onclick="content(this);">Командная строка</div>
 
       <div class='ui-corner-all button_menu_spacer hdn' id='flow_calibration_button' onclick="editFlowCalibration();">Калибровка расходомеров</div>
       <div class='ui-corner-all button_menu_spacer hdn' id='controller_time_button' onclick="setControllerTime();">Дата/время</div>
 
-      <div class='ui-corner-all button_menu_spacer hdn' id='phone_number' onclick="editPhoneNumber();">Номер телефона для SMS</div>
       <div class='ui-corner-all button_menu_spacer hdn' id='wifi_menu' onclick="editWiFiSettings();">Настройки Wi-Fi</div>
       <div class='ui-corner-all button_menu_spacer hdn' id='sensors_info_button' onclick="showSensorsInfo();">О датчиках</div>
 
@@ -442,7 +462,22 @@
                     
                   </div>
                                    
-
+                  <div class='content hdn' id='SMS_MENU_CONTENT'>
+                  
+                    <h3 class='ui-widget-header ui-corner-all'>Список SMS для управления контроллером</h3>
+                    
+                    <div id='SMS_LIST'></div>
+                    <br clear='left'/>
+                    <div><br/><br/>
+                    
+                        <button id='save_sms_button' onclick='saveSmsList();'>Сохранить в контроллер</button>
+                        <button id='new_sms_button' onclick='newSms();'>Добавить SMS</button>
+                        <button id='phone_number' class='hdn' onclick="editPhoneNumber();">Номер телефона для SMS</button>
+                        
+                    </div>
+                    
+                  </div>
+                  
                   <div class='content hdn' id='RULES_MENU_CONTENT'>
                   
                     <h3 class='ui-widget-header ui-corner-all'>Список правил</h3>
