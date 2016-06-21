@@ -1127,9 +1127,11 @@ bool AlertModule::IsRuleRaisedOnLastIteration(AlertRule* rule)
     {
       AlertRule* r = lastIterationRaisedRules[i];
       if(r == rule)
+      {
         return true;
+      }
     }
-
+    
     return false;
 }
 bool AlertModule::CanWorkWithRule(RulesVector& checkedRules, AlertRule* rule, RulesVector& raisedAlerts)

@@ -114,10 +114,12 @@ void WorkStatus::SetStatus(uint8_t bitNum, bool bOn)
 void WorkStatus::SetModeUnchanged()
 {
   memcpy(lastStatuses,statuses,sizeof(statuses));
+  SetStatus(WINDOWS_POS_CHANGED_BIT,0);
 }
 bool WorkStatus::IsModeChanged()
 {
-  return IsStatusModeChanged(WINDOWS_MODE_BIT) || IsStatusModeChanged(WATER_MODE_BIT) || IsStatusModeChanged(LIGHT_MODE_BIT);
+  return IsStatusModeChanged(WINDOWS_MODE_BIT) || IsStatusModeChanged(WATER_MODE_BIT) || IsStatusModeChanged(LIGHT_MODE_BIT) ||
+  GetStatus(WINDOWS_POS_CHANGED_BIT);
 }
 bool WorkStatus::GetStatus(uint8_t bitNum)
 {

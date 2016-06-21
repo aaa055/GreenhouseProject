@@ -14,6 +14,10 @@ void WindowState::Setup(TempSensors* parent,ModuleState* state,  uint8_t relayCh
   RelayStateHolder = state;
   Parent = parent;
 
+  // считаем, что как будто мы открыты, т.к. при старте контроллера надо принудительно закрыть окна
+  CurrentPosition = MainController->GetSettings()->GetOpenInterval();
+  RequestedPosition = CurrentPosition;
+
   // запоминаем, какие каналы модуля реле мы используем (в случае со сдвиговым регистром - это номера битов)
   RelayChannel1 = relayChannel1;
   RelayChannel2 = relayChannel2;
@@ -126,6 +130,9 @@ void WindowState::UpdateState(uint16_t dt)
         
         OnMyWay = false;
 
+        // говорим, что мы прекратили инициализироваться
+        SAVE_STATUS(WINDOWS_POS_CHANGED_BIT,1);
+
         return;
         
     } // if
@@ -212,7 +219,7 @@ void TempSensors::SaveChannelState(uint8_t channel, uint8_t state)
 }
 void TempSensors::SetupWindows()
 {
-  // настраиваем фрамуги
+  // настраиваем фрамуги  
   for(uint8_t i=0, j=0;i<SUPPORTED_WINDOWS;i++, j+=2)
   {
       // раздаём каналы реле: первому окну - 0,1, второму - 2,3 и т.д.
@@ -232,7 +239,9 @@ void TempSensors::SetupWindows()
           digitalWrite(pin1,RELAY_OFF);
           digitalWrite(pin2,RELAY_OFF);        
      #endif
-      
+
+    // просим окна закрыться при старте контроллера
+    Windows[i].ChangePosition(dirCLOSE,0);
   } // for
 }
 
@@ -324,7 +333,8 @@ void TempSensors::Setup()
 
 
    SAVE_STATUS(WINDOWS_MODE_BIT,1); // сохраняем режим работы окон
-   
+   SAVE_STATUS(WINDOWS_POS_CHANGED_BIT,0); // говорим, что окна инициализируются
+ 
 
  }
 void TempSensors::Update(uint16_t dt)

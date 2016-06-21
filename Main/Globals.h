@@ -691,7 +691,7 @@
 #define WATER_MODE_BIT 3 // номер бита режима работы полива (1 - авто, 0 - ручной)
 #define LIGHT_STATUS_BIT 4 // номер бита состояния досветки (1 - включена, 0 - выключена)
 #define LIGHT_MODE_BIT 5 // номер бита режима работы досветки (1 - авто, 0 - ручной)
-
+#define WINDOWS_POS_CHANGED_BIT 6 // бит, выставленный в 1, если окна закончили смену позиции
 #define STATUSES_BYTES 2 // сколько байт под статусы у нас используется
 
 #define SAVE_STATUS(bnum,sta) WORK_STATUS.SetStatus((bnum),(sta))
