@@ -11,6 +11,7 @@ require_once(INCLUDE_PATH . "utils/socket_transport.php");
 
 
 $SIMULATION = false; // ФЛАГ СИМУЛЯЦИИ, БЕЗ ЗАПИСИ В БД
+$SAVE_CONTROLLER_STATE = false; // сохранять или нет состояние полива/окон/досветки в БД
 
 // массив возможных состояний контроллера
 $states = array();
@@ -37,6 +38,7 @@ function requestControllerData($controller_id,$address)
   global $sensor_types;
   global $modules;
   global $SIMULATION;
+  global $SAVE_CONTROLLER_STATE;
   
   $NO_TEMPERATURE_DATA = "-128.00"; // нет показаний с датчика температуры
   $NO_LUMINOSITY_DATA = "-1.00"; // нет показаний с датчика освещенности
@@ -100,42 +102,47 @@ function requestControllerData($controller_id,$address)
       // теперь генерируем набор SQL для вставки
       if(!$SIMULATION)
         $dbengine->beginTransaction();
+        
+        if($SAVE_CONTROLLER_STATE)
+        {
       
-        $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['WINDOWS']}, $windows_open);";
-        if($SIMULATION)
-          echo $sql . "\n";
-        else
-          $dbengine->exec($sql);
+            $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['WINDOWS']}, $windows_open);";
+            if($SIMULATION)
+              echo $sql . "\n";
+            else
+              $dbengine->exec($sql);
 
-        $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['WINDOWS_MODE']}, $windows_auto_mode);";
-        if($SIMULATION)
-          echo $sql . "\n";
-        else
-          $dbengine->exec($sql);
+            $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['WINDOWS_MODE']}, $windows_auto_mode);";
+            if($SIMULATION)
+              echo $sql . "\n";
+            else
+              $dbengine->exec($sql);
 
-        $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['WATER']}, $water_on);";
-        if($SIMULATION)
-          echo $sql . "\n";
-        else
-          $dbengine->exec($sql);
+            $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['WATER']}, $water_on);";
+            if($SIMULATION)
+              echo $sql . "\n";
+            else
+              $dbengine->exec($sql);
 
-        $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['WATER_MODE']}, $water_auto_mode);";
-        if($SIMULATION)
-          echo $sql . "\n";
-        else
-          $dbengine->exec($sql);
+            $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['WATER_MODE']}, $water_auto_mode);";
+            if($SIMULATION)
+              echo $sql . "\n";
+            else
+              $dbengine->exec($sql);
 
-        $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['LIGHT']}, $light_on);";
-        if($SIMULATION)
-          echo $sql . "\n";
-        else
-          $dbengine->exec($sql);
+            $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['LIGHT']}, $light_on);";
+            if($SIMULATION)
+              echo $sql . "\n";
+            else
+              $dbengine->exec($sql);
 
-        $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['LIGHT_MODE']}, $light_auto_mode);";
-        if($SIMULATION)
-          echo $sql . "\n";
-        else
-          $dbengine->exec($sql);
+            $sql = "INSERT INTO controller_state(controller_id,state_id,state) VALUES($controller_id, {$states['LIGHT_MODE']}, $light_auto_mode);";
+            if($SIMULATION)
+              echo $sql . "\n";
+            else
+              $dbengine->exec($sql);
+          
+        } // if($SAVE_CONTROLLER_STATE)
 
 
       // тут уже обновили состояние контроллера, пора переходить к данным
@@ -466,13 +473,16 @@ function requestControllerData($controller_id,$address)
   
 } // function
 
-
-// заполняем массив состояний
-$res = $dbengine->query("SELECT state_id, state_name FROM states;");
-while($arr = $res->fetchArray())
+if($SAVE_CONTROLLER_STATE)
 {
-  $states[ $arr['state_name'] ] = $arr['state_id'];
-}
+    // заполняем массив состояний
+    $res = $dbengine->query("SELECT state_id, state_name FROM states;");
+    while($arr = $res->fetchArray())
+    {
+      $states[ $arr['state_name'] ] = $arr['state_id'];
+    }
+    
+} // $SAVE_CONTROLLER_STATE
 
 // заполняем массив типов сенсоров
 $res = $dbengine->query("SELECT sensor_type_id, sensor_type FROM sensor_types;");
