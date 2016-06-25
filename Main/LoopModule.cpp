@@ -31,7 +31,7 @@ void LoopModule::Update(uint16_t dt)
           // конструируем команду
        
           Command com;
-          com.Construct(lnk->linkedModule->GetID(),lnk->paramsToPass.c_str(),lnk->typeOfCommand.c_str());
+          com.Construct(lnk->linkedModule->GetID(),lnk->paramsToPass.c_str(),lnk->commandType);
 
 
           com.SetInternal(true); // говорим, что команда - от одного модуля к другому
@@ -67,7 +67,7 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
     return NULL;
   }
 
- String loopName = command.GetArg(LOOP_NAME_IDX); // получили имя циклически вызываемой команды
+ const char* loopName = command.GetArg(LOOP_NAME_IDX); // получили имя циклически вызываемой команды
  String moduleID = command.GetArg(MODULE_ID_IDX); // получили ID модуля
  LoopLink* lnk = GetLink(loopName);
 
@@ -92,9 +92,14 @@ uint8_t paramsCount = command.GetArgsCount(); // сколько параметр
       
   } // if
 
-    lnk->loopName = loopName; // сохраняем имя команды
-    lnk->typeOfCommand = command.GetArg(COMMAND_TYPE_IDX);
-    lnk->interval = (uint16_t) atoi(command.GetArg(INTERVAL_IDX));
+    delete [] lnk->loopName;
+    uint8_t len = strlen(loopName);
+    lnk->loopName = new char[len + 1];
+    strcpy(lnk->loopName,loopName); // сохраняем имя команды
+    lnk->loopName[len] = 0;
+    
+    lnk->commandType = !strcmp_P(command.GetArg(COMMAND_TYPE_IDX), (const char*) F("SET")) ? ctSET : ctGET;
+    lnk->interval = atol(command.GetArg(INTERVAL_IDX));
     lnk->bActive = (lnk->interval > 0 ? true : false);
     lnk->lastTimerVal = 0;
     lnk->countPasses = (uint8_t) atoi(command.GetArg(COUNT_PASSES_IDX));
@@ -125,13 +130,13 @@ AbstractModule* LoopModule::GetRegisteredModule(const String& moduleID)
     return MainController->GetModuleByID(moduleID);
 }
 
-LoopLink* LoopModule::GetLink(const String& loopName)
+LoopLink* LoopModule::GetLink(const char* loopName)
 {
 
         size_t sz = vec.size();
         for(size_t i =0;i<sz;i++)
         { 
-          if(vec[i]->loopName == loopName) // нашли команду с таким же именем
+          if(!strcmp(vec[i]->loopName,loopName)) // нашли команду с таким же именем
             return vec[i];
         } // for
   

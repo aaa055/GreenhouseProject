@@ -58,6 +58,27 @@ typedef struct
    
 } UniSensorsScratchpad; // скратчпад модуля с датчиками
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
+typedef struct
+{
+  byte sensorType; // тип датчика
+  byte sensorData[2]; // данные датчика
+   
+} UniNextionData; // данные для отображения на Nextion
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+typedef struct
+{
+  uint8_t reserved[3]; // резерв, добитие до 24 байт
+  uint8_t controllerStatus;
+  uint8_t nextionStatus1;
+  uint8_t nextionStatus2;  
+  uint8_t openTemperature; // температура открытия окон
+  uint8_t closeTemperature; // температура закрытия окон
+
+  uint8_t dataCount; // кол-во записанных показаний с датчиков
+  UniNextionData data[5]; // показания с датчиков
+  
+} UniNextionScratchpad; // скратчпад выносного модуля Nextion
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
 // класс для работы со скратчпадом, представляет основные функции, никак не изменяет переданный скратчпад до вызова функции read и функции write.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 class UniScratchpadClass
@@ -200,8 +221,7 @@ class AbstractUniClient
       // регистрирует модуль в системе
       virtual void Register(UniRawScratchpad* scratchpad) = 0; 
 
-      // обновляет данные с модуля, если возвращает true - значит, 
-      // надо записать скратчпад обратно в универсальный модуль
+      // обновляет данные с модуля
       virtual void Update(UniRawScratchpad* scratchpad, bool isModuleOnline) = 0;
 
       void SetPin(byte p) { pin = p; }
@@ -239,6 +259,37 @@ class SensorsUniClient : public AbstractUniClient
   
 };
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
+struct UniNextionWaitScreenData
+{
+  byte sensorType;
+  byte sensorIndex;
+  const char* moduleName;
+  UniNextionWaitScreenData(byte a, byte b, const char* c) 
+  {
+    sensorType = a;
+    sensorIndex = b;
+    moduleName = c;
+  }
+};
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+#ifdef USE_UNI_NEXTION_MODULE
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+class NextionUniClient: public AbstractUniClient
+{
+  public:
+    NextionUniClient();
+    virtual void Register(UniRawScratchpad* scratchpad);
+    virtual void Update(UniRawScratchpad* scratchpad, bool isModuleOnline);
+
+  private:
+
+    unsigned long updateTimer;
+    bool tempChanged;
+  
+};
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+#endif // USE_UNI_NEXTION_MODULE
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
 // Фабрика клиентов
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 class UniClientsFactory
@@ -247,6 +298,9 @@ class UniClientsFactory
 
     DummyUniClient dummyClient;
     SensorsUniClient sensorsClient;
+    #ifdef USE_UNI_NEXTION_MODULE
+    NextionUniClient nextionClient;
+    #endif
   
   public:
     UniClientsFactory();

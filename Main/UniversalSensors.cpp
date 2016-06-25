@@ -1,11 +1,16 @@
 #include "UniversalSensors.h"
 #include <OneWire.h>
 #include <EEPROM.h>
+#include "InteropStream.h"
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 UniRegDispatcher UniDispatcher;
 UniScratchpadClass UniScratchpad; // наш пишичитай скратчпада
 UniClientsFactory UniFactory; // наша фабрика клиентов
 UniRawScratchpad SHARED_SCRATCHPAD; // общий скратчпад для классов опроса модулей, висящих на линиях
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+#ifdef USE_UNI_NEXTION_MODULE
+  UniNextionWaitScreenData UNI_NX_SENSORS_DATA[] = { UNI_NEXTION_WAIT_SCREEN_SENSORS, {0,0,""} };
+#endif
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 // UniClientsFactory
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -25,10 +30,269 @@ AbstractUniClient* UniClientsFactory::GetClient(UniRawScratchpad* scratchpad)
   {
     case uniSensorsClient:
       return &sensorsClient;
+
+    case uniNextionClient:
+      #ifdef USE_UNI_NEXTION_MODULE
+        return &nextionClient;
+      #else
+      break;
+      #endif
   }
 
   return &dummyClient;
 }
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+#ifdef USE_UNI_NEXTION_MODULE
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+// NextionUniClient
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+NextionUniClient::NextionUniClient()
+{
+  updateTimer = 0;
+  tempChanged = false;
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+void NextionUniClient::Register(UniRawScratchpad* scratchpad)
+{
+  UNUSED(scratchpad);
+  // нам регистрироваться не надо, ничего не делаем
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+void NextionUniClient::Update(UniRawScratchpad* scratchpad, bool isModuleOnline)
+{
+  // тут обновляем данные, полученные с Nextion, и записываем ему текущее состояние
+  if(!isModuleOnline) // не надо ничего делать
+    return;
+
+  // сначала проверяем, чего там у нас нажато в дисплее
+  UniNextionScratchpad ourScratch;
+  memcpy(&ourScratch,scratchpad->data,sizeof(UniNextionScratchpad));
+
+  byte changesCount = 0; // кол-во изменений, если оно больше нуля - мы запишем скратч обратно, не дожидаясь наступления интервала обновления
+
+  if(WORK_STATUS.IsModeChanged()) // были изменения в режиме работы
+    changesCount++;
+
+  if(bitRead(ourScratch.nextionStatus1,0))
+  {
+   // Serial.println("close windows");
+    bitWrite(ourScratch.nextionStatus1,0,0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("STATE|WINDOW|ALL|CLOSE"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus1,1))
+  {
+  //  Serial.println("open windows");
+    bitWrite(ourScratch.nextionStatus1,1, 0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("STATE|WINDOW|ALL|OPEN"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus1,2))
+  {
+ //   Serial.println("windows auto mode");
+    bitWrite(ourScratch.nextionStatus1,2, 0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("STATE|MODE|AUTO"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus1,3))
+  {
+ //   Serial.println("windows manual mode");
+    bitWrite(ourScratch.nextionStatus1,3,0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("STATE|MODE|MANUAL"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus1,4))
+  {
+  //  Serial.println("water on");
+    bitWrite(ourScratch.nextionStatus1,4,0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("WATER|ON"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus1,5))
+  {
+ //   Serial.println("water off");
+    bitWrite(ourScratch.nextionStatus1,5, 0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("WATER|OFF"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus1,6))
+  {
+  //  Serial.println("water auto mode");
+    bitWrite(ourScratch.nextionStatus1,6,0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("WATER|MODE|AUTO"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus1,7))
+  {
+ //   Serial.println("water manual mode");
+    bitWrite(ourScratch.nextionStatus1,7, 0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("WATER|MODE|MANUAL"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus2,0))
+  {
+  //  Serial.println("light on");
+    bitWrite(ourScratch.nextionStatus2,0,0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("LIGHT|ON"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus2,1))
+  {
+ //   Serial.println("light off");
+    bitWrite(ourScratch.nextionStatus2,1, 0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("LIGHT|OFF"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus2,2))
+  {
+ //   Serial.println("light auto mode");
+    bitWrite(ourScratch.nextionStatus2,2, 0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("LIGHT|MODE|AUTO"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus2,3))
+  {
+ //   Serial.println("light manual mode");
+    bitWrite(ourScratch.nextionStatus2,3, 0);
+    changesCount++;
+    ModuleInterop.QueryCommand(ctSET, F("LIGHT|MODE|MANUAL"),false,false);  
+  }
+
+  if(bitRead(ourScratch.nextionStatus2,4))
+  {
+ //   Serial.println("open temp inc");
+    bitWrite(ourScratch.nextionStatus2,4, 0);
+    changesCount++;
+    byte tmp = MainController->GetSettings()->GetOpenTemp();
+    if(tmp < 50)
+      ++tmp;  
+
+    MainController->GetSettings()->SetOpenTemp(tmp);
+    tempChanged = true;
+  }
+
+  if(bitRead(ourScratch.nextionStatus2,5))
+  {
+ //   Serial.println("open temp dec");
+    bitWrite(ourScratch.nextionStatus2,5, 0);
+    changesCount++;
+    byte tmp = MainController->GetSettings()->GetOpenTemp();
+    if(tmp > 0)
+      --tmp;  
+
+    MainController->GetSettings()->SetOpenTemp(tmp);
+    tempChanged = true;
+  }
+
+  if(bitRead(ourScratch.nextionStatus2,6))
+  {
+  //  Serial.println("close temp inc");
+    bitWrite(ourScratch.nextionStatus2,6, 0);
+    changesCount++;
+    byte tmp = MainController->GetSettings()->GetCloseTemp();
+    if(tmp < 50)
+      ++tmp;  
+
+    MainController->GetSettings()->SetCloseTemp(tmp);
+    tempChanged = true;
+  }
+
+  if(bitRead(ourScratch.nextionStatus2,7))
+  {
+ //   Serial.println("close temp dec");
+    bitWrite(ourScratch.nextionStatus2,7, 0);
+    changesCount++;
+    byte tmp = MainController->GetSettings()->GetCloseTemp();
+    if(tmp > 0)
+      --tmp;  
+
+    MainController->GetSettings()->SetCloseTemp(tmp);
+    tempChanged = true;
+  }
+
+  if(bitRead(ourScratch.controllerStatus,6)) // дисплей заснул, можно сохранять настройки
+  {
+    bitWrite(ourScratch.controllerStatus,6,0); 
+  //  Serial.println("enter sleep");
+    if(tempChanged)
+      MainController->GetSettings()->Save();
+
+    tempChanged = false;
+  }
+
+  // теперь проверяем, надо ли нам записывать настройки немедленно
+   unsigned long curMillis = millis();
+   bool needToWrite = (changesCount > 0) || (curMillis - updateTimer > 1000);
+   if(needToWrite)
+   {
+    // надо записать текущее положение дел в Nextion
+      updateTimer = curMillis;
+
+      bitWrite(ourScratch.controllerStatus,0, WORK_STATUS.GetStatus(WINDOWS_STATUS_BIT));
+      bitWrite(ourScratch.controllerStatus,1, WORK_STATUS.GetStatus(WINDOWS_MODE_BIT));
+      bitWrite(ourScratch.controllerStatus,2, WORK_STATUS.GetStatus(WATER_STATUS_BIT));
+      bitWrite(ourScratch.controllerStatus,3, WORK_STATUS.GetStatus(WATER_MODE_BIT));
+      bitWrite(ourScratch.controllerStatus,4, WORK_STATUS.GetStatus(LIGHT_STATUS_BIT));
+      bitWrite(ourScratch.controllerStatus,5, WORK_STATUS.GetStatus(LIGHT_MODE_BIT));
+
+      GlobalSettings* sett = MainController->GetSettings();
+      ourScratch.openTemperature = sett->GetOpenTemp();
+      ourScratch.closeTemperature = sett->GetCloseTemp();
+
+      // теперь пишем показания с датчиков
+      ourScratch.dataCount = 0;
+      
+      byte cntr = 0;
+      while(UNI_NX_SENSORS_DATA[cntr].sensorType > 0)
+      {
+        AbstractModule* module = MainController->GetModuleByID(UNI_NX_SENSORS_DATA[cntr].moduleName);
+        if(module)
+        {
+          OneState* os = module->State.GetState((ModuleStates)UNI_NX_SENSORS_DATA[cntr].sensorType,UNI_NX_SENSORS_DATA[cntr].sensorIndex);
+          if(os)
+          {
+            // получили состояние, теперь пишем его в скратч
+            if(os->HasData())
+            {
+              byte buff[4] = {0};
+              os->GetRawData(buff);
+              ourScratch.data[ourScratch.dataCount].sensorType = UNI_NX_SENSORS_DATA[cntr].sensorType;
+              memcpy(ourScratch.data[ourScratch.dataCount].sensorData,buff,2);
+              ourScratch.dataCount++;
+            }
+          } // if(os)
+        } // if(module)
+
+        cntr++;
+
+        if(ourScratch.dataCount > 4)
+          break;
+      } // while
+      
+
+      // копируем скратчпад обратно
+      memcpy(scratchpad->data,&ourScratch,sizeof(UniNextionScratchpad));
+
+      // и пишем его в Nextion
+      UniScratchpad.begin(pin,scratchpad);
+      UniScratchpad.write();
+      
+   } // needToWrite
+   
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+#endif // USE_UNI_NEXTION_MODULE
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 // SensorsUniClient
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -101,7 +365,6 @@ void SensorsUniClient::Update(UniRawScratchpad* scratchpad, bool isModuleOnline)
     unsigned long curMillis = millis();
     if(curMillis - measureTimer > 5000)
     {
-      //Serial.println("Start measure...");
       measureTimer = curMillis;
       UniScratchpad.begin(pin,scratchpad);
       UniScratchpad.startMeasure();
@@ -203,6 +466,9 @@ UniPermanentLine::UniPermanentLine(uint8_t pinNumber)
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 bool UniPermanentLine::IsRegistered()
 {
+  if(SHARED_SCRATCHPAD.head.packet_type == uniNextionClient) // для дисплея Nextion не требуется регистрация 
+    return true;
+    
   return ( SHARED_SCRATCHPAD.head.controller_id == UniDispatcher.GetControllerID() );
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -6,15 +6,21 @@
 
 struct LoopLink // структура хранения информации для отсыла команды связанному модулю
 {
-  String loopName; // имя команды
+  char* loopName; // имя команды
+  String paramsToPass; // параметры, которые надо передать связанному модулю
   AbstractModule* linkedModule; // модуль, которому мы пересылаем команду через нужные интервалы
   bool bActive; // флаг активности работы
-  uint16_t lastTimerVal; // последнее значение таймера
-  uint16_t interval; // интервал работы команды
+  unsigned long lastTimerVal; // последнее значение таймера
+  unsigned long interval; // интервал работы команды
   uint8_t currPass; // номер текущего прохода
   uint8_t countPasses; // сколько проходов сделать всего
-  String paramsToPass; // параметры, которые надо передать связанному модулю
-  String typeOfCommand; // тип команды, которую надо передать связанному модулю
+  uint8_t commandType; // тип команды, которую надо передать связанному модулю
+
+  LoopLink()
+  {
+    loopName = NULL;
+    linkedModule = NULL;
+  }
 };
 
 typedef Vector<LoopLink*> LinkVector;
@@ -25,7 +31,7 @@ class LoopModule : public AbstractModule
 
   LinkVector vec;
   AbstractModule* GetRegisteredModule(const String& moduleID);
-  LoopLink* GetLink(const String& loopName);
+  LoopLink* GetLink(const char* loopName);
   LoopLink* AddLink(const Command& command, bool wantAnswer);
   
   public:
