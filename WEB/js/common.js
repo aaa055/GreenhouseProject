@@ -251,6 +251,7 @@ function numericExtension()
                 // allow backspace, tab, delete, enter, arrows, numbers and keypad numbers ONLY
                 // home, end, period, and numpad decimal
                 return (
+                    key == 189 || // minus sign 
                     key == 8 || 
                     key == 9 ||
                     key == 13 ||
