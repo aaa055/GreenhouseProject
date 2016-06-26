@@ -285,10 +285,11 @@ bool AlertRule::HasAlert()
        TemperaturePair tp = *os; 
        int8_t curTemp = tp.Current.Value;
 
-       if(curTemp == NO_TEMPERATURE_DATA) // нет датчика на линии
-        return false;
-
        int8_t tAlert = (int8_t) Settings.DataAlert; // следим за переданной температурой
+
+       if(curTemp == NO_TEMPERATURE_DATA) // нет датчика на линии
+        return (curTemp == tAlert); // на случай, если правило следит за отсутствием показаний с датчика
+ 
        switch(Settings.DataSource)
        {
           case tsOpenTemperature: // попросили подставить температуру открытия из настроек
@@ -334,7 +335,7 @@ bool AlertRule::HasAlert()
        long lum = lp.Current;
 
        if(lum == NO_LUMINOSITY_DATA) // нет датчика на линии
-        return false;
+        return (lum == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
 
        switch(Settings.Operand)
        {
@@ -361,7 +362,7 @@ bool AlertRule::HasAlert()
        int8_t curHumidity = hp.Current.Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
-        return false;
+        return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
 
        switch(Settings.Operand)
        {
@@ -388,7 +389,7 @@ bool AlertRule::HasAlert()
        int8_t curHumidity = hp.Current.Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
-        return false;
+        return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
 
        switch(Settings.Operand)
        {
@@ -415,7 +416,7 @@ bool AlertRule::HasAlert()
        int8_t curHumidity = hp.Current.Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
-        return false;
+        return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
 
        switch(Settings.Operand)
        {
