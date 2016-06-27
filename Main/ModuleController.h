@@ -34,6 +34,8 @@ class ModuleController
 
   GlobalSettings settings; // глобальные настройки
 
+  ReservationResolver* reservationResolver; // держатель списков резервирования
+
 #ifdef USE_DS3231_REALTIME_CLOCK
   DS3231Clock _rtc; // часы реального времени
 #endif
@@ -53,6 +55,11 @@ public:
 
   void Setup(); // настраивает контроллер на работу (инициализация нужных железок и т.п.)
   void begin(); // начинаем работу
+
+  // устанавливает обработчика списков резервирования
+  void SetReservationResolver(ReservationResolver* rr) { reservationResolver = rr; }
+  // возвращает состояние с зарезервированного списка для датчика модуля, с которого нет показаний
+  OneState* GetReservedState(AbstractModule* sourceModule, ModuleStates sensorType, uint8_t sensorIndex);
 
   bool HasSDCard() 
   {

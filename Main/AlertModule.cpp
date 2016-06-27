@@ -266,7 +266,7 @@ void AlertRule::Update(uint16_t dt
 }
 bool AlertRule::HasAlert()
 {
-  if(!linkedModule || !Settings.Enabled || !Settings.CanWork)//!bitRead(flags,RULE_ENABLED_BIT) || !bitRead(flags,RULE_CAN_WORK_BIT))
+  if(!linkedModule || !Settings.Enabled || !Settings.CanWork)
     return false;
 
 
@@ -288,7 +288,17 @@ bool AlertRule::HasAlert()
        int8_t tAlert = (int8_t) Settings.DataAlert; // следим за переданной температурой
 
        if(curTemp == NO_TEMPERATURE_DATA) // нет датчика на линии
-        return (curTemp == tAlert); // на случай, если правило следит за отсутствием показаний с датчика
+       {
+        // пытаемся найти резервирование
+        OneState* reservedState = MainController->GetReservedState(linkedModule,StateTemperature,Settings.SensorIndex);
+        if(!reservedState)
+          return (curTemp == tAlert); // на случай, если правило следит за отсутствием показаний с датчика
+        else // есть зарезервированный датчик с показаниями
+        {
+          TemperaturePair tp = *reservedState; 
+          curTemp = tp.Current.Value;
+        } // else
+       }
  
        switch(Settings.DataSource)
        {
@@ -335,7 +345,17 @@ bool AlertRule::HasAlert()
        long lum = lp.Current;
 
        if(lum == NO_LUMINOSITY_DATA) // нет датчика на линии
-        return (lum == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
+       {
+        // пытаемся найти резервирование
+        OneState* reservedState = MainController->GetReservedState(linkedModule,StateLuminosity,Settings.SensorIndex);
+        if(!reservedState)
+          return (lum == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
+        else // есть зарезервированный датчик с показаниями
+          {
+            LuminosityPair lp = *reservedState; 
+            lum = lp.Current;
+          } // else
+        }
 
        switch(Settings.Operand)
        {
@@ -362,7 +382,18 @@ bool AlertRule::HasAlert()
        int8_t curHumidity = hp.Current.Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
-        return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
+       {
+           // пытаемся найти резервирование
+          OneState* reservedState = MainController->GetReservedState(linkedModule,StateHumidity,Settings.SensorIndex);
+          if(!reservedState)
+            return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
+          else // есть зарезервированный датчик с показаниями
+          {
+            HumidityPair tp = *reservedState; 
+            curHumidity = tp.Current.Value;
+          } // else
+             
+       }
 
        switch(Settings.Operand)
        {
@@ -389,7 +420,17 @@ bool AlertRule::HasAlert()
        int8_t curHumidity = hp.Current.Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
-        return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
+       {
+          // пытаемся найти резервирование
+          OneState* reservedState = MainController->GetReservedState(linkedModule,StateSoilMoisture,Settings.SensorIndex);
+          if(!reservedState)
+            return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
+          else // есть зарезервированный датчик с показаниями
+          {
+            HumidityPair tp = *reservedState; 
+            curHumidity = tp.Current.Value;
+          } // else
+        }
 
        switch(Settings.Operand)
        {
@@ -416,7 +457,18 @@ bool AlertRule::HasAlert()
        int8_t curHumidity = hp.Current.Value;
 
        if(curHumidity == NO_TEMPERATURE_DATA) // нет датчика на линии
-        return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
+       {
+         // пытаемся найти резервирование
+          OneState* reservedState = MainController->GetReservedState(linkedModule,StatePH,Settings.SensorIndex);
+          if(!reservedState)
+            return (curHumidity == Settings.DataAlert); // на случай, если правило следит за отсутствием показаний с датчика
+         else // есть зарезервированный датчик с показаниями
+          {
+            HumidityPair tp = *reservedState; 
+            curHumidity = tp.Current.Value;
+          } // else
+            
+       }
 
        switch(Settings.Operand)
        {

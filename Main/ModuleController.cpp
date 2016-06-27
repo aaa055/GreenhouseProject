@@ -11,6 +11,7 @@ ModuleController::ModuleController() : cParser(NULL)
 ,logWriter(NULL)
 #endif
 {
+  reservationResolver = NULL;
   PublishSingleton.Text.reserve(SHARED_BUFFER_LENGTH); // 500 байт для ответа от модуля должно хватить.
 }
 #ifdef USE_DS3231_REALTIME_CLOCK
@@ -25,6 +26,13 @@ void ModuleController::begin()
  
  UniDispatcher.Setup(); // настраиваем диспетчера универсальных датчиков
  
+}
+OneState* ModuleController::GetReservedState(AbstractModule* sourceModule, ModuleStates sensorType, uint8_t sensorIndex)
+{
+  if(!reservationResolver)
+    return NULL;
+
+  return reservationResolver->GetReservedState(sourceModule,sensorType, sensorIndex);
 }
 void ModuleController::Setup()
 {  
