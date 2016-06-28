@@ -150,6 +150,30 @@
   </form>
 </div>
 
+<div id="new_reservation_dialog" title="Новый список резервирования" class='hdn'>
+
+<form>
+  <div class='button_menu_spacer'>
+  Тип резервирования:<br/>
+  <select id='reservation_type_select' style='width:100%;'>
+  <option value='TEMP'>Температура</option>
+  <option value='HUMIDITY'>Влажность</option>
+  <option value='LIGHT'>Освещенность</option>
+  <option value='SOIL'>Влажность почвы</option>
+  <option value='PH'>Значение pH</option>
+  </select><br/>
+  </div> 
+  
+  <div class='button_menu_spacer'>
+  <div class='ui-widget-header ui-corner-all button_menu_spacer' style='margin-top:6px;'>Датчики для резервирования</div>
+    <div id='reservation_sensors_list' style='height:120px;overflow-y:scroll;'>
+    </div>
+  </div>
+   
+</form>
+
+</div>
+
 <div id="new_delta_dialog" title="Новая дельта" class='hdn'>
 
   <form>
@@ -406,12 +430,13 @@
     
       <div class='menuitem ui-corner-all hdn' id='DELTA_MENU' onclick="content(this);">Список дельт</div>
       <div class='menuitem ui-corner-all hdn' id='CC_MENU' onclick="content(this);">Составные команды</div>
+      <div class='menuitem ui-corner-all hdn' id='RESERVATION_MENU' onclick="content(this);">Резервирование</div>
       <div class='menuitem ui-corner-all hdn' id='RULES_MENU' onclick="content(this);">Правила</div>
       <div class='menuitem ui-corner-all hdn' id='WATER_MENU' onclick="content(this);">Настройки полива</div>
       <div class='menuitem ui-corner-all hdn' id='SMS_MENU' onclick="content(this);">Список SMS</div>
       <div class='menuitem ui-corner-all' id='COMMAND_PROMPT_MENU' onclick="content(this);">Командная строка</div>
 
-      <div class='ui-corner-all button_menu_spacer hdn' id='flow_calibration_button' onclick="editFlowCalibration();">Калибровка расходомеров</div>
+      <div class='ui-corner-all button_menu_spacer hdn' id='flow_calibration_button' onclick="editFlowCalibration();">Расходомеры</div>
       <div class='ui-corner-all button_menu_spacer hdn' id='controller_time_button' onclick="setControllerTime();">Дата/время</div>
 
       <div class='ui-corner-all button_menu_spacer hdn' id='wifi_menu' onclick="editWiFiSettings();">Настройки Wi-Fi</div>
@@ -477,6 +502,39 @@
                     </div>
                     
                   </div>
+                  
+                  
+                  <div class='content hdn' id='RESERVATION_MENU_CONTENT'>
+                  
+                    <h3 class='ui-widget-header ui-corner-all'>Список резервирования датчиков</h3>
+                    
+                    <div class="row" id="RESERVATION_LIST_HEADER">
+                      <div class="row_item ui-widget-header">#</div>
+                      <div class="row_item ui-widget-header">Тип резервирования</div>
+                      <div class="row_item ui-widget-header">Датчики</div>
+                    </div>                    
+
+                    <div id='RESERVATION_LIST'></div>
+                    <br clear='left'/>
+                    <div><br/><br/>
+                    
+                        <button id='save_sms_button' onclick='saveReservationList();'>Сохранить в контроллер</button>
+                        <button id='new_sms_button' onclick='newReservation();'>Добавить резервирование</button>
+                        
+                    </div>
+                    
+                    <br/><br/>
+                    <h4 class='ui-widget-header ui-corner-all'>Что такое список резервирования?</h4>
+                    <div class='button_menu_spacer' style='font-size:80%;'>
+                    Список резервирования - это горячая замена показаний одного датчика показаниями другого. Если два датчика 
+                    находятся в одном списке резервирования и один из них вышел из строя, то для такого датчика будут браться показания 
+                    с других датчиков, находящихся с ним в одном списке резервирования. Списки резервирования используются правилами при
+                    проверке показаний с датчиков, и нужны для обеспечения бесперебойной работы правил. В остальном - показания с любого 
+                    датчика выводятся "как есть".
+                    </div>
+                    
+                  </div>                  
+                  
                   
                   <div class='content hdn' id='RULES_MENU_CONTENT'>
                   

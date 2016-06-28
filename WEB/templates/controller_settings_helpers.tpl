@@ -7,6 +7,7 @@
 <script type="text/javascript" src="js/water_settings.js"></script>
 <script type="text/javascript" src="js/rules.js"></script>
 <script type="text/javascript" src="js/sms.js"></script>
+<script type="text/javascript" src="js/reservation.js"></script>
 
 
 <script type='text/javascript'>
@@ -21,6 +22,7 @@ var compositeCommands = new CompositeCommands(); // список составн�
 var wateringSettings = new WateringSettings(); // настройки полива
 var rulesList = new RulesList(); // список правил из контроллера
 var smsList = new SMSList(); // список СМС
+var reservations = new Reservations(); // список резервирования
 
 {literal}
 //-----------------------------------------------------------------------------------------------------
@@ -111,6 +113,143 @@ function newDelta()
   , {text: "Отмена", click: function(){$(this).dialog("close");} }
   ] });     
   
+}
+//-----------------------------------------------------------------------------------------------------
+function addReservationCheckbox(moduleName,sensorIndex)
+{
+  var list = $('#reservation_sensors_list');
+
+  var row = $('<div/>').appendTo(list);
+
+  var chb = $('<input/>',{type: 'checkbox', id: 'reservation_checkbox', value: sensorIndex, 'module_name' : moduleName});
+  chb.appendTo(row);
+  var mnemonicName = controller.SensorsNames.getMnemonicName(new Sensor(sensorIndex,moduleName));
+  if(mnemonicName == sensorIndex)
+  {
+    var rr  = new Reservation(moduleName,sensorIndex);
+    mnemonicName = rr.getDisplayString();
+  }  
+  $('<label/>').text(mnemonicName).appendTo(row);
+}
+//-----------------------------------------------------------------------------------------------------
+function newReservation()
+{
+  if(reservations.Items.length > 9)
+  {
+    showMessage('Максимальное кол-во списков резервирования - 10!');
+    return;
+  }
+  
+  $('#reservation_type_select').trigger('change');
+  
+
+  $("#new_reservation_dialog").dialog({modal:true, width: 400, buttons: [{text: "Добавить", click: function(){
+
+      
+      var checked_cnt = 0;
+      $('#reservation_sensors_list').find('div #reservation_checkbox').each(function(idx,elem){
+      
+        if(elem.checked)
+          checked_cnt++;
+      
+      });
+      
+      if(checked_cnt < 2)
+      {
+        showMessage('Выберите по крайней мере два датчика для списка резервирования!');
+        return;
+      }
+      
+      if(checked_cnt > 9)
+      {
+        showMessage('Максимальное кол-во датчиков в одном списке резервирования - 10!');
+        return;
+      }
+      
+      var srcListLength = reservations.Items.length;
+      
+      var resList = reservations.Add($('#reservation_type_select').val());
+      
+      $('#reservation_sensors_list').find('div #reservation_checkbox').each(function(idx,elem){
+      
+          if(elem.checked)
+          {
+            var $elem = $(elem);
+            var module_name = $elem.attr('module_name');
+            var sensor_index = $elem.val();
+            
+            resList.Add(module_name,sensor_index);  
+              
+          }
+      
+      });
+                
+       addReservationRow('#RESERVATION_LIST',resList,srcListLength);
+  
+
+  
+      $(this).dialog("close");
+  
+  } }
+  
+  , {text: "Отмена", click: function(){$(this).dialog("close");} }
+  ] });       
+  
+}
+//-----------------------------------------------------------------------------------------------------
+function saveReservationList()
+{
+
+  $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+              
+   controller.queryCommand(false,'RSRV|DEL',function(obj,answer){
+    
+        if(!answer.IsOK)
+        {
+           $("#data_requested_dialog" ).dialog('close');
+           return;
+        } 
+        
+          
+          for(var i=0;i<reservations.Items.length;i++)
+          {
+            var resInfo = reservations.Items[i];
+            var cmd = 'RSRV|ADD|' + resInfo.Type;
+
+              for(var j=0;j<resInfo.Items.length;j++)
+              {
+                cmd += '|';
+                var rr = resInfo.Items[j];
+                cmd += rr.ModuleName + '|' + rr.SensorIndex;
+                
+              } // for
+    
+              controller.queryCommand(false,cmd,function(obj,addResult){
+              
+                                   
+              
+              });
+            
+              
+          } // for
+          
+                    controller.queryCommand(false,'RSRV|SAVE',function(obj,saveResult){
+                    
+                      $("#data_requested_dialog" ).dialog('close');
+                      
+                    });
+          
+      
+    
+    });              
+              
 }
 //-----------------------------------------------------------------------------------------------------
 // сохраняем список дельт в контроллер
@@ -597,6 +736,49 @@ function addRuleRow(parentElement, rule, num)
     
     row.appendTo(parentElement);
     
+  
+}
+//-----------------------------------------------------------------------------------------------------
+function addReservationRow(parentElement, reservation, num)
+{
+  
+    var row = $('<div/>',{'class': 'row reservation', id: 'reservation_' + num});
+    $('<div/>',{'class': 'row_item', id: 'reservation_index'}).html(num + 1).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'reservation_type'}).html(reservation.getTypeString()).appendTo(row);
+    $('<div/>',{'class': 'row_item', id: 'reservation_sensors'}).html(reservation.getSensorsString()).appendTo(row);
+    
+        
+    var actions = $('<div/>',{'class': 'row_item actions', id: 'actions'}).appendTo(row);
+    
+              
+    $('<div/>',{'class': 'action', title: 'Удалить список резервирования'}).appendTo(actions).button({
+      icons: {
+        primary: "ui-icon-close"
+      }, text: false
+    }).click({row: row, reservation : reservation}, function(ev){
+              
+                ev.data.row.remove();
+                reservations.Items.remove(ev.data.reservation);
+                
+                $('#RESERVATION_LIST').find('div #reservation_index').each(function(idx,elem){
+                
+                  $(elem).html(idx + 1);
+                
+                });
+                                
+              });                  
+    
+    row.appendTo(parentElement);  
+  
+}
+//-----------------------------------------------------------------------------------------------------
+function fillReservationsList()
+{
+  
+  for(var i=0;i<reservations.Items.length;i++)
+  {
+      addReservationRow('#RESERVATION_LIST',reservations.Items[i],i);
+  } // for
   
 }
 //-----------------------------------------------------------------------------------------------------
@@ -1588,6 +1770,49 @@ controller.OnGetModulesList = function(obj)
         });
     } // water
     
+    if(controller.Modules.includes('RSRV')) // есть список резервирования
+    {
+      $('#RESERVATION_MENU').toggle(true);
+      $('#RESERVATION_LIST').html("");
+      reservations.Clear();
+      
+        var reservationsToRetrieve = 0;
+        var retrievedReservations = 0;
+        
+        controller.queryCommand(true,'RSRV|CNT',function(obj,answer){
+        
+          if(answer.IsOK)
+          {
+            reservationsToRetrieve = parseInt(answer.Params[2]);
+            
+            for(var i=0;i<reservationsToRetrieve;i++)
+            {
+                  controller.queryCommand(true,'RSRV|VIEW|' + i,function(obj,reservationInfo){
+                  
+                      retrievedReservations++;
+                      if(reservationInfo.IsOK)
+                      {
+                        var resType = reservationInfo.Params[3];
+                        var resList = reservations.Add(resType);
+                        
+                        for(var j=4;j<reservationInfo.Params.length;j+=2)
+                        {
+                          resList.Add(reservationInfo.Params[j],parseInt(reservationInfo.Params[j+1]));
+                        } // for
+                        
+                      } // IsOK
+                      
+                      if(retrievedReservations == reservationsToRetrieve)
+                        fillReservationsList();
+                  
+                  });
+            } // for
+          } // if(answer.IsOK)
+        
+        });
+      
+    }
+    
     
     if(controller.Modules.includes('DELTA'))
       queryDeltasList(); // получаем список дельт
@@ -1892,7 +2117,51 @@ $(document).ready(function(){
 
   controller.querySensorNames(); // получаем имена датчиков
   
+  $('#reservation_type_select').change(function(){
   
+      var tp = $(this).val();
+      
+      // заполняем список датчиков для выбранного типа резервирования
+      var list = $('#reservation_sensors_list');
+      list.html("");
+      
+      var cnt = 0;
+      var mName = tp;
+      
+      if(tp == 'TEMP')
+      {
+        cnt = totalTempSensors;
+        mName = 'STATE';
+      }
+      else
+      if(tp == 'HUMIDITY')
+        cnt = totalHumiditySensors;
+      else
+      if(tp == 'LIGHT')
+        cnt = totalLuminositySensors;
+      else
+      if(tp == 'SOIL')
+        cnt = totalSoilMoistureSensors;
+      else
+      if(tp == 'PH')
+        cnt = totalPHSensors;
+        
+      for(var i=0;i<cnt;i++)
+      {
+        addReservationCheckbox(mName,i);
+      } // for
+      
+      if(tp == 'TEMP')
+      {
+        // для температуры добавляем ещё и датчики влажности
+        for(var i=0;i<totalHumiditySensors;i++)
+        {
+          addReservationCheckbox('HUMIDITY',i);
+        }
+      } // if
+  
+  });
+    
   $('#rule_action_input').change(function(){
   
       var val = parseInt($(this).val());
