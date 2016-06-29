@@ -44,7 +44,7 @@ class WindowState
 
   uint8_t RelayChannel1;
   uint8_t RelayChannel2;
-  ModuleState* RelayStateHolder;
+ // ModuleState* RelayStateHolder;
   TempSensors* Parent;
 
 public:
@@ -59,7 +59,7 @@ public:
 
   void UpdateState(uint16_t dt); // обновляет состояние фрамуги
   
-  void Setup(TempSensors* parent,ModuleState* state, uint8_t relayChannel1, uint8_t relayChannel2); // настраиваем перед пуском
+  void Setup(TempSensors* parent,uint8_t relayChannel1, uint8_t relayChannel2); // настраиваем перед пуском
 
 
   WindowState() 
@@ -71,7 +71,6 @@ public:
     TimerTicks = 0;
     RelayChannel1 = 0;
     RelayChannel2 = 0;
-    RelayStateHolder = NULL;
     Direction = dirNOTHING;
   }  
   

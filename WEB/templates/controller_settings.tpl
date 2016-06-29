@@ -433,6 +433,7 @@
       <div class='menuitem ui-corner-all hdn' id='RESERVATION_MENU' onclick="content(this);">Резервирование</div>
       <div class='menuitem ui-corner-all hdn' id='RULES_MENU' onclick="content(this);">Правила</div>
       <div class='menuitem ui-corner-all hdn' id='WATER_MENU' onclick="content(this);">Настройки полива</div>
+      <div class='menuitem ui-corner-all hdn' id='TIMERS_MENU' onclick="content(this);">Таймеры</div>
       <div class='menuitem ui-corner-all hdn' id='SMS_MENU' onclick="content(this);">Список SMS</div>
       <div class='menuitem ui-corner-all' id='COMMAND_PROMPT_MENU' onclick="content(this);">Командная строка</div>
 
@@ -446,6 +447,54 @@
     
     
     <div class="page_content">
+      
+            <div class='content hdn' id='TIMERS_MENU_CONTENT'>
+             <h3 class='ui-widget-header ui-corner-all' style='padding:4px;'>Настройки периодических таймеров</h3>
+              
+              <div class='button_menu_spacer'>
+              <a href='javascript:saveTimers();' id='save_timers_button'>Сохранить в контроллер</a>
+              </div>
+   
+                    
+                      <div>                      
+                        <div class='half'>
+                            <div class='half_box half_left'>
+                            
+                                {include file='timer.tpl' num=1}
+                                
+                             </div>
+                        </div>
+                      
+                        <div class='half'>
+                          <div class='half_box half_right'>
+                              
+                              {include file='timer.tpl' num=2}
+                              
+                          </div>
+                        </div>
+                      
+                     </div>
+                     
+                    <br clear='left'/><br/>  
+                    
+                    <div>                      
+                        <div class='half'>
+                            <div class='half_box half_left'>
+                                {include file='timer.tpl' num=3}
+                             </div>
+                        </div>
+                      
+                        <div class='half'>
+                          <div class='half_box half_right'>
+                              {include file='timer.tpl' num=4}
+                          </div>
+                        </div>
+                      
+                     </div> 
+                     
+                    
+            </div>
+                  
       
                   <div class='content hdn' id='DELTA_MENU_CONTENT'>
                   

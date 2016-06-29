@@ -197,6 +197,105 @@ function newReservation()
   
 }
 //-----------------------------------------------------------------------------------------------------
+function saveTimers()
+{
+  $("#data_requested_dialog" ).dialog({
+                dialogClass: "no-close",
+                modal: true,
+                closeOnEscape: false,
+                draggable: false,
+                resizable: false,
+                buttons: []
+              });
+              
+   var cmd = "TMR";
+   
+   for(var i=1;i<5;i++)
+   {
+      
+      var tmrDayMaskAndEnable = 0;
+      
+      var en = $('#timerEnabled' + i).get(0).checked;
+      if(en)
+        tmrDayMaskAndEnable |= 128;
+        
+      $('#timerDayMask' + i).find('input[type=checkbox]').each(function(idx,elem){
+      
+          if(elem.checked)
+            tmrDayMaskAndEnable |= (1 << idx);
+      
+      });
+      
+      cmd += "|" + tmrDayMaskAndEnable;
+      
+      var pin = parseInt($('#timerPin' + i).val());
+      if(isNaN(pin))
+          pin = 0;
+      if(pin < 0)
+        pin = 0;
+
+      $('#timerPin' + i).val(pin);
+        
+        cmd += "|" + pin;
+        
+      var onMin = parseInt($('#timerOnMin' + i).val());
+      if(isNaN(onMin))
+        onMin = 0;
+      if(onMin < 0)
+        onMin = 0;
+        
+      var onSec = parseInt($('#timerOnSec' + i).val());
+      if(isNaN(onSec))
+        onSec = 0;
+      if(onSec < 0)
+        onSec = 0;
+        
+      var tmrHoldOnTime = onMin*60 + onSec;
+      if(tmrHoldOnTime > 65535)
+      {
+        tmrHoldOnTime = 65535;
+        
+        $('#timerOnMin' + i).val(parseInt(tmrHoldOnTime/60));
+        $('#timerOnSec' + i).val(parseInt(tmrHoldOnTime%60));
+      }
+        
+      cmd += "|" + tmrHoldOnTime;
+ 
+     var offMin = parseInt($('#timerOffMin' + i).val());
+      if(isNaN(offMin))
+        offMin = 0;
+      if(offMin < 0)
+        offMin = 0;
+
+     
+      var offSec = parseInt($('#timerOffSec' + i).val());
+      if(isNaN(offSec))
+        offSec = 0;
+      if(offSec < 0)
+        offSec = 0;
+        
+      var tmrHoldOffTime = offMin*60 + offSec;
+      if(tmrHoldOffTime > 65535)
+      {
+        tmrHoldOffTime = 65535;
+        $('#timerOffMin' + i).val(parseInt(tmrHoldOffTime/60));
+        $('#timerOffSec' + i).val(parseInt(tmrHoldOffTime%60));
+      }
+        
+      cmd += "|" + tmrHoldOffTime;      
+      
+   } // for
+      
+    controller.queryCommand(false,cmd,function(obj,answer){
+    
+      $("#data_requested_dialog" ).dialog('close');
+      if(answer.IsOK)
+        showMessage("Данные успешно сохранены!");
+      else
+        showMessage("Ошибка сохранения данных :(");
+    });
+}
+//-----------------------------------------------------------------------------------------------------
 function saveReservationList()
 {
 
@@ -1589,7 +1688,46 @@ controller.OnGetModulesList = function(obj)
           }
         
         });
-    }    
+    }  
+    
+    if(controller.Modules.includes('TMR')) // если в прошивке есть модуль таймеров
+    {
+        controller.queryCommand(true,'TMR',function(obj,answer){
+           
+          $('#TIMERS_MENU').toggle(answer.IsOK);
+          
+          if(answer.IsOK)
+          {
+           
+           var tmrNumber = 1;
+           for(var i=0;i<16;i+=4)
+           {
+              var num = i+1;
+              var tmrDayMaskAndEnable = parseInt(answer.Params[num]);
+              var tmrPin = parseInt(answer.Params[num+1]);
+              var tmrHoldOnTime = parseInt(answer.Params[num+2]);
+              var tmrHoldOffTime = parseInt(answer.Params[num+3]);
+              
+              $('#timerPin' + tmrNumber).val(tmrPin);
+              $('#timerOnMin' + tmrNumber).val(parseInt(tmrHoldOnTime/60));
+              $('#timerOnSec' + tmrNumber).val(parseInt(tmrHoldOnTime%60));
+              $('#timerOffMin' + tmrNumber).val(parseInt(tmrHoldOffTime/60));
+              $('#timerOffSec' + tmrNumber).val(parseInt(tmrHoldOffTime%60));
+              
+              $('#timerEnabled' + tmrNumber).get(0).checked = (tmrDayMaskAndEnable & 128);
+              $('#timerDayMask' + tmrNumber).find('input[type=checkbox]').each(function(idx,elem){
+              
+                elem.checked = tmrDayMaskAndEnable & (1 << idx);
+              
+              });
+              
+              
+              tmrNumber++;
+           } // for
+          } // isOK
+        
+        });
+    }          
     
     // запрашиваем информацию о прошивке
     controller.queryCommand(true,'0|WIRED',function(obj,answer){
@@ -2314,7 +2452,7 @@ $(document).ready(function(){
       }
     });
     
-  $( "#save_delta_button, #save_cc_button, #save_watering_button, #save_rules_button, #save_sms_button" ).button({
+  $( "#save_delta_button, #save_cc_button, #save_watering_button, #save_rules_button, #save_sms_button, #save_timers_button" ).button({
       icons: {
         primary: "ui-icon-arrowthickstop-1-n"
       }
@@ -2384,7 +2522,7 @@ $(document).ready(function(){
       }
     }).hide().css('width','100%');       
     
-    $('#cc_param, #flow_calibraton1, #flow_calibraton2, #rule_pin_number').forceNumericOnly();     
+    $('#cc_param, #flow_calibraton1, #flow_calibraton2, #rule_pin_number, #timerPin1, #timerPin2, #timerPin3, #timerPin4, #timerOnMin1, #timerOnMin2, #timerOnMin3, #timerOnMin4, #timerOnSec1, #timerOnSec2, #timerOnSec3, #timerOnSec4, #timerOffMin1, #timerOffMin2, #timerOffMin3, #timerOffMin4, #timerOffSec1, #timerOffSec2, #timerOffSec3, #timerOffSec4').forceNumericOnly();     
 
     $('#all_watering_start_hour, #all_watering_time').forceNumericOnly();
     $('#watering_start_hour, #watering_time').forceNumericOnly(); 

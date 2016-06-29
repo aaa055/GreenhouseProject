@@ -82,6 +82,10 @@
 #include "ReservationModule.h"
 #endif
 
+#ifdef USE_TIMER_MODULE
+#include "TimerModule.h"
+#endif
+
 // КОМАНДЫ ИНИЦИАЛИЗАЦИИ ПРИ СТАРТЕ
 //const char init_0[] PROGMEM = "CTSET=PIN|13|0";// ВЫКЛЮЧИМ ПРИ СТАРТЕ СВЕТОДИОД
 #ifdef USE_READY_DIODE
@@ -230,6 +234,10 @@ EthernetModule ethernetModule;
 
 #ifdef USE_RESERVATION_MODULE
 ReservationModule reservationModule;
+#endif
+
+#ifdef USE_TIMER_MODULE
+TimerModule timerModule;
 #endif
 
 #ifdef USE_WIFI_MODULE
@@ -391,6 +399,10 @@ void setup()
 
   #ifdef USE_RESERVATION_MODULE
   controller.RegisterModule(&reservationModule);
+  #endif
+
+  #ifdef USE_TIMER_MODULE
+  controller.RegisterModule(&timerModule);
   #endif
 
   #ifdef USE_LOG_MODULE
