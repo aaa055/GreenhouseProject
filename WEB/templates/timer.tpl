@@ -13,7 +13,7 @@
   Включён (мин, сек):<br/>
   <input type='text' id='timerOnMin{$num}' maxlength='4' style='width:50px;'/> : <input type='text' id='timerOnSec{$num}' maxlength='2' style='width:50px;'/>
   </div>
-  Выключён (мин, сек):<br/>
+  Выключен (мин, сек):<br/>
   <input type='text' id='timerOffMin{$num}' maxlength='4' style='width:50px;'/> : <input type='text' id='timerOffSec{$num}' maxlength='2' style='width:50px;'/>
 
   </td>
