@@ -351,13 +351,19 @@
             </div>
             
             <div class='button_menu_spacer hdn' id='rule_additional_param'>
-                <div>
+                <div id='rule_additional_param_caption'>
                   Дополнительный параметр:
                 </div>
                 
                 <div>
                   <input type='text' id='rule_additional_param_input' style='width:100%' placeholder=''/>
                 </div>
+                
+                <div id='ruleWndInterval' class='hdn'>
+                Интервал, с:<br/>
+                <input type='text' id='rule_wnd_interval_input' style='width:100%' placeholder='0 - не указано'/>
+                </div>
+                
             </div>            
       
       </div>
@@ -379,6 +385,7 @@
     <li><b>"%TO%"</b> - температура открытия из настроек;</li>
     <li><b>"%TC%"</b> - температура закрытия из настроек;</li>
     <li><b>"-2"</b> - игнорировать показания с датчика освещенности;</li>
+    <li><b>"ALL"</b> - все окна, <b>"0-2"</b> - диапазон окон, <b>"7"</b> - одно окно;</li>
     <li>Если время начала и продолжительность работы правила установлены в <b>"0"</b> - правило работает всегда.</li>
   </ul>
   </div>

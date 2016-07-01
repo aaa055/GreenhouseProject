@@ -250,7 +250,7 @@ width: calc(100%-220px);
   width:30px;
 }
 #RULES_LIST .row .row_item:nth-child(2) {
-  width:150px;
+  width:70px;
 }
 #RULES_LIST .row .row_item:nth-child(3) {
   width:100px;
@@ -268,7 +268,7 @@ width: calc(100%-220px);
 }
 
 #RULES_LIST .row .row_item:nth-child(7) {
-  width:150px;
+  width:250px;
 }
 
 #SMS_LIST .row .row_item:nth-child(1) {

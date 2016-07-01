@@ -4,8 +4,8 @@
 MAX_RULES = 30; // максимальное кол-во правил
 RULE_TARGETS = {'_': 'нет слежения', 'TEMP': 'температурой', 'LIGHT' : 'освещенностью', 'HUMIDITY': 'влажностью', 'PIN': 'пином', 'SOIL': 'влажностью почвы', 'PH' : 'значением pH'};
 RULE_COMMANDS = {
-  '.+STATE\\|WINDOW\\|.*\\|OPEN' : [0, 'открываем окна']
-, '.+STATE\\|WINDOW\\|.*\\|CLOSE': [1, 'закрываем окна']
+  '.+STATE\\|WINDOW\\|(.*)\\|OPEN' : [0, 'открываем окна']
+, '.+STATE\\|WINDOW\\|(.*)\\|CLOSE': [1, 'закрываем окна']
 , '.+LIGHT\\|ON' : [2, 'включаем досветку']
 , '.+LIGHT\\|OFF' : [3, 'выключаем досветку']
 , '.+PIN\\|(.*)\\|ON' : [4, 'включаем пины']
@@ -14,8 +14,8 @@ RULE_COMMANDS = {
 };
 
 RULE_BUILD_COMMANDS = [
-  'CTSET=STATE|WINDOW|ALL|OPEN'
-, 'CTSET=STATE|WINDOW|ALL|CLOSE'
+  'CTSET=STATE|WINDOW|{0}|OPEN'
+, 'CTSET=STATE|WINDOW|{0}|CLOSE'
 , 'CTSET=LIGHT|ON'
 , 'CTSET=LIGHT|OFF'
 , 'CTSET=PIN|{0}|ON'

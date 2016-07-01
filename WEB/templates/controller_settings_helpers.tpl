@@ -993,6 +993,7 @@ function newRule(editedRule, editedRow)
   $('#rule_sensor_value_input').val('');
   $('#rule_action_input').val('0').trigger('change');
   $('#rule_additional_param_input').val('');
+  $('#rule_wnd_interval_input').val('');
   
   __globalRuleDaymask = 0xFF;
 
@@ -1041,8 +1042,23 @@ function newRule(editedRule, editedRow)
     $('#rule_sensor_operand').val(editedRule.Operand);
     $('#rule_sensor_value_input').val(editedRule.AlertCondition);
     $('#rule_pin_state_input').val(editedRule.Operand);
-    $('#rule_action_input').val(editedRule.getTargetCommandIndex()).trigger('change');
+    
+    var tci = editedRule.getTargetCommandIndex();
+    $('#rule_action_input').val(tci).trigger('change');
     $('#rule_additional_param_input').val(editedRule.getAdditionalParam());
+    if(tci == 0) // открыть окна, надо искать интервал
+    {
+      var tcSplitted = editedRule.TargetCommand.split("|");
+      var passedInterval = parseInt(tcSplitted[tcSplitted.length-1]);
+      if(isNaN(passedInterval))
+        passedInterval = 0;
+        
+        passedInterval /= 1000;
+        
+      $('#rule_wnd_interval_input').val(passedInterval);
+        
+    }
+    
     
     __globalRuleDaymask = editedRule.DayMask;
     
@@ -1145,7 +1161,8 @@ function newRule(editedRule, editedRow)
           
       }
       
-       if(rule_action_input > 3 && rule_additional_param_input == '')
+       if((rule_action_input == 0 || rule_action_input == 1 || rule_action_input == 4 || rule_action_input == 5 || rule_action_input == 6) 
+       && rule_additional_param_input == '')
        {
         showMessage('Укажите дополнительные параметры!');
         $('#rule_additional_param_input').focus();
@@ -1154,7 +1171,16 @@ function newRule(editedRule, editedRow)
        
        var targetCommand = rulesList.buildTargetCommand(rule_action_input,rule_additional_param_input);
        
-       
+       if(rule_action_input == 0)
+       {
+        var wndInt = parseInt($('#rule_wnd_interval_input').val());
+        if(isNaN(wndInt))
+          wndInt = 0;
+          
+          if(wndInt > 0)
+            targetCommand += '|' + (wndInt*1000);
+       }
+                     
        // вроде всё проверили, пытаемся посмотреть
        var fullRuleString = 'dummy|dummy|dummy|' + ruleName + '|' + moduleName + '|' + ruleTarget + '|' + sensorIndex + '|' + operand + '|' + alertCondition + '|' + 
        ruleStartTime + '|' + ruleWorkTime + '|' + ruleDaymask + '|' + linked_rules + '|' + targetCommand;
@@ -2306,16 +2332,30 @@ $(document).ready(function(){
       var ed = $('#rule_additional_param_input');
       ed.attr('placeholder','');
       $('#rule_additional_param').toggle(false);
+      $('#ruleWndInterval').toggle(false);
+      
+      var $addParamCaption = $('#rule_additional_param_caption');
+      $addParamCaption.html("Дополнительный параметр:");
       
       switch(val)
       {
+        case 0:
+        case 1:
+          $addParamCaption.html("Номера окон:");
+          ed.attr('placeholder','ALL - все окна, 0-2 - диапазон');
+          $('#rule_additional_param').toggle(true);
+          $('#ruleWndInterval').toggle(val == 0);
+        break;
+      
         case 4:
         case 5:
+          $addParamCaption.html("Номера пинов:");
           ed.attr('placeholder','номера пинов, через запятую');
           $('#rule_additional_param').toggle(true);
         break;
         
         case 6:
+          $addParamCaption.html("Индекс составной команды:");
           ed.attr('placeholder','индекс составной команды');
           $('#rule_additional_param').toggle(true);
         break;
@@ -2522,7 +2562,7 @@ $(document).ready(function(){
       }
     }).hide().css('width','100%');       
     
-    $('#cc_param, #flow_calibraton1, #flow_calibraton2, #rule_pin_number, #timerPin1, #timerPin2, #timerPin3, #timerPin4, #timerOnMin1, #timerOnMin2, #timerOnMin3, #timerOnMin4, #timerOnSec1, #timerOnSec2, #timerOnSec3, #timerOnSec4, #timerOffMin1, #timerOffMin2, #timerOffMin3, #timerOffMin4, #timerOffSec1, #timerOffSec2, #timerOffSec3, #timerOffSec4').forceNumericOnly();     
+    $('#cc_param, #flow_calibraton1, #flow_calibraton2, #rule_pin_number, #timerPin1, #timerPin2, #timerPin3, #timerPin4, #timerOnMin1, #timerOnMin2, #timerOnMin3, #timerOnMin4, #timerOnSec1, #timerOnSec2, #timerOnSec3, #timerOnSec4, #timerOffMin1, #timerOffMin2, #timerOffMin3, #timerOffMin4, #timerOffSec1, #timerOffSec2, #timerOffSec3, #timerOffSec4, #rule_wnd_interval_input').forceNumericOnly();     
 
     $('#all_watering_start_hour, #all_watering_time').forceNumericOnly();
     $('#watering_start_hour, #watering_time').forceNumericOnly(); 
