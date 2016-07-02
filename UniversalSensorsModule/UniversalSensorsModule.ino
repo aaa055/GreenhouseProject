@@ -1,28 +1,44 @@
-
 /*
-
-Модуль поддержки трёх датчиков DS18B20 по шине 1-Wire.
-Отдаёт информацию с трёх датчиков, подвешенных на шине 1-Wire,
-в одном пакете данных.
-
+Прошивка для универсального модуля, предназначена для подключения
+любого типа поддерживаемых датчиков и передачи с них показаний по шине 1-Wire.
 */
-//----------------------------------------------------------------------------------------------------------------
-// настройки
-//----------------------------------------------------------------------------------------------------------------
-#define RF_MODULE_ID 201 // уникальный ID модуля
-//----------------------------------------------------------------------------------------------------------------
-// номера пинов для датчиков (0 - нет датчика на пине)
-const byte SENSORS_PINS[3] = {
-
-7, // датчик на пине 7
-8, // датчик на пине 8
-9 // датчик на пине 9
-
-};
 //----------------------------------------------------------------------------------------------------------------
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <OneWire.h>
+#include "BH1750.h"
+#include "UniGlobals.h"
+#include "Si7021Support.h"
+//----------------------------------------------------------------------------------------------------------------
+typedef enum
+{
+  mstNone, // ничего нету
+  mstDS18B20, // температурный DS18B20
+  mstBH1750, // цифровой освещённости BH1750
+  mstSi7021 // цифровой влажности Si7021
+  
+} ModuleSensorType; // тип датчика, кодключенного к модулю
+//----------------------------------------------------------------------------------------------------------------
+typedef struct
+{
+  byte Type; // тип датчика
+  byte Pin; // пин, на котором висит датчик
+  
+} SensorSettings; // настройки датчиков, подключённых к модулю
+//----------------------------------------------------------------------------------------------------------------
+// настройки
+//----------------------------------------------------------------------------------------------------------------
+#define RF_MODULE_ID 202 // уникальный ID модуля
+#define ROM_ADDRESS (void*) 4 // по какому адресу у нас настройки?
+//----------------------------------------------------------------------------------------------------------------
+// настройки датчиков для модуля, МЕНЯТЬ ЗДЕСЬ!
+const SensorSettings Sensors[3] = {
+
+{mstBH1750,BH1750Address1}, // датчик освещённости BH1750 на шине I2C
+{mstNone,0}, // ничего нету
+{mstNone,0} // ничего нету
+
+};
 //----------------------------------------------------------------------------------------------------------------
 //Синонимы регистров управления прерываниями. Разные для ATTINY и ATMEGA
 //----------------------------------------------------------------------------------------------------------------
@@ -117,6 +133,14 @@ inline void PreInit()
 #define OWT_READLINE 30/4        //  ждать от спада мастера до момента чтения линии 1-Wire line
 #define OWT_LOWTIME 15/4         // Сколько удерживать LOW
 //----------------------------------------------------------------------------------------------------------------
+typedef enum
+{
+  ptSensorsData = 1, // данные с датчиков
+  ptNextionDisplay = 2, // дисплей Nextion, подключённый по шине 1-Wire
+  ptExecuteModule = 3 // исполнительный модуль 
+  
+} PacketTypes;
+//----------------------------------------------------------------------------------------------------------------
 //Структура передаваемая мастеру и обратно
 //----------------------------------------------------------------------------------------------------------------
 struct sensor
@@ -156,8 +180,6 @@ typedef enum
   
 } UniSensorType; // тип датчика
 //----------------------------------------------------------------------------------------------------------------
-#define NO_TEMPERATURE_DATA -128 // нет данных с датчика температуры или влажности
-//----------------------------------------------------------------------------------------------------------------
 //States / Modes
 //----------------------------------------------------------------------------------------------------------------
 typedef enum
@@ -192,15 +214,82 @@ volatile bool scratchpadReceivedFromMaster = false; // флаг, что мы п�
 volatile bool needToMeasure = false; // флаг, что мы должны запустить конвертацию
 volatile unsigned long sensorsUpdateTimer = 0; // таймер получения информации с датчиков и обновления данных в скратчпаде
 volatile bool measureTimerEnabled = false; // флаг, что мы должны прочитать данные с датчиков после старта измерений
-#define DS18B20_MEASURE_MIN_TIME 1000 // через сколько минимум можно читать с датчиков DS18B20 после запуска конвертации
-unsigned long query_interval = DS18B20_MEASURE_MIN_TIME; // тут будет интервал опроса
+#define MEASURE_MIN_TIME 1000 // через сколько минимум можно читать с датчиков после запуска конвертации
+unsigned long query_interval = MEASURE_MIN_TIME; // тут будет интервал опроса
 //----------------------------------------------------------------------------------------------------------------
 //Write a bit after next falling edge from master
 //its for sending a zero as soon as possible
 #define OWW_NO_WRITE 2
 #define OWW_WRITE_0 0
 //----------------------------------------------------------------------------------------------------------------
-#define ROM_ADDRESS (void*) 1 // по какому адресу у нас настройки?
+byte GetSensorType(const SensorSettings& sett)
+{
+  switch(sett.Type)
+  {
+    case mstNone:
+      return uniNone;
+    
+    case mstDS18B20:
+      return uniTemp;
+      
+    case mstBH1750:
+      return uniLuminosity;
+
+    case mstSi7021:
+      return uniHumidity;
+  }
+
+  return uniNone;
+}
+//----------------------------------------------------------------------------------------------------------------
+void SetDefaultValue(const SensorSettings& sett, byte* data)
+{
+  switch(sett.Type)
+  {
+    case mstNone:
+      *data = 0xFF;
+    break;
+    
+    case mstDS18B20:
+      *data = NO_TEMPERATURE_DATA;
+    break;
+      
+    case mstBH1750:
+    {
+    long lum = NO_LUMINOSITY_DATA;
+    memcpy(data,&lum,sizeof(lum));
+    }
+    break;
+
+    case mstSi7021:
+    {
+    *data = NO_TEMPERATURE_DATA;
+    data++; data++;
+    *data = NO_TEMPERATURE_DATA;
+    }
+    break;
+  }
+}
+//----------------------------------------------------------------------------------------------------------------
+void* InitSensor(const SensorSettings& sett)
+{
+  switch(sett.Type)
+  {
+    case mstNone:
+      return NULL;
+    
+    case mstDS18B20:
+      return InitDS18B20(sett);
+      
+    case mstBH1750:
+      return InitBH1750(sett);
+
+    case mstSi7021:
+      return InitSi7021(sett);
+  }
+
+  return NULL;  
+}
 //----------------------------------------------------------------------------------------------------------------
 void ReadROM()
 {
@@ -209,7 +298,7 @@ void ReadROM()
 
     // пишем свой уникальный ID
     scratchpadS.rf_id = RF_MODULE_ID; 
-    scratchpadS.packet_type = 1; // говорим, что это тип пакета - данные с датчиками
+    scratchpadS.packet_type = ptSensorsData; // говорим, что это тип пакета - данные с датчиками
     scratchpadS.packet_subtype = 0;
 
     // говорим, что никакой калибровки не поддерживаем
@@ -217,40 +306,47 @@ void ReadROM()
 
     // если интервала опроса не сохранено - выставляем по умолчанию
     if(scratchpadS.query_interval == 0xFF)
-      scratchpadS.query_interval =  DS18B20_MEASURE_MIN_TIME/1000;
+      scratchpadS.query_interval =  MEASURE_MIN_TIME/1000;
 
     // вычисляем интервал опроса
     query_interval = ((scratchpadS.query_interval & 0xF0)*60 + (scratchpadS.query_interval & 0x0F))*1000;
       
 
-    scratchpadS.sensor1.type = uniNone;
-    scratchpadS.sensor2.type = uniNone;
-    scratchpadS.sensor3.type = uniNone;
+    scratchpadS.sensor1.type = GetSensorType(Sensors[0]);
+    scratchpadS.sensor2.type = GetSensorType(Sensors[1]);
+    scratchpadS.sensor3.type = GetSensorType(Sensors[2]);
 
-    if(SENSORS_PINS[0] > 0)
-      scratchpadS.sensor1.type = uniTemp; // тип температура
-      
-    if(SENSORS_PINS[1] > 0)
-      scratchpadS.sensor2.type = uniTemp; // тип температура
-      
-    if(SENSORS_PINS[2] > 0)
-      scratchpadS.sensor3.type = uniTemp; // тип температура
-    
-    scratchpadS.sensor1.data[0] = NO_TEMPERATURE_DATA;
-    scratchpadS.sensor2.data[0] = NO_TEMPERATURE_DATA;
-    scratchpadS.sensor3.data[0] = NO_TEMPERATURE_DATA;
+    SetDefaultValue(Sensors[0],scratchpadS.sensor1.data);
+    SetDefaultValue(Sensors[1],scratchpadS.sensor2.data);
+    SetDefaultValue(Sensors[2],scratchpadS.sensor3.data);
 
 }
 //----------------------------------------------------------------------------------------------------------------
-void InitSensor(byte pin)
+void* InitSi7021(const SensorSettings& sett) // инициализируем датчик влажности Si7021
 {
-  if(!pin)
-    return;
+  UNUSED(sett);
+  Si7021* si = new Si7021();
+  si->begin();
 
-   OneWire ow(pin);
+  return si;
+}
+//----------------------------------------------------------------------------------------------------------------
+void* InitBH1750(const SensorSettings& sett) // инициализируем датчик освещённости
+{
+  BH1750Support* bh = new BH1750Support();
+  bh->begin((BH1750Address)sett.Pin);
+  return bh;
+}
+//----------------------------------------------------------------------------------------------------------------
+void* InitDS18B20(const SensorSettings& sett) // инициализируем датчик температуры
+{
+  if(!sett.Pin)
+    return NULL;
+
+   OneWire ow(sett.Pin);
 
   if(!ow.reset()) // нет датчика
-    return;  
+    return NULL;  
 
    ow.write(0xCC); // пофиг на адреса (SKIP ROM)
    ow.write(0x4E); // запускаем запись в scratchpad
@@ -264,27 +360,31 @@ void InitSensor(byte pin)
    ow.write(0x48); // COPY SCRATCHPAD
    delay(10);
    ow.reset();
+
+   return NULL;
     
 }
+//----------------------------------------------------------------------------------------------------------------
+void* SensorDefinedData[3] = {NULL}; // данные, определённые датчиками при инициализации
 //----------------------------------------------------------------------------------------------------------------
 void InitSensors()
 {
   // инициализируем датчики
-  InitSensor(SENSORS_PINS[0]);
-  InitSensor(SENSORS_PINS[1]);
-  InitSensor(SENSORS_PINS[2]);
+  SensorDefinedData[0] = InitSensor(Sensors[0]);
+  SensorDefinedData[1] = InitSensor(Sensors[1]);
+  SensorDefinedData[2] = InitSensor(Sensors[2]);
      
 }
 //----------------------------------------------------------------------------------------------------------------
-void ReadSensor(byte pin, struct sensor* s)
-{
+ void ReadDS18B20(const SensorSettings& sett, struct sensor* s) // читаем данные с датчика температуры
+{ 
   s->data[0] = NO_TEMPERATURE_DATA;
   s->data[1] = 0;
   
-  if(!pin)
+  if(!sett.Pin)
     return;
 
-   OneWire ow(pin);
+   OneWire ow(sett.Pin);
     
     if(!ow.reset()) // нет датчика на линии
       return; 
@@ -315,24 +415,66 @@ void ReadSensor(byte pin, struct sensor* s)
    
   s->data[0] = tc_100/100;
   s->data[1] = tc_100 % 100;
-
     
+}
+//----------------------------------------------------------------------------------------------------------------
+void ReadBH1750(const SensorSettings& sett, void* sensorDefinedData, struct sensor* s) // читаем данные с датчика освещённости
+{
+  UNUSED(sett);
+  BH1750Support* bh = (BH1750Support*) sensorDefinedData;
+  long lum = bh->GetCurrentLuminosity();
+  memcpy(s->data,&lum,sizeof(lum));
+}
+//----------------------------------------------------------------------------------------------------------------
+void ReadSi7021(const SensorSettings& sett, void* sensorDefinedData, struct sensor* s) // читаем данные с датчика влажности Si7021
+{
+  UNUSED(sett);
+  Si7021* si = (Si7021*) sensorDefinedData;
+  HumidityAnswer ha = si->read();
+
+  s->data[0] = ha.Humidity;
+  s->data[1] = ha.HumidityDecimal;
+  s->data[2] = ha.Temperature;
+  s->data[3] = ha.TemperatureDecimal;
+
+}
+//----------------------------------------------------------------------------------------------------------------
+void ReadSensor(const SensorSettings& sett, void* sensorDefinedData, struct sensor* s)
+{
+  switch(sett.Type)
+  {
+    case mstNone:
+      
+    break;
+
+    case mstDS18B20:
+    ReadDS18B20(sett,s);
+    break;
+
+    case mstBH1750:
+    ReadBH1750(sett,sensorDefinedData,s);
+    break;
+
+    case mstSi7021:
+    ReadSi7021(sett,sensorDefinedData,s);
+    break;
+  }
 }
 //----------------------------------------------------------------------------------------------------------------
 void ReadSensors()
 {
   // читаем информацию с датчиков
-  ReadSensor(SENSORS_PINS[0],&scratchpadS.sensor1);
-  ReadSensor(SENSORS_PINS[1],&scratchpadS.sensor2);
-  ReadSensor(SENSORS_PINS[2],&scratchpadS.sensor3);
+  ReadSensor(Sensors[0],SensorDefinedData[0],&scratchpadS.sensor1);
+  ReadSensor(Sensors[1],SensorDefinedData[1],&scratchpadS.sensor2);
+  ReadSensor(Sensors[2],SensorDefinedData[2],&scratchpadS.sensor3);
 }
 //----------------------------------------------------------------------------------------------------------------
-void MeasureSensor(byte pin)
+void MeasureDS18B20(const SensorSettings& sett)
 {
-  if(!pin)
+  if(!sett.Pin)
     return;
 
-   OneWire ow(pin);
+   OneWire ow(sett.Pin);
     
     if(!ow.reset()) // нет датчика на линии
       return; 
@@ -344,29 +486,40 @@ void MeasureSensor(byte pin)
   
 }
 //----------------------------------------------------------------------------------------------------------------
+void MeasureSensor(const SensorSettings& sett) // запускаем конвертацию с датчика, если надо
+{
+  switch(sett.Type)
+  {
+    case mstNone:    
+    break;
+
+    case mstDS18B20:
+    MeasureDS18B20(sett);
+    break;
+
+    case mstBH1750:
+    break;
+
+    case mstSi7021:
+    break;
+  }  
+}
+//----------------------------------------------------------------------------------------------------------------
 void StartMeasure()
 {
   // запускаем конвертацию
-  MeasureSensor(SENSORS_PINS[0]);
-  MeasureSensor(SENSORS_PINS[1]);
-  MeasureSensor(SENSORS_PINS[2]);
+  MeasureSensor(Sensors[0]);
+  MeasureSensor(Sensors[1]);
+  MeasureSensor(Sensors[2]);
 }
 //----------------------------------------------------------------------------------------------------------------
 void WriteROM()
 {
     scratchpadS.rf_id = RF_MODULE_ID;
-    scratchpadS.sensor1.type = uniNone;
-    scratchpadS.sensor2.type = uniNone;
-    scratchpadS.sensor3.type = uniNone;
-    
-    if(SENSORS_PINS[0] > 0)
-      scratchpadS.sensor1.type = uniTemp; // тип температура
-      
-    if(SENSORS_PINS[1] > 0)
-      scratchpadS.sensor2.type = uniTemp; // тип температура
-      
-    if(SENSORS_PINS[2] > 0)
-      scratchpadS.sensor3.type = uniTemp; // тип температура
+
+    scratchpadS.sensor1.type = GetSensorType(Sensors[0]);
+    scratchpadS.sensor2.type = GetSensorType(Sensors[1]);
+    scratchpadS.sensor3.type = GetSensorType(Sensors[2]);
   
     eeprom_write_block( (void*)scratchpad,ROM_ADDRESS,29);
 
@@ -374,7 +527,9 @@ void WriteROM()
 //----------------------------------------------------------------------------------------------------------------
 void setup()
 {
-    Serial.begin(9600);
+  //  Serial.begin(9600);
+  //  byte dummy[100] = {0xFF};
+   //  eeprom_write_block( (void*)dummy,ROM_ADDRESS,100);
   
     ReadROM();
 
