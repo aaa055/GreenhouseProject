@@ -84,6 +84,65 @@ WorkStatus::WorkStatus()
 {
   memset(statuses,0,sizeof(uint8_t)*STATUSES_BYTES);
   memset(lastStatuses,0,sizeof(uint8_t)*STATUSES_BYTES);
+  memset(&State,0,sizeof(State));
+}
+void WorkStatus::SaveWindowState(byte channel, byte state)
+{
+  if(channel > 31)
+    return;
+    
+  // state у нас принимает значения HIGH или LOW, т.е. 0 или 1
+  // channel - номер канала, от 0 до 31
+
+  // сперва сбрасываем нужный бит
+  State.WindowsState &= ~(1 << channel);
+
+  // теперь, если нам передали не 0 - устанавливаем нужный бит
+  if(state)
+     State.WindowsState |= (1 << channel);
+     
+}
+void WorkStatus::SaveLightChannelState(byte channel, byte state)
+{
+  if(channel > 7)
+    return;
+
+  // сперва сбрасываем нужный бит
+  State.LightChannelsState &= ~(1 << channel);
+
+  // теперь, если нам передали не 0 - устанавливаем нужный бит
+  if(state)
+    State.LightChannelsState |= (1 << channel);  
+}
+void WorkStatus::SaveWaterChannelState(byte channel, byte state)
+{
+  if(channel > 7)
+    return;
+
+  // сперва сбрасываем нужный бит
+  State.WaterChannelsState &= ~(1 << channel);
+
+  // теперь, если нам передали не 0 - устанавливаем нужный бит
+  if(state)
+    State.WaterChannelsState |= (1 << channel);
+}
+void WorkStatus::PinWrite(byte pin, byte level)
+{
+  digitalWrite(pin,level);
+
+  // теперь копируем состояние пина во внутреннюю структуру
+  uint8_t byte_num = pin/8;
+  uint8_t bit_num = pin%8;
+  
+  if(byte_num > 7) // не помещаемся
+    return;
+
+  // сперва сбрасываем нужный бит
+  State.PinsState[byte_num] &= ~(1 << bit_num);
+
+  // теперь, если нам передали не 0 - устанавливаем нужный бит
+  if(level)
+    State.PinsState[byte_num] |= (1 << bit_num);
 }
 void WorkStatus::CopyStatusModes()
 {

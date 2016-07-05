@@ -119,7 +119,7 @@ void WateringModule::Setup()
   for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
   {
     pinMode(WATER_RELAYS[i],OUTPUT);
-    digitalWrite(WATER_RELAYS[i],RELAY_OFF);
+    WORK_STATUS.PinWrite(WATER_RELAYS[i],RELAY_OFF);
 
     // настраиваем все каналы
     wateringChannels[i].SetRelayOn(false);
@@ -181,7 +181,7 @@ void WateringModule::Setup()
 #ifdef USE_PUMP_RELAY
   // выключаем реле насоса  
   pinMode(PUMP_RELAY_PIN,OUTPUT);
-  digitalWrite(PUMP_RELAY_PIN,RELAY_OFF);
+  WORK_STATUS.PinWrite(PUMP_RELAY_PIN,RELAY_OFF);
   bPumpIsOn = false;
 #endif
 
@@ -327,7 +327,8 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
       if(channel->IsChanged() || internalNeedChange)
         for(uint8_t i=0;i<WATER_RELAYS_COUNT;i++)
         {
-          digitalWrite(WATER_RELAYS[i],state);      
+          WORK_STATUS.PinWrite(WATER_RELAYS[i],state);  // сохраняем статус пинов
+          WORK_STATUS.SaveWaterChannelState(i,state); // сохраняем статус каналов полива     
         } // for
         
       return;
@@ -336,7 +337,10 @@ void WateringModule::HoldChannelState(int8_t channelIdx, WateringChannel* channe
     // работаем с одним каналом, пишем в пин только тогда, когда состояние реле поменялось
     
     if(channel->IsChanged() || internalNeedChange)
-      digitalWrite(WATER_RELAYS[channelIdx],state);
+    {
+      WORK_STATUS.PinWrite(WATER_RELAYS[channelIdx],state); // сохраняем статус пина
+      WORK_STATUS.SaveWaterChannelState(channelIdx,state); // сохраняем статус канала полива
+    }
   
 }
 
@@ -372,7 +376,7 @@ void WateringModule::HoldPumpState(bool anyChannelActive)
     if(bPumpIsOn) // если был включен - выключаем
     {
       bPumpIsOn = false;
-      digitalWrite(PUMP_RELAY_PIN,RELAY_OFF);
+      WORK_STATUS.PinWrite(PUMP_RELAY_PIN,RELAY_OFF);
     }
     return; // и не будем ничего больше делать
   }
@@ -381,7 +385,7 @@ void WateringModule::HoldPumpState(bool anyChannelActive)
       bPumpIsOn = anyChannelActive;
 
      // пишем в реле насоса вкл или выкл в зависимости от настройки "включать насос при поливе"
-      digitalWrite(PUMP_RELAY_PIN,bPumpIsOn ? RELAY_ON : RELAY_OFF);
+      WORK_STATUS.PinWrite(PUMP_RELAY_PIN,bPumpIsOn ? RELAY_ON : RELAY_OFF);
     } 
 }
 #endif

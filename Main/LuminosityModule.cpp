@@ -1,7 +1,9 @@
 #include "LuminosityModule.h"
 #include "ModuleController.h"
 
+#if LAMP_RELAYS_COUNT > 0
 static uint8_t LAMP_RELAYS[] = { LAMP_RELAYS_PINS }; // объявляем массив пинов реле
+#endif
 
 BH1750Support::BH1750Support()
 {
@@ -91,12 +93,15 @@ void LuminosityModule::Setup()
   blinker.begin(DIODE_LIGHT_MANUAL_MODE_PIN,F("LX")); // настраиваем блинкер на нужный пин
 #endif
 
- // выключаем все реле
-  for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
-  {
-    pinMode(LAMP_RELAYS[i],OUTPUT);
-    digitalWrite(LAMP_RELAYS[i],RELAY_OFF);
-  } // for
+  #if LAMP_RELAYS_COUNT > 0
+   // выключаем все реле
+    for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
+    {
+      pinMode(LAMP_RELAYS[i],OUTPUT);
+      WORK_STATUS.PinWrite(LAMP_RELAYS[i],RELAY_OFF);
+      WORK_STATUS.SaveLightChannelState(i,RELAY_OFF);
+    } // for
+  #endif
     
        
  }
@@ -111,11 +116,14 @@ void LuminosityModule::Update(uint16_t dt)
  if(bLastRelaysIsOn != bRelaysIsOn) // только если состояние с момента последнего опроса изменилось
  {
     bLastRelaysIsOn = bRelaysIsOn; // сохраняем текущее
-    
-    for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
-    {
-      digitalWrite(LAMP_RELAYS[i],bRelaysIsOn ? RELAY_ON : RELAY_OFF); // пишем в пин нужное состояние    
-    } // for 
+
+    #if LAMP_RELAYS_COUNT > 0
+      for(uint8_t i=0;i<LAMP_RELAYS_COUNT;i++)
+      {
+        WORK_STATUS.PinWrite(LAMP_RELAYS[i],bRelaysIsOn ? RELAY_ON : RELAY_OFF); // пишем в пин нужное состояние
+        WORK_STATUS.SaveLightChannelState(i,bRelaysIsOn ? RELAY_ON : RELAY_OFF);    
+      } // for
+    #endif 
  } // if
 
 

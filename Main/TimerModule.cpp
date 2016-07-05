@@ -20,7 +20,7 @@ void PeriodicTimer::On()
   if(lastPinState != TIMER_ON)
   {
     lastPinState = TIMER_ON;
-    digitalWrite(Settings.Pin,TIMER_ON);
+    WORK_STATUS.PinWrite(Settings.Pin,TIMER_ON);
   }
      
 }
@@ -33,7 +33,7 @@ void PeriodicTimer::Off()
   if(lastPinState != TIMER_OFF)
   {
     lastPinState = TIMER_OFF;
-    digitalWrite(Settings.Pin,TIMER_OFF);
+    WORK_STATUS.PinWrite(Settings.Pin,TIMER_OFF);
   }
      
 }

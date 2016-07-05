@@ -37,10 +37,146 @@ AbstractUniClient* UniClientsFactory::GetClient(UniRawScratchpad* scratchpad)
       #else
       break;
       #endif
+
+    case uniExecutionClient:
+    #ifdef USE_UNI_EXECUTION_MODULE
+      return &executionClient;
+    #else
+      break;
+    #endif
   }
 
   return &dummyClient;
 }
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+#ifdef USE_UNI_EXECUTION_MODULE
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+UniExecutionModuleClient::UniExecutionModuleClient()
+{
+  
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+void UniExecutionModuleClient::Register(UniRawScratchpad* scratchpad)
+{
+  // нам регистрироваться в системе дополнительно не надо
+  UNUSED(scratchpad);
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+void UniExecutionModuleClient::Update(UniRawScratchpad* scratchpad, bool isModuleOnline)
+{
+  if(!isModuleOnline) // когда модуль офлайн - ничего делать не надо
+    return;
+
+   // приводим к типу нашего скратча
+   UniExecutionModuleScratchpad* ourScratch = (UniExecutionModuleScratchpad*) &(scratchpad->data);
+
+   // получаем состояние контроллера
+   ControllerState state = WORK_STATUS.GetState();
+
+   // теперь проходимся по всем слотам
+   for(byte i=0;i<8;i++)
+   {
+      byte slotStatus = 0; // статус слота - 0 по умолчанию
+      
+      switch(ourScratch->slots[i].slotType)
+      {
+        case slotEmpty: // пустой слот, ничего делать не надо
+        case 0xFF: // если вычитали из EEPROM, а там ничего не было
+        break;
+
+        case slotWindowLeftChannel:
+        {
+          // состояние левого канала окна, в slotLinkedData - номер окна
+          byte windowNumber = ourScratch->slots[i].slotLinkedData;
+          if(windowNumber < 16)
+          {
+            // окна у нас нумеруются от 0 до 15, всего 16 окон.
+            // на каждое окно - два бита, для левого и правого канала.
+            // следовательно, чтобы получить стартовый бит - надо номер окна
+            // умножить на 2.
+            byte bitNum = windowNumber*2;           
+            if(state.WindowsState & (1 << bitNum))
+              slotStatus = 1; // выставляем в слоте значение 1
+          }
+        }
+        break;
+
+        case slotWindowRightChannel:
+        {
+          // состояние левого канала окна, в slotLinkedData - номер окна
+          byte windowNumber = ourScratch->slots[i].slotLinkedData;
+          if(windowNumber < 16)
+          {
+            // окна у нас нумеруются от 0 до 15, всего 16 окон.
+            // на каждое окно - два бита, для левого и правого канала.
+            // следовательно, чтобы получить стартовый бит - надо номер окна
+            // умножить на 2.
+            byte bitNum = windowNumber*2;
+
+            // поскольку канал у нас правый - его бит идёт следом за левым.
+            bitNum++;
+                       
+            if(state.WindowsState & (1 << bitNum))
+              slotStatus = 1; // выставляем в слоте значение 1
+          }
+        }
+        break;
+
+        case slotWateringChannel:
+        {
+          // состояние канала полива, в slotLinkedData - номер канала полива
+          byte wateringChannel = ourScratch->slots[i].slotLinkedData;
+          if(wateringChannel< 8)
+          {
+            if(state.WaterChannelsState & (1 << wateringChannel))
+              slotStatus = 1; // выставляем в слоте значение 1
+              
+          }
+        }        
+        break;
+
+        case slotLightChannel:
+        {
+          // состояние канала досветки, в slotLinkedData - номер канала досветки
+          byte lightChannel = ourScratch->slots[i].slotLinkedData;
+          if(lightChannel < 8)
+          {
+            if(state.LightChannelsState & (1 << lightChannel))
+              slotStatus = 1; // выставляем в слоте значение 1
+              
+          }
+        }
+        break;
+
+        case slotPin:
+        {
+          // получаем статус пина
+          byte pinNumber = ourScratch->slots[i].slotLinkedData;
+          byte byteNum = pinNumber/8;
+          byte bitNum = pinNumber%8;
+
+          if(byteNum < 8)
+          {
+            // если нужный бит с номером пина установлен - на пине высокий уровень
+            if(state.PinsState[byteNum] & (1 << bitNum))
+              slotStatus = 1; // выставляем в слоте значение 1
+          }
+          
+        }
+        break;
+        
+      } // switch
+
+      // мы получили slotStatus, записываем его обратно в слот
+      ourScratch->slots[i].slotStatus = slotStatus;
+   } // for
+
+   // пишем актуальное состояние слотов клиенту
+   UniScratchpad.begin(pin,scratchpad);
+   UniScratchpad.write();
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+#endif // USE_UNI_EXECUTION_MODULE
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 #ifdef USE_UNI_NEXTION_MODULE
 //-------------------------------------------------------------------------------------------------------------------------------------------------------

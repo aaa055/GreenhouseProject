@@ -268,6 +268,14 @@ class ReservationResolver
     virtual OneState* GetReservedState(AbstractModule* sourceModule, ModuleStates sensorType, uint8_t sensorIndex) = 0;
 };
 
+typedef struct
+{
+  unsigned long WindowsState; // состояние каналов окон, 4 байта = 32 бита = 16 окон)
+  byte WaterChannelsState; // состояние каналов полива, 1 байт, (8 каналов)
+  byte LightChannelsState; // состояние каналов досветки, 1 байт (8 каналов)
+  byte PinsState[8]; // состояние пинов, 8 байт, 64 пина
+  
+} ControllerState; // состояние контроллера
 
 class WorkStatus
 {
@@ -280,6 +288,8 @@ class WorkStatus
 
   static byte MakeNum(char symbol);
 
+  ControllerState State;
+
   public:
   
     void SetStatus(uint8_t bitNum, bool bOn);
@@ -291,6 +301,17 @@ class WorkStatus
 
   static const char* ToHex(int i);
   static byte FromHex(const char* buff);
+
+  void PinWrite(byte pin, byte level); // пишет в пин состояние, заодно копируя его в слепок состояния контроллера
+
+  void SaveWindowState(byte channel, byte state);
+  void SaveWaterChannelState(byte channel, byte state);
+  void SaveLightChannelState(byte channel, byte state);
+
+  ControllerState& GetState()
+  {
+    return State;
+  }
   
 }; // структура статусов работы 
 

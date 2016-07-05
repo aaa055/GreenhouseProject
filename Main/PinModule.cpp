@@ -17,7 +17,7 @@ void PinModule::UpdatePinStates()
     {
       s->hasChanges = false;
       pinMode(s->pinNumber,OUTPUT); // делаем пин запоминающим значения
-      digitalWrite(s->pinNumber,s->pinState); // запоминаем текущее состояние пина
+      WORK_STATUS.PinWrite(s->pinNumber,s->pinState); // запоминаем текущее состояние пина
    
     }
   } // for

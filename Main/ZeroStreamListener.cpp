@@ -152,23 +152,6 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               PublishSingleton << WorkStatus::ToHex(raw[i]);
             } // for
 
-            /*
-
-            uint8_t sensorType, sensorIndex;
-            
-            PublishSingleton = uniRegistrator.GetRegistrationID();
-            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetID();
-            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetConfig();
-            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetCalibrationFactor();
-            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetCalibrationFactor(1);
-            PublishSingleton << PARAM_DELIMITER << uniRegistrator.GetQueryInterval();
-
-            for(uint8_t tt = 0;tt<UNI_SENSORS_COUNT;tt++)
-            {
-              uniRegistrator.GetSensorInfo(tt,sensorType,sensorIndex);
-              PublishSingleton << PARAM_DELIMITER << sensorType << PARAM_DELIMITER << sensorIndex;
-            }
-            */
           } // if
           else
           {

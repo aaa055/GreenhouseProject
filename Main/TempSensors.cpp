@@ -80,6 +80,10 @@ void WindowState::SwitchRelays(uint8_t rel1State, uint8_t rel2State)
   // уведомляем родителя, что такой-то канал имеет такое-то состояние, он сам разберётся, что с этим делать
   Parent->SaveChannelState(RelayChannel1,rel1State);
   Parent->SaveChannelState(RelayChannel2,rel2State);
+
+  // тут говорим слепку состояния, чтобы он запомнил состояние каналов окон
+  WORK_STATUS.SaveWindowState(RelayChannel1,rel1State);
+  WORK_STATUS.SaveWindowState(RelayChannel2,rel2State);
     
 }
 void WindowState::UpdateState(uint16_t dt)
@@ -213,7 +217,7 @@ void TempSensors::SaveChannelState(uint8_t channel, uint8_t state)
     
   #else
     // просто управляем пинами, поэтому напрямую пишем в пины
-    digitalWrite(WINDOWS_RELAYS[channel],state);
+    WORK_STATUS.PinWrite(WINDOWS_RELAYS[channel],state);
   #endif
 }
 void TempSensors::SetupWindows()
@@ -235,8 +239,8 @@ void TempSensors::SetupWindows()
           pinMode(pin2, OUTPUT);
         
           // выключаем реле
-          digitalWrite(pin1,RELAY_OFF);
-          digitalWrite(pin2,RELAY_OFF);        
+          WORK_STATUS.PinWrite(pin1,RELAY_OFF);
+          WORK_STATUS.PinWrite(pin2,RELAY_OFF);        
      #endif
 
     // просим окна закрыться при старте контроллера

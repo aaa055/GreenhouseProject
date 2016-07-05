@@ -39,6 +39,31 @@ typedef struct
   
 } UniRawScratchpad; // "сырой" скратчпад, байты данных могут меняться в зависимости от типа модуля
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
+typedef enum
+{
+  slotEmpty, // пустой слот, без настроек
+  slotWindowLeftChannel, // настройки привязки к левому каналу одного окна
+  slotWindowRightChannel, // настройки привязки к правому каналу одного окна
+  slotWateringChannel, // настройки привязки к статусу канала полива 
+  slotLightChannel, // настройки привязки к статусу канала досветки
+  slotPin // настройки привязки к статусу пина
+  
+} UniSlotType; // тип слота, для которого указаны настройки
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+typedef struct
+{
+  byte slotType; // тип слота, одно из значений UniSlotType 
+  byte slotLinkedData; // данные, привязанные к слоту мастером, должны хранится слейвом без изменений
+  byte slotStatus; // статус слота (HIGH или LOW)
+  
+} UniSlotData; // данные одного слота настроек универсального модуля 
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+typedef struct
+{
+  UniSlotData slots[8]; // слоты настроек
+  
+} UniExecutionModuleScratchpad; // скратчпад исполнительного модуля
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
 typedef struct
 {
   byte index; // индекс датчика
@@ -151,7 +176,8 @@ typedef struct
 typedef enum
 {
   uniSensorsClient = 1, // packet_type == 1
-  uniNextionClient = 2 // packet_type == 2
+  uniNextionClient = 2, // packet_type == 2
+  uniExecutionClient = 3 // packet_type == 3
   
 } UniClientType; // тип клиента
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -259,6 +285,20 @@ class SensorsUniClient : public AbstractUniClient
   
 };
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
+// класс клиента исполнительного модуля
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
+#ifdef USE_UNI_EXECUTION_MODULE
+class UniExecutionModuleClient  : public AbstractUniClient
+{
+  public:
+
+    UniExecutionModuleClient();
+    virtual void Register(UniRawScratchpad* scratchpad);
+    virtual void Update(UniRawScratchpad* scratchpad, bool isModuleOnline);
+  
+};
+#endif
+//-------------------------------------------------------------------------------------------------------------------------------------------------------
 struct UniNextionWaitScreenData
 {
   byte sensorType;
@@ -274,7 +314,7 @@ struct UniNextionWaitScreenData
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 #ifdef USE_UNI_NEXTION_MODULE
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
-class NextionUniClient: public AbstractUniClient
+class NextionUniClient : public AbstractUniClient
 {
   public:
     NextionUniClient();
@@ -300,6 +340,10 @@ class UniClientsFactory
     SensorsUniClient sensorsClient;
     #ifdef USE_UNI_NEXTION_MODULE
     NextionUniClient nextionClient;
+    #endif
+
+    #ifdef USE_UNI_EXECUTION_MODULE
+    UniExecutionModuleClient executionClient;
     #endif
   
   public:

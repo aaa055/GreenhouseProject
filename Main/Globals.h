@@ -15,6 +15,7 @@
 #define UNI_WIRED_MODULES_COUNT 1 // сколько проводных линий для универсальных модулей используется (0 - нисколько)
 #define UNI_WIRED_MODULES 30 // номера пинов (через запятую), на которых висят универсальные модули, кол-вом  UNI_WIRED_SENSORS_COUNT
 #define USE_UNI_NEXTION_MODULE // закомментировать, если не нужен выносной модуль с дисплеем Nextion на шине 1-Wire
+#define USE_UNI_EXECUTION_MODULE // закомментировать, если не нужна поддержка исполнительных модулей
 // показания с каких датчиков передавать выносному модулю с дисплеем Nextion? максимум 5 датчиков 
 #define UNI_NEXTION_WAIT_SCREEN_SENSORS {StateTemperature,0,"STATE"}, {StateHumidity,1,"HUMIDITY"}, {StateLuminosity,0,"LIGHT"}
 
