@@ -2,6 +2,7 @@
 #define DS3231SUPPORT_H
 
 #include <Wire.h>
+#include "AbstractModule.h"
 
 #if (ARDUINO >= 100)
   #define DS3231_WIRE_READ Wire.read
@@ -46,6 +47,8 @@ class DS3231Clock
     const char* getDateStr(const DS3231Time& t);
 
     DS3231Time getTime();
+
+    Temperature getTemperature();
  
     void begin();
 };

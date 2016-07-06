@@ -40,6 +40,34 @@ void DS3231Clock::setTime(uint8_t second, uint8_t minute, uint8_t hour, uint8_t 
 
   delay(10); // немного подождём для надёжности
 }
+Temperature DS3231Clock::getTemperature()
+{
+ Temperature res;
+  
+ union int16_byte {
+       int i;
+       byte b[2];
+   } rtcTemp;
+     
+  Wire.beginTransmission(DS3231Address);
+  Wire.write(0x11);
+  if(Wire.endTransmission() != 0) // ошибка
+    return res;
+
+  if(Wire.requestFrom(DS3231Address, 2) == 2)
+  {
+    rtcTemp.b[1] = DS3231_WIRE_READ();
+    rtcTemp.b[0] = DS3231_WIRE_READ();
+
+    long tempC100 = (rtcTemp.i >> 6) * 25;
+
+    res.Value = tempC100/100;
+    res.Fract = abs(tempC100 % 100);
+    
+  }
+  
+  return res;
+}
 DS3231Time DS3231Clock::getTime()
 {
   DS3231Time t;

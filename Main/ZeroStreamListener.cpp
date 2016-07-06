@@ -24,6 +24,10 @@ void(* resetFunc) (void) = 0;
 void ZeroStreamListener::Setup()
 {
   // настройка модуля тут
+  #ifdef USE_DS3231_REALTIME_CLOCK
+    // добавляем температуру часов
+    State.AddState(StateTemperature,0);
+  #endif
  }
 
 void ZeroStreamListener::Update(uint16_t dt)
@@ -39,7 +43,20 @@ void ZeroStreamListener::Update(uint16_t dt)
 #endif // USE_UNIVERSAL_SENSORS
 
   UNUSED(dt);
-  // обновление модуля тут
+
+ #ifdef USE_DS3231_REALTIME_CLOCK
+
+  static uint16_t dsTimer = 0;
+  dsTimer += dt;
+  if(dsTimer > 2000)
+  {
+    dsTimer = 0;
+  // получаем температуру модуля реального времени
+    DS3231Clock rtc = MainController->GetClock();
+    Temperature t = rtc.getTemperature();
+    State.UpdateState(StateTemperature,0,(void*)&t);
+  }
+  #endif  
 
 }
 
@@ -221,7 +238,7 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
 
             WORK_STATUS.WriteStatus(pStream,true); // просим записать статус
 
-            // тут можем писать остальные статусы, типа показаний датчиков и т.п.
+            // тут можем писать остальные статусы, типа показаний датчиков и т.п.:
 
             size_t modulesCount = MainController->GetModulesCount(); // получаем кол-во зарегистрированных модулей
 
@@ -236,8 +253,8 @@ bool  ZeroStreamListener::ExecCommand(const Command& command, bool wantAnswer)
               yield(); // немного даём поработать другим модулям
 
               AbstractModule* mod = MainController->GetModule(i);
-              if(mod == this) // себя пропускаем
-                continue;
+             // if(mod == this) // себя пропускаем
+             //   continue;
 
               // проверяем, не пустой ли модуль. для этого смотрим, сколько у него датчиков вообще
               uint8_t tempCount = mod->State.GetStateCount(StateTemperature);
