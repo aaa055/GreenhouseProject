@@ -46,9 +46,12 @@ void ZeroStreamListener::Update(uint16_t dt)
 
  #ifdef USE_DS3231_REALTIME_CLOCK
 
-  static uint16_t dsTimer = 0;
+  // читать чаще, чем раз в 20 секунд - быссмысленно, 
+  // внутренняя конверсия температуры у DS3231 происходит
+  // каждые 64 секунды.
+  static uint16_t dsTimer = 20000;
   dsTimer += dt;
-  if(dsTimer > 2000)
+  if(dsTimer > 20000)
   {
     dsTimer = 0;
   // получаем температуру модуля реального времени

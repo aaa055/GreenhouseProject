@@ -481,7 +481,10 @@
 #define STATE_OPEN F("OPEN") // Открыть CTSET=STATE|WINDOW|0|OPEN, CTSET=STATE|WINDOW|ALL|OPEN, CTSET=STATE|WINDOW|0-2|OPEN|2000
 #define ALL F("ALL") // отработать все каналы
 #define PROP_WINDOW F("WINDOW") // название канала, чтобы было понятно
-#define PROP_WINDOW_CNT F("WINDOW_CNT") // кол-во фрамуг CTGET=STATE|WINDOW_CNT
+#define PROP_WINDOW_CNT F("WINDOW_CNT") // кол-во фрамуг CTGET=STATE|WINDOW|WINDOW_CNT
+#define PROP_WINDOW_STATEMASK F("STATEMASK") // CTGET=STATE|WINDOW|STATEMASK - получить состояние всех окон в виде маски. Ответ: OK=STATE|WINDOW|STATEMASK|Кол-во окон|Маска,
+// где Маска - байты маски в виде шестнадцатеричной строки (например "F0"), для каждого окна в этих байтах - по два бита, их значение: 00 - закрыто, 01 - открывается, 10 - закрывается, 11 - открыто.
+// например, для 4-х окон будет 1 байт (4*2 бита = 8 бит = 1 байт), для 5 окон - два байта, при этом во втором байте значащими будут только младшие 2 бита и т.д.
 #define TEMP_SETTINGS F("T_SETT") // получить/установить температуры срабатывания, CTGET=STATE|T_SETT, CTSET=STATE|T_SETT|t open|t close
 #define NO_TEMPERATURE_DATA -128 // нет данных с датчика температуры
 

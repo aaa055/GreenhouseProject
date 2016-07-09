@@ -723,11 +723,11 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
           } // if
           else if(commandRequested == PROP_WINDOW) // статус окна
           {
-             commandRequested = command.GetArg(1);
-             commandRequested.toUpperCase();
+            commandRequested = command.GetArg(1);
+           // commandRequested.toUpperCase();
 
-             if(commandRequested == PROP_WINDOW_CNT)
-             {
+            if(commandRequested == PROP_WINDOW_CNT)
+            {
                     PublishSingleton.Status = true;
                     if(wantAnswer)
                     {
@@ -735,7 +735,85 @@ bool  TempSensors::ExecCommand(const Command& command, bool wantAnswer)
                       PublishSingleton << PARAM_DELIMITER  << SUPPORTED_WINDOWS;
                     }
 
-             }
+            }
+            else
+            if(commandRequested == PROP_WINDOW_STATEMASK)
+            {
+               // получить состояние окон в виде маски, для каждого окна - два бита в маске
+               PublishSingleton.Status = true;
+               if(wantAnswer)
+               {
+                 PublishSingleton = PROP_WINDOW;
+                 PublishSingleton << PARAM_DELIMITER << PROP_WINDOW_STATEMASK;
+                 PublishSingleton << PARAM_DELIMITER << SUPPORTED_WINDOWS << PARAM_DELIMITER;
+
+                 // теперь выводим маску. для начала считаем, сколько байт нам нужно вывести.
+                 byte bitsCount = SUPPORTED_WINDOWS*2;
+                 byte bytesCount = bitsCount/8;
+                 if(bitsCount%8 > 0)
+                  bytesCount++;
+
+                  // посчитали кол-во байт, теперь в каждый байт мы запишем состояние максимум четырёх окон
+                  byte windowIdx = 0;
+                  for(byte bCntr = 0; bCntr < bytesCount; bCntr++)
+                  {
+                    byte workByte = 0; // байт, куда мы будем писать состояние окон
+                    byte written = 0; // сколько окон записали в байт
+                    byte bitPos = 0; // позиция записи битов в байт
+                    
+                    for(byte wIter = windowIdx; wIter < SUPPORTED_WINDOWS; wIter++, bitPos+=2)
+                    {
+                      if(written > 3) // записали байт полностью
+                        break;
+
+                      // теперь пишем состояние окна. Индекс окна является стартовой позицией сдвига.
+                      WindowState* ws = &(Windows[wIter]);
+                      if(ws->IsBusy())
+                      {
+                        // окно в движении
+                        if(ws->GetDirection() == dirOPEN)
+                        {
+                          // окно открывается
+                          // надо записать 01, т.е пишем в младший из двух бит
+                          workByte |= (1 << bitPos);
+                        }
+                        else
+                        {
+                          // окно закрывается
+                          // надо записать 10, т.е. пишем в старший из двух бит
+                          workByte |= (1 << (bitPos+1));
+                        }
+                        
+                      } // if(ws->IsBusy())
+                      else
+                      {
+                         // окно никуда не двигается, записываем его текущее состояние
+                         if(ws->GetCurrentPosition() > 0)
+                         {
+                           // окно открыто, надо записать две единички в биты окна
+                           workByte |= (1 << bitPos);
+                           workByte |= (1 << (bitPos+1));
+                           
+                         }
+                         else
+                         {
+                           // окно закрыто, ничего в статус писать не надо, там одни нули
+                         }
+                      } // else
+
+                        
+                      written++;
+                    } // for
+
+                    // байт готов к отправке, выводим его в монитор
+                    PublishSingleton << WorkStatus::ToHex(workByte);
+
+                    windowIdx += 4; // прибавляем четвёрочку, т.к. мы в один байт можем записать информацию о состоянии максимум 4 окон
+                    
+                  } // for
+                 
+               } // if wantAnwer
+            }
             else // запросили по индексу
             {
               //TODO: Тут может быть запрос ALL, а не только индекс!!!
