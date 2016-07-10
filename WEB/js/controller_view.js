@@ -48,7 +48,7 @@ View.prototype.fillSensorsList = function(parentElement, list, add, pattern = {i
               dataDiv.html(NO_DATA);
               
               var updatingChart = $('<div/>',{'class': 'peity', id: 'inline_chart'}).appendTo(dt);
-              updatingChart.peity("line", { width: 64, height: 20 });
+              updatingChart.peity("line", { width: 64, height: 16 });
               
               if(sensor.HasData)
               {

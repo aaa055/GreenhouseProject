@@ -90,6 +90,95 @@ controller.OnStatus = function(obj)
     $('#offline_block').show();
     $('#online_block').hide();
   }
+  
+  controller.queryCommand(true,'STATE|WINDOW|STATEMASK',function(obj,answer){
+    
+        if(!answer.IsOK)
+         {
+          $('#windowsChannelsState').toggle(false);
+          return;
+         }
+         
+          $('#windowsChannelsState').toggle(true);
+         
+          var totalWindows = parseInt(answer.Params[3]);
+          var byteHolder = answer.Params[4];
+         
+          var numBits = totalWindows * 2;
+          
+          var numBytes = numBits / 8;
+          if (numBits % 8 > 0)
+              numBytes++;
+              
+           
+           var optionsCount = $('#windowsChannelsState').find("option").length;
+           
+           while(optionsCount < totalWindows)
+           {
+              $("<option/>", { 'value' : optionsCount, 'style' : 'padding:2px;padding-left:8px;padding-right:8px;'}).appendTo('#windowsChannelsState');
+              optionsCount++;
+           }
+           
+           var windowIndex = 0; // текущая позиция записи в массив состояний окон
+           
+            for (var i = 0; i < numBytes; i++)
+            {
+                var strByte = '0x' + byteHolder.substring(0, 2);
+                byteHolder = byteHolder.substring(2);
+                
+                var bState = parseInt(strByte);
+                // сконвертировали строку в байт, теперь смотрим
+                
+                // в одном байте у нас - состояние 4-х окон
+                for (var bitPos = 0; bitPos < 8; bitPos += 2)
+                {
+                    // получаем младший бит
+                    var bLow = BitIsSet(bState, bitPos);
+                    // получаем старший бит
+                    var bHigh = BitIsSet(bState, (bitPos+1));
+
+                    var wCapt = "Окно номер #" + windowIndex + ': ';
+                    var ws = "<нет данных>";
+                    
+                    var optionClass = '';
+                    
+                    // проверяем комбинации
+                    if (!bLow && !bHigh)
+                    {
+                        ws = "закрыто";
+                    }
+                    else
+                    if (!bHigh && bLow)
+                    {
+                        ws = "открывается";
+                    }
+                    else
+                    if (bHigh && !bLow)
+                    {
+                        ws = "закрывается";
+                    }
+                    else
+                    if (bHigh && bLow)
+                    {
+                        ws = "открыто";
+                        optionClass = 'auto_mode';
+                    }
+                    
+                    // сохраняем состояние
+                    var opt = $('#windowsChannelsState').find("option")[windowIndex];
+                    $(opt).text(wCapt + ws).removeClass();
+                    
+                    if(optionClass != '')
+                      $(opt).addClass(optionClass);
+                    
+                    windowIndex++; // переходим на следующее окно
+                } // for
+
+            } // for
+          
+         
+        });
+  
 };
 //-----------------------------------------------------------------------------------------------------
 // ждём получения настроек температур и моторов и только тогла показываем ссылку.

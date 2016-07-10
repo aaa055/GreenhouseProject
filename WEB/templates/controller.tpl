@@ -192,14 +192,33 @@
 
                       <div class='ui-widget-header ui-corner-all padding_around8px'>Окна</div>   
                       <div class='ui-widget-content ui-corner-all padding_around8px'>
+                      
+                       <table border='0' width='100%' cellspacing='0' cellpadding='0'>
+                       <tr>
+                      
+                            <td valign='top'>
 
-                        <div class='padding_around8px'>
-                          Статус: <span class='bold' id='window_state'></span><br/>
-                          Режим: <span class='bold' id='window_mode'></span>
-                        </div>
-                        
-                        <button id='toggler_windows' onclick='controller.toggleWindows();updateWindowsState();'></button>
-                        <button id='toggler_windows_mode' onclick='controller.toggleWindowsMode();updateWindowsState();'></button>
+                              <div class='padding_around8px'>
+                                Статус: <span class='bold' id='window_state'></span><br/>
+                                Режим: <span class='bold' id='window_mode'></span>
+                              </div>
+                              
+                              <button id='toggler_windows' onclick='controller.toggleWindows();updateWindowsState();'></button>
+                              <button id='toggler_windows_mode' onclick='controller.toggleWindowsMode();updateWindowsState();'></button>
+                            
+                            </td>
+                            
+                            <td valign='top' align='right'>
+                              <div class='padding_around8px'>
+                                <select id='windowsChannelsState' class='hdn' size='4'>
+                                </select>
+                                
+                              </div>
+                            </td>
+                         
+                         </tr>
+                         </table>   
+                         
 
                       </div>
                       
